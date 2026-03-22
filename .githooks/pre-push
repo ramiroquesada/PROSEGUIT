@@ -1,0 +1,38 @@
+#!/bin/sh
+# pre-push hook: verifica que la rama local esté actualizada antes de hacer push
+
+BRANCH=$(git symbolic-ref --short HEAD 2>/dev/null)
+REMOTE="origin"
+
+echo "[pre-push] Verificando actualizaciones en $REMOTE/$BRANCH..."
+
+# Hacer fetch silencioso para obtener estado actual del remote
+git fetch "$REMOTE" "$BRANCH" --quiet 2>/dev/null
+
+if [ $? -ne 0 ]; then
+  echo "[pre-push] ⚠️  No se pudo conectar con $REMOTE. Continuando de todos modos."
+  exit 0
+fi
+
+# Verificar si hay commits en el remote que no tenemos localmente
+BEHIND=$(git rev-list --count HEAD.."$REMOTE/$BRANCH" 2>/dev/null)
+
+if [ -z "$BEHIND" ]; then
+  # La rama remota no existe todavía, primer push
+  exit 0
+fi
+
+if [ "$BEHIND" -gt 0 ]; then
+  echo ""
+  echo "[pre-push] ❌ Tu rama está $BEHIND commit(s) detrás de $REMOTE/$BRANCH"
+  echo ""
+  echo "   Tenés cambios en el repositorio remoto que no tenés localmente."
+  echo "   Hacé 'git pull' antes de pushear para evitar conflictos."
+  echo ""
+  echo "   git pull origin $BRANCH"
+  echo ""
+  exit 1
+fi
+
+echo "[pre-push] ✅ Todo actualizado. Haciendo push..."
+exit 0
