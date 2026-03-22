@@ -76,4 +76,12 @@ export function useReturnLoan() {
   });
 }
 
+export function useServiceProviders() {
+  return useQuery({
+    queryKey: ['service-providers'],
+    queryFn: () => api.get<{ id: number; nombre: string; activo: boolean }[]>('/service-providers'),
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
 export type { Prestamo };

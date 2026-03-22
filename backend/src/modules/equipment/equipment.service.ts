@@ -314,6 +314,51 @@ export async function decommission(id: number, data: {
   return updated;
 }
 
+export async function returnFromService(id: number, data: {
+  motivo: string;
+  diagnostico?: string;
+  comentario?: string;
+}, usuarioId: number) {
+  const equipo = await prisma.equipo.findUnique({ where: { id } });
+  if (!equipo) throw new AppError(404, 'Equipo no encontrado');
+  if (equipo.estado !== 'EN_SERVICIO_EXTERNO') {
+    throw new AppError(400, 'El equipo no está en servicio externo');
+  }
+
+  // Cerrar el EnvioServicio más reciente abierto
+  const envioAbierto = await prisma.envioServicio.findFirst({
+    where: { equipoId: id, fechaRetorno: null },
+    orderBy: { fechaEnvio: 'desc' },
+  });
+
+  if (envioAbierto) {
+    await prisma.envioServicio.update({
+      where: { id: envioAbierto.id },
+      data: {
+        fechaRetorno: new Date(),
+        diagnostico: data.diagnostico,
+      },
+    });
+  }
+
+  const updated = await prisma.equipo.update({
+    where: { id },
+    data: {
+      estado: 'ACTIVO',
+      historial: {
+        create: {
+          accion: 'RETORNO_SERVICIO_EXTERNO',
+          usuarioId,
+          motivo: data.motivo,
+          comentario: data.comentario,
+        },
+      },
+    },
+  });
+
+  return updated;
+}
+
 export async function getEquipmentTypes() {
   return prisma.tipoEquipo.findMany({ orderBy: { nombre: 'asc' } });
 }

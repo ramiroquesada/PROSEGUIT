@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api-client';
 
 interface EquipmentFilters {
@@ -69,6 +69,71 @@ interface Equipment {
   template: { id: number; nombre: string } | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export function useTransferEquipment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: number; oficinaDestinoId: number; motivo: string; comentario?: string }) =>
+      api.post(`/equipment/${id}/transfer`, data),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: ['equipment', id] });
+      qc.invalidateQueries({ queryKey: ['equipment'] });
+      qc.invalidateQueries({ queryKey: ['history', 'equipment', id] });
+    },
+  });
+}
+
+export function useSendToSupport() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: number; motivo: string; comentario?: string }) =>
+      api.post(`/equipment/${id}/send-to-support`, data),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: ['equipment', id] });
+      qc.invalidateQueries({ queryKey: ['history', 'equipment', id] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
+export function useSendToService() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: number; servicioId: number; motivo: string; comentario?: string }) =>
+      api.post(`/equipment/${id}/send-to-service`, data),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: ['equipment', id] });
+      qc.invalidateQueries({ queryKey: ['history', 'equipment', id] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
+export function useReturnFromService() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: number; motivo: string; diagnostico?: string; comentario?: string }) =>
+      api.post(`/equipment/${id}/return-from-service`, data),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: ['equipment', id] });
+      qc.invalidateQueries({ queryKey: ['history', 'equipment', id] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
+export function useDecommission() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: number; motivo: string; comentario?: string }) =>
+      api.post(`/equipment/${id}/decommission`, data),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: ['equipment', id] });
+      qc.invalidateQueries({ queryKey: ['history', 'equipment', id] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
 }
 
 export type { Equipment };

@@ -72,6 +72,15 @@ export async function decommissionHandler(req: Request, res: Response) {
   res.json(equipo);
 }
 
+export async function returnFromServiceHandler(req: Request, res: Response) {
+  const equipo = await equipmentService.returnFromService(
+    Number(req.params.id),
+    req.body,
+    req.user!.userId,
+  );
+  res.json(equipo);
+}
+
 export async function typesHandler(_req: Request, res: Response) {
   const tipos = await equipmentService.getEquipmentTypes();
   res.json(tipos);

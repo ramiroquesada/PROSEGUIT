@@ -55,5 +55,6 @@ router.post('/:id/transfer', validate(transferSchema), controller.transferHandle
 router.post('/:id/send-to-support', validate(supportSchema), controller.sendToSupportHandler);
 router.post('/:id/send-to-service', validate(serviceSchema), controller.sendToServiceHandler);
 router.post('/:id/decommission', validate(decommissionSchema), controller.decommissionHandler);
+router.post('/:id/return-from-service', validate(supportSchema), controller.returnFromServiceHandler);
 
 export default router;
