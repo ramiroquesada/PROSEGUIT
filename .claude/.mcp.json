@@ -1,0 +1,22 @@
+{
+  "servers": {
+    "postgres": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres"],
+      "env": {
+        "DATABASE_URL": "postgresql://proseguit:proseguit@localhost:5433/proseguit"
+      }
+    },
+    "context7": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"]
+    },
+    "prisma": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "prisma", "mcp"]
+    }
+  }
+}

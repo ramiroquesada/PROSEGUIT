@@ -1,0 +1,122 @@
+.dashboard {
+  max-width: 1200px;
+}
+
+.welcome {
+  margin-bottom: var(--space-2xl);
+
+  & h2 {
+    font-size: var(--font-size-2xl);
+    color: var(--color-secondary);
+    margin-bottom: var(--space-xs);
+  }
+
+  & p {
+    color: var(--color-text-secondary);
+  }
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-lg);
+  margin-bottom: var(--space-2xl);
+}
+
+.statCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+
+  &[data-color="success"] .statValue { color: var(--color-success); }
+  &[data-color="warning"] .statValue { color: var(--color-warning); }
+  &[data-color="danger"] .statValue { color: var(--color-danger); }
+  &[data-color="info"] .statValue { color: var(--color-info); }
+  &[data-color="neutral"] .statValue { color: var(--color-primary); }
+}
+
+.statValue {
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+}
+
+.statLabel {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+.activitySection {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-xl);
+}
+
+.sectionTitle {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+  margin-bottom: var(--space-lg);
+  color: var(--color-text);
+}
+
+.activityList {
+  display: flex;
+  flex-direction: column;
+}
+
+.activityItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-md);
+  padding: var(--space-md) 0;
+  border-bottom: 1px solid var(--color-border);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.activityInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.activityAction {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.activityEquipo {
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+}
+
+.activityMotivo {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.activityMeta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+}
+
+.loadingText,
+.emptyText {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  text-align: center;
+  padding: var(--space-xl);
+}

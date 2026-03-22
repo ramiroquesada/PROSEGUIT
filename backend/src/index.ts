@@ -1,0 +1,36 @@
+import express from 'express';
+import cors from 'cors';
+import { env } from './config/env.js';
+import { corsOptions } from './config/cors.js';
+import { errorHandler } from './middleware/error-handler.js';
+import authRoutes from './modules/auth/auth.routes.js';
+import equipmentRoutes from './modules/equipment/equipment.routes.js';
+import locationsRoutes from './modules/locations/locations.routes.js';
+import dashboardRoutes from './modules/dashboard/dashboard.routes.js';
+
+const app = express();
+
+// Middleware global
+app.use(cors(corsOptions));
+app.use(express.json());
+
+// Health check
+app.get('/api/v1/health', (_req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Rutas
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/equipment', equipmentRoutes);
+app.use('/api/v1/locations', locationsRoutes);
+app.use('/api/v1/dashboard', dashboardRoutes);
+
+// Error handler global (Express 5 captura async errors automáticamente)
+app.use(errorHandler);
+
+app.listen(env.port, () => {
+  console.log(`[PROSEGUIT] API corriendo en http://localhost:${env.port}`);
+  console.log(`[PROSEGUIT] Entorno: ${env.nodeEnv}`);
+});
+
+export default app;

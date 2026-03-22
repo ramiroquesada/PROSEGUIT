@@ -1,0 +1,33 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+*.log
+.DS_Store
+Thumbs.db
+
+# Prisma
+backend/prisma/*.db
+
+# Vite
+frontend/.vite/
+
+# IDE
+.idea/
+*.swp
+*.swo
+
+# OS
+desktop.ini
+
+# Dump SQL original (datos de produccion)
+db_seguit1.sql
+
+# Claude local settings
+.claude/settings.local.json
+
+# Archivos de extraccion temporales
+extract_data.js
+export_datos_v1.json
+resumen_datos_v1.txt

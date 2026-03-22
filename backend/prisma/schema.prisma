@@ -1,0 +1,284 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==========================================
+// UBICACIONES JERÁRQUICAS (3 niveles)
+// ==========================================
+
+model Ciudad {
+  id        Int       @id @default(autoincrement())
+  nombre    String    @unique @db.VarChar(100)
+  secciones Seccion[]
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@map("ciudad")
+}
+
+model Seccion {
+  id        Int       @id @default(autoincrement())
+  nombre    String    @db.VarChar(100)
+  ciudadId  Int       @map("ciudad_id")
+  ciudad    Ciudad    @relation(fields: [ciudadId], references: [id])
+  oficinas  Oficina[]
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@unique([nombre, ciudadId])
+  @@map("seccion")
+}
+
+model Oficina {
+  id        Int     @id @default(autoincrement())
+  nombre    String  @db.VarChar(100)
+  seccionId Int     @map("seccion_id")
+  seccion   Seccion @relation(fields: [seccionId], references: [id])
+  v1Id      Int?    @map("v1_id")
+
+  equipos          Equipo[]
+  usuarios         Usuario[]
+  funcionarios     Funcionario[]
+  historialOrigen  Historial[]    @relation("HistorialOrigen")
+  historialDestino Historial[]    @relation("HistorialDestino")
+  prestamos        Prestamo[]
+  createdAt        DateTime       @default(now()) @map("created_at")
+
+  @@unique([nombre, seccionId])
+  @@map("oficina")
+}
+
+// ==========================================
+// EQUIPOS
+// ==========================================
+
+enum EstadoEquipo {
+  ACTIVO
+  EN_REPARACION
+  DADO_DE_BAJA
+  EN_DEPOSITO
+  PRESTADO
+  EN_SERVICIO_EXTERNO
+
+  @@map("estado_equipo")
+}
+
+model TipoEquipo {
+  id       Int              @id @default(autoincrement())
+  nombre   String           @unique @db.VarChar(50)
+  icono    String?          @db.VarChar(50)
+  v1Id     Int?             @map("v1_id")
+  equipos  Equipo[]
+  templates ModeloTemplate[]
+
+  @@map("tipo_equipo")
+}
+
+model ModeloTemplate {
+  id               Int        @id @default(autoincrement())
+  nombre           String     @db.VarChar(100)
+  tipoEquipoId     Int        @map("tipo_equipo_id")
+  tipoEquipo       TipoEquipo @relation(fields: [tipoEquipoId], references: [id])
+  marca            String?    @db.VarChar(50)
+  especificaciones Json       @default("{}") @db.JsonB
+  equipos          Equipo[]
+  createdAt        DateTime   @default(now()) @map("created_at")
+
+  @@map("modelo_template")
+}
+
+model Equipo {
+  id               Int            @id @default(autoincrement())
+  serie            Int            @unique
+  modelo           String?        @db.VarChar(100)
+  templateId       Int?           @map("template_id")
+  template         ModeloTemplate? @relation(fields: [templateId], references: [id])
+  tipoEquipoId     Int            @map("tipo_equipo_id")
+  tipoEquipo       TipoEquipo     @relation(fields: [tipoEquipoId], references: [id])
+  oficinaId        Int            @map("oficina_id")
+  oficina          Oficina        @relation(fields: [oficinaId], references: [id])
+  estado           EstadoEquipo   @default(ACTIVO)
+  ip               String?        @db.VarChar(45)
+  urlImage         String?        @map("url_image") @db.VarChar(500)
+  observacion      String?        @db.Text
+  especificaciones Json           @default("{}") @db.JsonB
+  v1Id             Int?           @map("v1_id")
+
+  historial      Historial[]
+  prestamos      Prestamo[]
+  enviosServicio EnvioServicio[]
+  createdAt      DateTime        @default(now()) @map("created_at")
+  updatedAt      DateTime        @updatedAt @map("updated_at")
+
+  @@index([tipoEquipoId])
+  @@index([oficinaId])
+  @@index([estado])
+  @@map("equipo")
+}
+
+// ==========================================
+// HISTORIAL Y ACCIONES
+// ==========================================
+
+enum AccionTipo {
+  CREACION
+  TRANSFERENCIA
+  ENVIO_SOPORTE
+  RETORNO_SOPORTE
+  PRESTAMO
+  DEVOLUCION
+  BAJA
+  CAMBIO_ESTADO
+  EDICION
+  ENVIO_SERVICIO_EXTERNO
+  RETORNO_SERVICIO_EXTERNO
+
+  @@map("accion_tipo")
+}
+
+model Historial {
+  id              Int        @id @default(autoincrement())
+  equipoId        Int        @map("equipo_id")
+  equipo          Equipo     @relation(fields: [equipoId], references: [id])
+  accion          AccionTipo
+  oficinaOrigenId  Int?       @map("oficina_origen_id")
+  oficinaOrigen    Oficina?   @relation("HistorialOrigen", fields: [oficinaOrigenId], references: [id])
+  oficinaDestinoId Int?       @map("oficina_destino_id")
+  oficinaDestino   Oficina?   @relation("HistorialDestino", fields: [oficinaDestinoId], references: [id])
+  usuarioId       Int        @map("usuario_id")
+  usuario         Usuario    @relation(fields: [usuarioId], references: [id])
+  motivo          String     @db.Text
+  comentario      String?    @db.Text
+  fecha           DateTime   @default(now())
+  metadata        Json       @default("{}") @db.JsonB
+
+  @@index([equipoId])
+  @@index([fecha(sort: Desc)])
+  @@map("historial")
+}
+
+// ==========================================
+// PRÉSTAMOS
+// ==========================================
+
+model Prestamo {
+  id                Int          @id @default(autoincrement())
+  equipoId          Int          @map("equipo_id")
+  equipo            Equipo       @relation(fields: [equipoId], references: [id])
+  oficinaDestinoId  Int          @map("oficina_destino_id")
+  oficinaDestino    Oficina      @relation(fields: [oficinaDestinoId], references: [id])
+  solicitanteFicha  Int          @map("solicitante_ficha")
+  solicitante       Funcionario  @relation("PrestamoSolicitante", fields: [solicitanteFicha], references: [ficha])
+  tecnicoId         Int          @map("tecnico_id")
+  tecnico           Usuario      @relation("PrestamoTecnico", fields: [tecnicoId], references: [id])
+  fechaPrestamo     DateTime     @default(now()) @map("fecha_prestamo")
+  fechaDevolucion   DateTime?    @map("fecha_devolucion")
+  devueltoPorFicha  Int?         @map("devuelto_por_ficha")
+  devueltoPor       Funcionario? @relation("PrestamoDevuelto", fields: [devueltoPorFicha], references: [ficha])
+  recibidoPorId     Int?         @map("recibido_por_id")
+  recibidoPor       Usuario?     @relation("PrestamoRecibido", fields: [recibidoPorId], references: [id])
+  motivo            String?      @db.Text
+  activo            Boolean      @default(true)
+  createdAt         DateTime     @default(now()) @map("created_at")
+
+  @@map("prestamo")
+}
+
+// ==========================================
+// SERVICIOS EXTERNOS
+// ==========================================
+
+model ServicioExterno {
+  id        Int             @id @default(autoincrement())
+  nombre    String          @db.VarChar(100)
+  contacto  String?         @db.VarChar(200)
+  telefono  String?         @db.VarChar(50)
+  activo    Boolean         @default(true)
+  envios    EnvioServicio[]
+
+  @@map("servicio_externo")
+}
+
+model EnvioServicio {
+  id            Int              @id @default(autoincrement())
+  equipoId      Int              @map("equipo_id")
+  equipo        Equipo           @relation(fields: [equipoId], references: [id])
+  servicioId    Int              @map("servicio_id")
+  servicio      ServicioExterno  @relation(fields: [servicioId], references: [id])
+  fechaEnvio    DateTime         @default(now()) @map("fecha_envio")
+  fechaRetorno  DateTime?        @map("fecha_retorno")
+  motivo        String           @db.Text
+  diagnostico   String?          @db.Text
+  costo         Decimal?         @db.Decimal(10, 2)
+  tecnicoId     Int              @map("tecnico_id")
+  tecnico       Usuario          @relation(fields: [tecnicoId], references: [id])
+  createdAt     DateTime         @default(now()) @map("created_at")
+
+  @@map("envio_servicio")
+}
+
+// ==========================================
+// USUARIOS Y FUNCIONARIOS
+// ==========================================
+
+enum RolUsuario {
+  ADMIN
+  TECNICO
+
+  @@map("rol_usuario")
+}
+
+model Usuario {
+  id                  Int       @id @default(autoincrement())
+  nombre              String    @db.VarChar(100)
+  ficha               Int       @unique
+  email               String?   @db.VarChar(255)
+  passwordHash        String    @map("password_hash") @db.VarChar(255)
+  rol                 RolUsuario @default(TECNICO)
+  activo              Boolean   @default(true)
+  forcePasswordChange Boolean   @default(false) @map("force_password_change")
+  oficinaId           Int?      @map("oficina_id")
+  oficina             Oficina?  @relation(fields: [oficinaId], references: [id])
+  v1Id                Int?      @map("v1_id")
+
+  historial          Historial[]
+  prestamosTecnico   Prestamo[]      @relation("PrestamoTecnico")
+  prestamosRecibidos Prestamo[]      @relation("PrestamoRecibido")
+  enviosServicio     EnvioServicio[]
+  refreshTokens      RefreshToken[]
+  createdAt          DateTime        @default(now()) @map("created_at")
+  updatedAt          DateTime        @updatedAt @map("updated_at")
+
+  @@map("usuario")
+}
+
+model Funcionario {
+  ficha    Int     @id
+  nombre   String  @db.VarChar(100)
+  oficinaId Int?   @map("oficina_id")
+  oficina  Oficina? @relation(fields: [oficinaId], references: [id])
+  activo   Boolean @default(true)
+
+  prestamosSolicitados Prestamo[] @relation("PrestamoSolicitante")
+  prestamosDevueltos   Prestamo[] @relation("PrestamoDevuelto")
+  createdAt            DateTime   @default(now()) @map("created_at")
+
+  @@map("funcionario")
+}
+
+// ==========================================
+// AUTH
+// ==========================================
+
+model RefreshToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique @db.VarChar(500)
+  usuarioId Int      @map("usuario_id")
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("refresh_token")
+}
