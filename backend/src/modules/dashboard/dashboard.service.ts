@@ -33,7 +33,7 @@ export async function getStats() {
 export async function getRecentActivity(limit = 20) {
   return prisma.historial.findMany({
     include: {
-      equipo: { select: { serie: true, modelo: true } },
+      equipo: { select: { id: true, serie: true, modelo: true, tipoEquipo: { select: { nombre: true } } } },
       usuario: { select: { nombre: true, ficha: true } },
       oficinaOrigen: { select: { nombre: true } },
       oficinaDestino: { select: { nombre: true } },

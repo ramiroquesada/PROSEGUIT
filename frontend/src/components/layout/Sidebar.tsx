@@ -1,15 +1,25 @@
 import { NavLink, useNavigate } from 'react-router';
+import {
+  LayoutDashboard,
+  Monitor,
+  MapPin,
+  ArrowLeftRight,
+  ScrollText,
+  LayoutTemplate,
+  Users,
+  LogOut,
+} from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 import styles from './Sidebar.module.css';
 
 const navItems = [
-  { to: '/', label: 'Dashboard', icon: '📊' },
-  { to: '/equipos', label: 'Equipos', icon: '💻' },
-  { to: '/ubicaciones', label: 'Ubicaciones', icon: '📍' },
-  { to: '/prestamos', label: 'Préstamos', icon: '🔄' },
-  { to: '/historial', label: 'Historial', icon: '📜' },
-  { to: '/plantillas', label: 'Plantillas', icon: '📋' },
-  { to: '/usuarios', label: 'Usuarios', icon: '👥' },
+  { to: '/', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/equipos', label: 'Equipos', icon: Monitor },
+  { to: '/ubicaciones', label: 'Ubicaciones', icon: MapPin },
+  { to: '/prestamos', label: 'Préstamos', icon: ArrowLeftRight },
+  { to: '/historial', label: 'Historial', icon: ScrollText },
+  { to: '/plantillas', label: 'Plantillas', icon: LayoutTemplate },
+  { to: '/usuarios', label: 'Usuarios', icon: Users },
 ];
 
 export default function Sidebar() {
@@ -37,19 +47,24 @@ export default function Sidebar() {
       </div>
 
       <nav className={styles.nav}>
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.to === '/'}
-            className={({ isActive }) =>
-              `${styles.navItem} ${isActive ? styles.active : ''}`
-            }
-          >
-            <span className={styles.navIcon}>{item.icon}</span>
-            {item.label}
-          </NavLink>
-        ))}
+        {navItems.map((item) => {
+          const Icon = item.icon;
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              end={item.to === '/'}
+              className={({ isActive }) =>
+                `${styles.navItem} ${isActive ? styles.active : ''}`
+              }
+            >
+              <span className={styles.navIcon}>
+                <Icon size={18} strokeWidth={1.75} />
+              </span>
+              {item.label}
+            </NavLink>
+          );
+        })}
       </nav>
 
       <div className={styles.userSection}>
@@ -59,8 +74,12 @@ export default function Sidebar() {
             <span className={styles.userName}>{user?.nombre}</span>
             <span className={styles.userRole}>{user?.rol}</span>
           </div>
-          <button className={styles.logoutBtn} onClick={handleLogout} title="Cerrar sesión">
-            Salir
+          <button
+            className={styles.logoutBtn}
+            onClick={handleLogout}
+            title="Cerrar sesión"
+          >
+            <LogOut size={15} strokeWidth={2} />
           </button>
         </div>
       </div>

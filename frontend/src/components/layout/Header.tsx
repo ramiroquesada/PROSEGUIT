@@ -1,28 +1,82 @@
-import { useLocation } from 'react-router';
+import { useLocation, useParams } from 'react-router';
+import { useAuth } from '../../lib/auth-context';
+import { useEquipmentDetail } from '../../hooks/useEquipment';
 import styles from './Header.module.css';
 
-const pageTitles: Record<string, string> = {
-  '/': 'Dashboard',
-  '/equipos': 'Equipos',
+const PAGE_TITLES: Record<string, string> = {
+  '/':            'Dashboard',
+  '/equipos':     'Equipos',
   '/ubicaciones': 'Ubicaciones',
-  '/prestamos': 'Préstamos',
-  '/historial': 'Historial Global',
-  '/plantillas': 'Plantillas de Modelos',
-  '/usuarios': 'Usuarios',
+  '/prestamos':   'Préstamos',
+  '/historial':   'Historial',
+  '/plantillas':  'Plantillas',
+  '/usuarios':    'Usuarios',
 };
+
+// Breadcrumb para rutas de detalle/edición de equipos
+function EquipmentBreadcrumb({ id, isEdit }: { id: string; isEdit: boolean }) {
+  const { data } = useEquipmentDetail(parseInt(id, 10));
+  const label = data ? `Serie ${data.serie}` : '…';
+  return (
+    <span className={styles.breadcrumb}>
+      Equipos
+      <span className={styles.breadcrumbSep}>›</span>
+      <span className={styles.breadcrumbCurrent}>
+        {isEdit ? `${label} · Editar` : label}
+      </span>
+    </span>
+  );
+}
+
+function NuevoBreadcrumb({ parent }: { parent: string }) {
+  return (
+    <span className={styles.breadcrumb}>
+      {parent}
+      <span className={styles.breadcrumbSep}>›</span>
+      <span className={styles.breadcrumbCurrent}>Nuevo</span>
+    </span>
+  );
+}
 
 export default function Header() {
   const { pathname } = useLocation();
-  const baseRoute = '/' + pathname.split('/')[1];
-  const title = pageTitles[baseRoute] || 'PROSEGUIT';
+  const { user } = useAuth();
+  const params = useParams();
+
+  // Determinar título y breadcrumb según la ruta
+  let title = 'PROSEGUIT';
+  let breadcrumb: React.ReactNode = null;
+
+  if (pathname === '/') {
+    title = 'Dashboard';
+  } else if (pathname === '/equipos/nuevo') {
+    title = 'Equipos';
+    breadcrumb = <NuevoBreadcrumb parent="Equipos" />;
+  } else if (pathname.match(/^\/equipos\/\d+\/editar$/)) {
+    title = 'Equipos';
+    breadcrumb = <EquipmentBreadcrumb id={params.id!} isEdit />;
+  } else if (pathname.match(/^\/equipos\/\d+$/)) {
+    title = 'Equipos';
+    breadcrumb = <EquipmentBreadcrumb id={params.id!} isEdit={false} />;
+  } else {
+    const base = '/' + pathname.split('/')[1];
+    title = PAGE_TITLES[base] || 'PROSEGUIT';
+  }
 
   return (
     <header className={styles.header}>
-      <h2 className={styles.title}>{title}</h2>
-      <div className={styles.statusBadge}>
-        <span className={styles.statusDot} />
-        Sistema operativo
+      <div className={styles.left}>
+        <h2 className={styles.title}>{title}</h2>
+        {breadcrumb && breadcrumb}
       </div>
+
+      {user && (
+        <div className={styles.userChip}>
+          <div className={styles.userDot} />
+          <span className={styles.userName}>{user.nombre}</span>
+          <span className={styles.userRole}>{user.rol}</span>
+        </div>
+      )}
     </header>
   );
 }

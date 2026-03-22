@@ -16,7 +16,7 @@ interface RecentActivity {
   accion: string;
   motivo: string;
   fecha: string;
-  equipo: { serie: number; modelo: string | null } | null;
+  equipo: { id: number; serie: number; modelo: string | null; tipoEquipo: { nombre: string } } | null;
   usuario: { nombre: string; ficha: number };
   oficinaOrigen: { nombre: string } | null;
   oficinaDestino: { nombre: string } | null;

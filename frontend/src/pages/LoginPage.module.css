@@ -1,130 +1,221 @@
 .container {
-  display: flex;
   min-height: 100dvh;
-}
-
-.brandPanel {
-  flex: 1;
-  background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-secondary-light) 100%);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: var(--space-2xl);
-  color: var(--color-text-inverse);
+  padding: var(--space-lg);
+  background:
+    radial-gradient(ellipse at 20% 80%, rgb(var(--color-primary-rgb) / 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 20%, rgb(var(--color-primary-rgb) / 0.1) 0%, transparent 50%),
+    linear-gradient(135deg, #001E40 0%, var(--color-secondary) 50%, #002856 100%);
+  position: relative;
+  overflow: hidden;
 
-  @media (width < 768px) {
-    display: none;
+  /* Patrón de puntos decorativo */
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(circle, rgb(255 255 255 / 0.04) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
   }
 }
 
-.brandTitle {
-  font-size: var(--font-size-3xl);
-  font-weight: 700;
-  margin-bottom: var(--space-sm);
-}
-
-.brandSubtitle {
-  font-size: var(--font-size-lg);
-  opacity: 0.85;
-  text-align: center;
-  max-width: 400px;
-}
-
-.brandBadge {
-  margin-top: var(--space-xl);
-  padding: var(--space-sm) var(--space-lg);
-  background: rgb(255 255 255 / 0.15);
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-sm);
-}
-
-.formPanel {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-xl);
-  background: var(--color-surface);
-}
-
-.formCard {
+/* ─── Card central ─── */
+.card {
+  position: relative;
   width: 100%;
-  max-width: 400px;
+  max-width: 420px;
+  background: var(--color-surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl), 0 0 0 1px rgb(255 255 255 / 0.05);
+  overflow: hidden;
+  animation: card-enter 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
-.formHeader {
-  margin-bottom: var(--space-2xl);
-
-  & h1 {
-    font-size: var(--font-size-2xl);
-    color: var(--color-secondary);
-    margin-bottom: var(--space-xs);
+@keyframes card-enter {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.97);
   }
-
-  & p {
-    color: var(--color-text-secondary);
-    font-size: var(--font-size-sm);
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
 
+/* ─── Header de la card con gradiente ─── */
+.cardHeader {
+  background: linear-gradient(135deg, var(--color-secondary) 0%, #002856 100%);
+  padding: var(--space-xl) var(--space-2xl);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+
+  /* Círculo decorativo */
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -40px;
+    right: -40px;
+    width: 120px;
+    height: 120px;
+    border-radius: var(--radius-full);
+    background: rgb(var(--color-primary-rgb) / 0.15);
+  }
+}
+
+.logoMark {
+  width: 52px;
+  height: 52px;
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
+  border-radius: var(--radius-lg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  margin: 0 auto var(--space-md);
+  box-shadow: 0 4px 16px rgb(var(--color-primary-rgb) / 0.4);
+  position: relative;
+  z-index: 1;
+}
+
+.brandName {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-black);
+  letter-spacing: 0.1em;
+  color: var(--color-text-inverse);
+  line-height: 1;
+  margin-bottom: var(--space-xs);
+  position: relative;
+  z-index: 1;
+}
+
+.brandSub {
+  font-size: var(--font-size-xs);
+  color: rgb(255 255 255 / 0.5);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  position: relative;
+  z-index: 1;
+}
+
+/* ─── Cuerpo del formulario ─── */
+.cardBody {
+  padding: var(--space-xl) var(--space-2xl) var(--space-2xl);
+}
+
+.formTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-secondary);
+  margin-bottom: var(--space-xs);
+}
+
+.formSubtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-xl);
+}
+
+/* ─── Campos ─── */
 .field {
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-md);
 
   & label {
     display: block;
-    font-size: var(--font-size-sm);
-    font-weight: 500;
-    color: var(--color-text);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-semibold);
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
     margin-bottom: var(--space-xs);
   }
 
   & input {
     width: 100%;
-    padding: var(--space-sm) var(--space-md);
-    border: 1px solid var(--color-border);
+    padding: 12px var(--space-md);
+    border: 1.5px solid var(--color-border);
     border-radius: var(--radius-md);
     font-size: var(--font-size-base);
-    transition: border-color var(--transition-fast);
-    background: var(--color-surface);
+    background: var(--color-bg);
+    color: var(--color-text);
+    transition:
+      border-color var(--transition-fast),
+      background var(--transition-fast),
+      box-shadow var(--transition-fast);
+
+    &::placeholder { color: var(--color-text-tertiary); }
+
+    &:hover { border-color: var(--color-border-strong); }
 
     &:focus {
       border-color: var(--color-primary);
+      background: var(--color-surface);
       outline: none;
       box-shadow: 0 0 0 3px rgb(var(--color-primary-rgb) / 0.15);
     }
-
-    &::placeholder {
-      color: var(--color-text-secondary);
-    }
   }
 }
 
+/* ─── Botón submit ─── */
 .submitBtn {
   width: 100%;
-  padding: var(--space-sm) var(--space-lg);
-  background: var(--color-primary);
+  padding: 13px var(--space-lg);
+  margin-top: var(--space-lg);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-hover) 100%);
   color: var(--color-text-inverse);
   font-size: var(--font-size-base);
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   border-radius: var(--radius-md);
-  transition: background var(--transition-fast);
+  letter-spacing: 0.02em;
+  transition:
+    opacity var(--transition-fast),
+    transform var(--transition-fast),
+    box-shadow var(--transition-fast);
+  box-shadow: 0 4px 12px rgb(var(--color-primary-rgb) / 0.3);
 
   &:hover:not(:disabled) {
-    background: var(--color-primary-hover);
+    opacity: 0.92;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgb(var(--color-primary-rgb) / 0.4);
+  }
+
+  &:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: none;
   }
 
   &:disabled {
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
   }
 }
 
+/* ─── Error ─── */
 .error {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
   padding: var(--space-sm) var(--space-md);
-  background: var(--color-danger-light);
+  background: var(--color-danger-subtle);
+  border: 1px solid rgb(var(--color-danger-rgb) / 0.2);
   color: var(--color-danger);
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
-  margin-bottom: var(--space-lg);
+  font-weight: var(--font-weight-medium);
+  margin-bottom: var(--space-md);
+}
+
+/* ─── Footer ─── */
+.cardFooter {
+  text-align: center;
+  padding: var(--space-md) var(--space-2xl);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  background: var(--color-bg);
 }

@@ -28,24 +28,20 @@ export default function LoginPage() {
 
   return (
     <div className={styles.container}>
-      <div className={styles.brandPanel}>
-        <h2 className={styles.brandTitle}>PROSEGUIT</h2>
-        <p className={styles.brandSubtitle}>
-          Sistema de Gestión de Inventario IT
-          <br />
-          Intendencia de Soriano
-        </p>
-        <span className={styles.brandBadge}>v2.0</span>
-      </div>
+      <div className={styles.card}>
+        {/* Header con marca */}
+        <div className={styles.cardHeader}>
+          <div className={styles.logoMark}>🏛</div>
+          <h1 className={styles.brandName}>PROSEGUIT</h1>
+          <p className={styles.brandSub}>Intendencia de Soriano</p>
+        </div>
 
-      <div className={styles.formPanel}>
-        <div className={styles.formCard}>
-          <div className={styles.formHeader}>
-            <h1>Iniciar Sesión</h1>
-            <p>Ingresá tu ficha y contraseña para continuar</p>
-          </div>
+        {/* Formulario */}
+        <div className={styles.cardBody}>
+          <p className={styles.formTitle}>Iniciar Sesión</p>
+          <p className={styles.formSubtitle}>Ingresá tu ficha y contraseña para continuar</p>
 
-          {error && <div className={styles.error}>{error}</div>}
+          {error && <div className={styles.error}>⚠ {error}</div>}
 
           <form onSubmit={handleSubmit}>
             <div className={styles.field}>
@@ -81,6 +77,10 @@ export default function LoginPage() {
               {loading ? 'Ingresando...' : 'Ingresar'}
             </button>
           </form>
+        </div>
+
+        <div className={styles.cardFooter}>
+          Sistema de Gestión de Inventario IT · v2.0
         </div>
       </div>
     </div>
