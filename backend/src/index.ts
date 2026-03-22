@@ -7,6 +7,11 @@ import authRoutes from './modules/auth/auth.routes.js';
 import equipmentRoutes from './modules/equipment/equipment.routes.js';
 import locationsRoutes from './modules/locations/locations.routes.js';
 import dashboardRoutes from './modules/dashboard/dashboard.routes.js';
+import historyRoutes from './modules/history/history.routes.js';
+import loansRoutes from './modules/loans/loans.routes.js';
+import modelTemplatesRoutes from './modules/model-templates/model-templates.routes.js';
+import serviceProvidersRoutes from './modules/service-providers/service-providers.routes.js';
+import usersRoutes from './modules/users/users.routes.js';
 
 const app = express();
 
@@ -24,6 +29,11 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/equipment', equipmentRoutes);
 app.use('/api/v1/locations', locationsRoutes);
 app.use('/api/v1/dashboard', dashboardRoutes);
+app.use('/api/v1/history', historyRoutes);
+app.use('/api/v1/loans', loansRoutes);
+app.use('/api/v1/model-templates', modelTemplatesRoutes);
+app.use('/api/v1/service-providers', serviceProvidersRoutes);
+app.use('/api/v1/users', usersRoutes);
 
 // Error handler global (Express 5 captura async errors automáticamente)
 app.use(errorHandler);
