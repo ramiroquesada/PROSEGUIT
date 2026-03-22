@@ -11,6 +11,7 @@ import UsersPage from './pages/UsersPage';
 import ChangePasswordPage from './pages/ChangePasswordPage';
 import LocationsPage from './pages/LocationsPage';
 import TemplatesPage from './pages/TemplatesPage';
+import HistoryPage from './pages/HistoryPage';
 import MainLayout from './components/layout/MainLayout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -51,6 +52,7 @@ export default function App() {
         <Route path="equipos/:id/editar" element={<EquipmentFormPage />} />
         <Route path="prestamos" element={<LoansPage />} />
         <Route path="ubicaciones" element={<LocationsPage />} />
+        <Route path="historial" element={<HistoryPage />} />
         <Route path="plantillas" element={<TemplatesPage />} />
         <Route path="usuarios" element={<UsersPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

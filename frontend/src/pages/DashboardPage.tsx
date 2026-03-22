@@ -27,14 +27,16 @@ export default function DashboardPage() {
       </div>
 
       <div className={styles.statsGrid}>
-        <StatCard label="Equipos Activos" value={stats?.activos} loading={loadingStats} color="success" />
-        <StatCard label="En Reparación" value={stats?.enReparacion} loading={loadingStats} color="warning" />
-        <StatCard label="Préstamos Activos" value={stats?.prestamosActivos} loading={loadingStats} color="info" />
-        <StatCard label="Ubicaciones" value={stats?.totalUbicaciones} loading={loadingStats} color="neutral" />
+        <StatCard label="Equipos Activos" value={stats?.activos} loading={loadingStats} color="success" icon="💻" />
+        <StatCard label="En Reparación" value={stats?.enReparacion} loading={loadingStats} color="warning" icon="🔧" />
+        <StatCard label="Préstamos Activos" value={stats?.prestamosActivos} loading={loadingStats} color="info" icon="🔄" />
+        <StatCard label="Ubicaciones" value={stats?.totalUbicaciones} loading={loadingStats} color="neutral" icon="📍" />
       </div>
 
       <div className={styles.activitySection}>
-        <h3 className={styles.sectionTitle}>Actividad Reciente</h3>
+        <div className={styles.sectionHeader}>
+          <h3 className={styles.sectionTitle}>Actividad Reciente</h3>
+        </div>
         {loadingActivity ? (
           <p className={styles.loadingText}>Cargando...</p>
         ) : activity && activity.length > 0 ? (
@@ -68,16 +70,22 @@ export default function DashboardPage() {
   );
 }
 
-function StatCard({ label, value, loading, color }: {
+function StatCard({ label, value, loading, color, icon }: {
   label: string;
   value: number | undefined;
   loading: boolean;
   color: string;
+  icon: string;
 }) {
   return (
     <div className={styles.statCard} data-color={color}>
-      <span className={styles.statValue}>{loading ? '—' : (value ?? 0)}</span>
-      <span className={styles.statLabel}>{label}</span>
+      <div className={styles.statHeader}>
+        <div className={styles.statIcon}>{icon}</div>
+      </div>
+      <div className={styles.statBody}>
+        <span className={styles.statValue}>{loading ? '—' : (value ?? 0)}</span>
+        <span className={styles.statLabel}>{label}</span>
+      </div>
     </div>
   );
 }

@@ -78,6 +78,7 @@
 .ciudadIcon { font-size: var(--font-size-lg); }
 .seccionIcon { font-size: var(--font-size-base); }
 .oficinaIcon { font-size: var(--font-size-sm); opacity: 0.7; }
+.nodeIcon { font-size: var(--font-size-base); flex-shrink: 0; }
 
 .ciudadNombre {
   font-size: var(--font-size-base);
@@ -147,11 +148,32 @@
   align-items: center;
   gap: var(--space-sm);
   padding: var(--space-xs) var(--space-lg) var(--space-xs) calc(var(--space-lg) + 48px);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  border-radius: var(--radius-sm);
+
+  &:hover { background: color-mix(in srgb, var(--color-primary) 8%, transparent); }
+  &[data-selected="true"] {
+    background: color-mix(in srgb, var(--color-primary) 12%, transparent);
+    outline: 1px solid color-mix(in srgb, var(--color-primary) 40%, transparent);
+  }
 }
 
 .oficinaNombre {
   font-size: var(--font-size-sm);
   color: var(--color-text);
+  flex: 1;
+}
+
+.verBtn {
+  font-size: var(--font-size-xs);
+  color: var(--color-primary);
+  opacity: 0;
+  transition: opacity var(--transition-fast);
+  white-space: nowrap;
+
+  .oficinaNode:hover & { opacity: 1; }
+  .oficinaNode[data-selected="true"] & { opacity: 1; }
 }
 
 .emptyNode {
@@ -159,6 +181,201 @@
   color: var(--color-text-secondary);
   padding: var(--space-sm) var(--space-2xl);
   font-style: italic;
+}
+
+/* ── Layout two-col ──────────────────────────────────────────── */
+.layout {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-lg);
+  align-items: start;
+  transition: grid-template-columns var(--transition-base);
+
+  &[data-panel-open="true"] {
+    grid-template-columns: 1fr 340px;
+  }
+}
+
+/* ── Equipment panel ─────────────────────────────────────────── */
+.panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  position: sticky;
+  top: var(--space-lg);
+  max-height: calc(100vh - 160px);
+  display: flex;
+  flex-direction: column;
+}
+
+.panelHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-md) var(--space-lg);
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-bg);
+  flex-shrink: 0;
+}
+
+.panelBreadcrumb {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  margin-bottom: 2px;
+}
+
+.panelTitle {
+  font-size: var(--font-size-base);
+  font-weight: 700;
+  color: var(--color-secondary);
+}
+
+.panelClose {
+  padding: var(--space-xs);
+  border: none;
+  background: none;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  line-height: 1;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+  &:hover { background: var(--color-bg); color: var(--color-text); }
+}
+
+.panelLoading {
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+  padding: var(--space-2xl);
+}
+
+.panelCount {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  padding: var(--space-sm) var(--space-lg) 0;
+  flex-shrink: 0;
+}
+
+.equipoList {
+  overflow-y: auto;
+  flex: 1;
+  padding: var(--space-sm) 0;
+}
+
+.equipoItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-lg);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+
+  &:hover { background: var(--color-bg); }
+}
+
+.equipoInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.equipoSerie {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--color-secondary);
+}
+
+.equipoModelo {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.equipoTipo {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.equipoIp {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-family: monospace;
+}
+
+.statusBadge {
+  display: inline-flex;
+  padding: 2px var(--space-sm);
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+
+  &[data-color="success"]  { background: #dcfce7; color: #16a34a; }
+  &[data-color="warning"]  { background: #fef3c7; color: #d97706; }
+  &[data-color="danger"]   { background: #fee2e2; color: #dc2626; }
+  &[data-color="info"]     { background: #dbeafe; color: #2563eb; }
+  &[data-color="neutral"]  { background: #f1f5f9; color: #64748b; }
+}
+
+.verTodosBtn {
+  display: block;
+  width: calc(100% - var(--space-lg) * 2);
+  margin: var(--space-sm) var(--space-lg) var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  background: none;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  color: var(--color-primary);
+  cursor: pointer;
+  text-align: center;
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+  &:hover { background: color-mix(in srgb, var(--color-primary) 8%, transparent); border-color: var(--color-primary); }
+}
+
+.panelEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-2xl) var(--space-lg);
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.addEquipoBtn {
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--color-primary);
+  color: white;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+  &:hover { background: var(--color-primary-dark); }
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (width < 768px) {
+  .layout[data-panel-open="true"] {
+    grid-template-columns: 1fr;
+  }
+
+  .panel {
+    position: static;
+    max-height: 400px;
+  }
 }
 
 /* Modal */

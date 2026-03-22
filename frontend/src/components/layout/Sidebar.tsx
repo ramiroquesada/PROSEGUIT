@@ -7,6 +7,7 @@ const navItems = [
   { to: '/equipos', label: 'Equipos', icon: '💻' },
   { to: '/ubicaciones', label: 'Ubicaciones', icon: '📍' },
   { to: '/prestamos', label: 'Préstamos', icon: '🔄' },
+  { to: '/historial', label: 'Historial', icon: '📜' },
   { to: '/plantillas', label: 'Plantillas', icon: '📋' },
   { to: '/usuarios', label: 'Usuarios', icon: '👥' },
 ];
@@ -20,11 +21,19 @@ export default function Sidebar() {
     navigate('/login');
   }
 
+  const initials = user?.nombre
+    ? user.nombre.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()
+    : '?';
+
   return (
     <aside className={styles.sidebar}>
       <div className={styles.brand}>
-        <h1 className={styles.logo}>PROSEGUIT</h1>
-        <span className={styles.version}>v2.0</span>
+        <div className={styles.logoMark}>🏛</div>
+        <div className={styles.logoText}>
+          <h1 className={styles.logo}>PROSEGUIT</h1>
+          <span className={styles.logoSubtitle}>Inventario IT</span>
+        </div>
+        <span className={styles.version}>v2</span>
       </div>
 
       <nav className={styles.nav}>
@@ -44,13 +53,16 @@ export default function Sidebar() {
       </nav>
 
       <div className={styles.userSection}>
-        <div className={styles.userInfo}>
-          <span className={styles.userName}>{user?.nombre}</span>
-          <span className={styles.userRole}>{user?.rol}</span>
+        <div className={styles.userCard}>
+          <div className={styles.userAvatar}>{initials}</div>
+          <div className={styles.userInfo}>
+            <span className={styles.userName}>{user?.nombre}</span>
+            <span className={styles.userRole}>{user?.rol}</span>
+          </div>
+          <button className={styles.logoutBtn} onClick={handleLogout} title="Cerrar sesión">
+            Salir
+          </button>
         </div>
-        <button className={styles.logoutBtn} onClick={handleLogout}>
-          Salir
-        </button>
       </div>
     </aside>
   );

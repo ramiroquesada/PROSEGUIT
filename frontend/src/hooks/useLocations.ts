@@ -24,4 +24,18 @@ export function useLocationTree() {
   });
 }
 
+export function useEquipmentByOficina(oficinaId: number | null) {
+  return useQuery({
+    queryKey: ['equipment', { oficinaId }],
+    queryFn: () => api.get<{
+      data: {
+        id: number; serie: number; modelo: string | null; estado: string;
+        tipoEquipo: { nombre: string }; ip: string | null;
+      }[];
+      pagination: { total: number };
+    }>(`/equipment?oficinaId=${oficinaId}&limit=100`),
+    enabled: oficinaId !== null && oficinaId > 0,
+  });
+}
+
 export type { LocationTree };
