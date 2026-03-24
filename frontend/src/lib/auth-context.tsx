@@ -6,7 +6,6 @@ interface User {
   nombre: string;
   ficha: number;
   rol: string;
-  forcePasswordChange: boolean;
 }
 
 interface AuthState {

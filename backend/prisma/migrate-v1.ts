@@ -92,7 +92,6 @@ async function migrateUsers() {
         passwordHash: hash,
         rol: u.rol === 1 ? 'ADMIN' : 'TECNICO',
         activo: true,
-        forcePasswordChange: u.ficha !== 9999,
         oficinaId: defaultOficinaId,
         v1Id: u.id,
       },

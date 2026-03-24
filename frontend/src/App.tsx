@@ -15,12 +15,8 @@ import HistoryPage from './pages/HistoryPage';
 import MainLayout from './components/layout/MainLayout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, user } = use(AuthContext)!;
+  const { isAuthenticated } = use(AuthContext)!;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
-  // Redirigir a cambio de contraseña si es obligatorio
-  if (user?.forcePasswordChange && window.location.pathname !== '/cambiar-password') {
-    return <Navigate to="/cambiar-password" replace />;
-  }
   return <>{children}</>;
 }
 

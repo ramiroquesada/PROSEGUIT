@@ -43,7 +43,6 @@ async function main() {
       passwordHash: adminHash,
       rol: 'ADMIN',
       activo: true,
-      forcePasswordChange: false,
       oficinaId: ofInformatica.id,
     },
   });
@@ -59,7 +58,6 @@ async function main() {
       passwordHash: ramiroHash,
       rol: 'TECNICO',
       activo: true,
-      forcePasswordChange: true,
       oficinaId: ofInformatica.id,
     },
   });
