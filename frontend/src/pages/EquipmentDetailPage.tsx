@@ -4,6 +4,7 @@ import { useEquipmentDetail, useTransferEquipment, useSendToSupport, useSendToSe
 import { useEquipmentHistory } from '../hooks/useHistory';
 import { useLocationTree, useCreateCity, useCreateSection, useCreateOffice } from '../hooks/useLocations';
 import { useServiceProviders } from '../hooks/useLoans';
+import { ArrowRightLeft, Wrench, Building2, Ban, RotateCcw, Pencil, ChevronLeft } from 'lucide-react';
 import styles from './EquipmentDetailPage.module.css';
 
 // ── Constantes de display ──────────────────────────────────────────────────
@@ -73,6 +74,15 @@ const ACCIONES_POR_ESTADO: Record<string, { type: ActionType; label: string; var
   ],
   PRESTADO: [],
   DADO_DE_BAJA: [],
+};
+
+// ── Iconos por tipo de acción ─────────────────────────────────────────────
+const ACCION_ICON: Record<ActionType, React.ComponentType<{ size?: number }>> = {
+  transfer:      ArrowRightLeft,
+  support:       Wrench,
+  service:       Building2,
+  returnService: RotateCcw,
+  decommission:  Ban,
 };
 
 // ── Títulos y descripciones de modal ──────────────────────────────────────
@@ -241,17 +251,25 @@ export default function EquipmentDetailPage() {
     <div className={styles.page}>
       {/* ── Header ─────────────────────────────────────────────────────── */}
       <div className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate('/equipos')}>← Volver</button>
+        <button className={styles.backBtn} onClick={() => navigate('/equipos')}>
+          <ChevronLeft size={16} />
+          Volver
+        </button>
         <div className={styles.headerInfo}>
           <h2 className={styles.title}>
-            Serie {equipo.serie}
-            {equipo.modelo && <span className={styles.modelo}> — {equipo.modelo}</span>}
+            <span className={styles.titleSerie}>Serie {equipo.serie}</span>
+            <span className={styles.titleMeta}>
+              {equipo.tipoEquipo.nombre}{equipo.modelo ? ` — ${equipo.modelo}` : ''}
+            </span>
           </h2>
           <span className={styles.badge} data-color={STATUS_COLOR[equipo.estado] || 'neutral'}>
             {STATUS_LABEL[equipo.estado] || equipo.estado}
           </span>
         </div>
-        <button className={styles.editBtn} onClick={() => navigate(`/equipos/${id}/editar`)}>Editar</button>
+        <button className={styles.editBtn} onClick={() => navigate(`/equipos/${id}/editar`)}>
+          <Pencil size={14} />
+          Editar
+        </button>
       </div>
 
       <div className={styles.content}>
@@ -278,16 +296,20 @@ export default function EquipmentDetailPage() {
             <div className={styles.card}>
               <h3 className={styles.cardTitle}>Acciones</h3>
               <div className={styles.actionButtons}>
-                {accionesDisponibles.map((a) => (
-                  <button
-                    key={a.type}
-                    className={styles.actionBtn}
-                    data-variant={a.variant}
-                    onClick={() => openAction(a.type)}
-                  >
-                    {a.label}
-                  </button>
-                ))}
+                {accionesDisponibles.map((a) => {
+                  const Icon = ACCION_ICON[a.type];
+                  return (
+                    <button
+                      key={a.type}
+                      className={styles.actionBtn}
+                      data-variant={a.variant}
+                      onClick={() => openAction(a.type)}
+                    >
+                      <Icon size={15} />
+                      {a.label}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -329,9 +351,11 @@ export default function EquipmentDetailPage() {
                     <p className={styles.timelineMotivo}>{entry.motivo}</p>
                     {(entry.oficinaOrigen || entry.oficinaDestino) && (
                       <p className={styles.timelineUbicacion}>
-                        {entry.oficinaOrigen && <span>De: {entry.oficinaOrigen.nombre}</span>}
-                        {entry.oficinaOrigen && entry.oficinaDestino && <span> → </span>}
-                        {entry.oficinaDestino && <span>A: {entry.oficinaDestino.nombre}</span>}
+                        {entry.oficinaOrigen && <span>{entry.oficinaOrigen.nombre}</span>}
+                        {entry.oficinaOrigen && entry.oficinaDestino && (
+                          <ArrowRightLeft size={10} />
+                        )}
+                        {entry.oficinaDestino && <span>{entry.oficinaDestino.nombre}</span>}
                       </p>
                     )}
                     <p className={styles.timelineTecnico}>por {entry.usuario.nombre}</p>
@@ -431,7 +455,7 @@ export default function EquipmentDetailPage() {
 
               {action.type === 'decommission' && (
                 <div className={styles.modalWarning}>
-                  ⚠️ Esta acción es irreversible. El equipo quedará dado de baja.
+                  Esta acción es irreversible. El equipo quedará dado de baja.
                 </div>
               )}
 
