@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+import { Search, Plus, Package } from 'lucide-react';
 import { useEquipmentList, useEquipmentTypes } from '../hooks/useEquipment';
 import { useLocationTree } from '../hooks/useLocations';
 import styles from './EquipmentListPage.module.css';
@@ -48,10 +49,15 @@ export default function EquipmentListPage() {
     setPage(1);
   }
 
+  const total = data?.pagination.total ?? 0;
+  const from = total === 0 ? 0 : (page - 1) * 25 + 1;
+  const to = Math.min(page * 25, total);
+
   return (
     <div className={styles.page}>
       <div className={styles.toolbar}>
         <form className={styles.searchForm} onSubmit={handleSearch}>
+          <Search className={styles.searchIcon} />
           <input
             type="text"
             placeholder="Buscar por serie, modelo, IP..."
@@ -96,12 +102,16 @@ export default function EquipmentListPage() {
         </div>
 
         <button className={styles.addBtn} onClick={() => navigate('/equipos/nuevo')}>
-          + Nuevo Equipo
+          <Plus size={16} />
+          Nuevo Equipo
         </button>
       </div>
 
       {isLoading ? (
-        <div className={styles.loading}>Cargando equipos...</div>
+        <div className={styles.loadingWrapper}>
+          <div className={styles.loadingSpinner} />
+          <span>Cargando equipos...</span>
+        </div>
       ) : (
         <>
           <div className={styles.tableWrapper}>
@@ -127,15 +137,24 @@ export default function EquipmentListPage() {
                         {STATUS_OPTIONS.find((s) => s.value === eq.estado)?.label || eq.estado}
                       </span>
                     </td>
-                    <td className={styles.location}>
-                      {eq.oficina.seccion.ciudad.nombre} &rsaquo; {eq.oficina.seccion.nombre} &rsaquo; {eq.oficina.nombre}
+                    <td>
+                      <div className={styles.location}>
+                        <span className={styles.locationCity}>{eq.oficina.seccion.ciudad.nombre}</span>
+                        <span className={styles.locationOffice}>{eq.oficina.nombre}</span>
+                      </div>
                     </td>
                     <td className={styles.ip}>{eq.ip || '—'}</td>
                   </tr>
                 ))}
                 {data?.data.length === 0 && (
                   <tr>
-                    <td colSpan={6} className={styles.empty}>No se encontraron equipos</td>
+                    <td colSpan={6}>
+                      <div className={styles.emptyWrapper}>
+                        <Package size={40} className={styles.emptyIcon} />
+                        <span className={styles.emptyTitle}>No se encontraron equipos</span>
+                        <span className={styles.emptySubtitle}>Probá con otros filtros o agregá un nuevo equipo</span>
+                      </div>
+                    </td>
                   </tr>
                 )}
               </tbody>
@@ -144,24 +163,28 @@ export default function EquipmentListPage() {
 
           {data && data.pagination.totalPages > 1 && (
             <div className={styles.pagination}>
-              <button
-                disabled={page <= 1}
-                onClick={() => setPage((p) => p - 1)}
-                className={styles.pageBtn}
-              >
-                Anterior
-              </button>
-              <span className={styles.pageInfo}>
-                Página {data.pagination.page} de {data.pagination.totalPages}
-                {' '}({data.pagination.total} equipos)
+              <div className={styles.pageNav}>
+                <button
+                  disabled={page <= 1}
+                  onClick={() => setPage((p) => p - 1)}
+                  className={styles.pageBtn}
+                >
+                  ← Anterior
+                </button>
+                <span className={styles.pageInfoMain}>
+                  Página {data.pagination.page} / {data.pagination.totalPages}
+                </span>
+                <button
+                  disabled={page >= data.pagination.totalPages}
+                  onClick={() => setPage((p) => p + 1)}
+                  className={styles.pageBtn}
+                >
+                  Siguiente →
+                </button>
+              </div>
+              <span className={styles.pageInfoSub}>
+                Mostrando {from}–{to} de {total} equipos
               </span>
-              <button
-                disabled={page >= data.pagination.totalPages}
-                onClick={() => setPage((p) => p + 1)}
-                className={styles.pageBtn}
-              >
-                Siguiente
-              </button>
             </div>
           )}
         </>

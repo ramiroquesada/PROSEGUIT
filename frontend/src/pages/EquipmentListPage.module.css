@@ -21,11 +21,23 @@
 .searchForm {
   flex: 1;
   min-width: 240px;
+  position: relative;
+}
+
+.searchIcon {
+  position: absolute;
+  left: var(--space-sm);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-text-secondary);
+  pointer-events: none;
+  width: 16px;
+  height: 16px;
 }
 
 .searchInput {
   width: 100%;
-  padding: var(--space-sm) var(--space-md);
+  padding: var(--space-sm) var(--space-md) var(--space-sm) 2.25rem;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
@@ -145,6 +157,7 @@
   cursor: pointer;
   transition: background var(--transition-fast);
 
+  &:nth-child(even) { background: rgb(var(--color-primary-rgb) / 0.02); }
   &:hover { background: var(--color-primary-subtle); }
   &:last-child td { border-bottom: none; }
 }
@@ -156,8 +169,20 @@
 }
 
 .location {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.locationCity {
   font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text-secondary);
+}
+
+.locationOffice {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
 }
 
 .ip {
@@ -229,13 +254,19 @@
 .pagination {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: var(--space-md);
   padding: var(--space-md) var(--space-lg);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
+}
+
+.pageNav {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
 }
 
 .pageBtn {
@@ -258,13 +289,67 @@
   }
 }
 
-.pageInfo {
+.pageInfoMain {
   font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.pageInfoSub {
+  font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
 }
 
 /* ─── Estados ─── */
-.loading,
+.loadingWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-md);
+  padding: var(--space-3xl);
+  color: var(--color-text-secondary);
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loadingSpinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: var(--radius-full);
+  animation: spin 0.7s linear infinite;
+}
+
+.emptyWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-sm);
+  padding: var(--space-3xl) var(--space-xl);
+  color: var(--color-text-secondary);
+}
+
+.emptyIcon {
+  color: var(--color-border-strong);
+  margin-bottom: var(--space-xs);
+}
+
+.emptyTitle {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  color: var(--color-text);
+}
+
+.emptySubtitle {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+}
+
+/* legacy - keep for empty td */
 .empty {
   text-align: center;
   padding: var(--space-3xl);
