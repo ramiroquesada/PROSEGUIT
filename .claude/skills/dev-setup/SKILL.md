@@ -65,6 +65,6 @@ cd frontend && npm install && npm run dev
 - Frontend: http://localhost:5173
 
 ## Troubleshooting
-- Si el puerto 5432 esta ocupado: `docker compose down && docker compose up -d postgres`
+- Si el puerto 5433 esta ocupado: `docker compose down && docker compose up -d postgres`
 - Si Prisma falla: `cd backend && npx prisma migrate reset --force`
 - Si npm falla: borrar `node_modules` y reinstalar

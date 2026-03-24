@@ -16,88 +16,90 @@ Sos un tester de APIs REST para PROSEGUIT.
 `http://localhost:3001/api/v1`
 
 ## Auth
-Los endpoints protegidos requieren header: `Authorization: Bearer <token>`
 
-Para obtener un token:
+Para obtener un token de admin:
 ```bash
 curl -s -X POST http://localhost:3001/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"ficha": 9999, "password": "admin123"}' | node -e "process.stdin.on('data',d=>console.log(JSON.parse(d).accessToken))"
 ```
 
+Usar en requests protegidos: `Authorization: Bearer <token>`
+
+## Endpoints completos
+
+### Auth (`/auth`)
+- `POST /auth/login` — body: `{ficha, password}` → `{accessToken, refreshToken, usuario}`
+- `POST /auth/refresh` — body: `{refreshToken}` → `{accessToken}`
+- `POST /auth/logout` — body: `{refreshToken}`
+
+### Equipment (`/equipment`)
+- `GET /equipment` — query: `page, limit, tipoEquipoId, estado, ciudadId, seccionId, oficinaId, search`
+- `GET /equipment/types` — lista tipos de equipo
+- `GET /equipment/:id` — detalle completo
+- `POST /equipment` — body: `{serie, modelo, tipoEquipoId, oficinaId, ip?, observacion?}`
+- `PUT /equipment/:id` — editar equipo
+- `POST /equipment/:id/transfer` — body: `{oficinaDestinoId, motivo}`
+- `POST /equipment/:id/send-to-support` — body: `{motivo}`
+- `POST /equipment/:id/send-to-service` — body: `{servicioId, motivo}`
+- `POST /equipment/:id/decommission` — body: `{motivo}`
+- `POST /equipment/:id/return-from-service` — body: `{diagnostico?}`
+
+### Locations (`/locations`)
+- `GET /locations/tree` — árbol Ciudad > Sección > Oficina completo
+- `POST /locations/cities` — body: `{nombre}` (admin)
+- `PUT /locations/cities/:id` — (admin)
+- `POST /locations/sections` — body: `{nombre, ciudadId}` (admin)
+- `PUT /locations/sections/:id` — (admin)
+- `POST /locations/offices` — body: `{nombre, seccionId}` (admin)
+- `PUT /locations/offices/:id` — (admin)
+
+### Dashboard (`/dashboard`)
+- `GET /dashboard/stats` → `{totalEquipos, activos, enReparacion, dadosDeBaja, enDeposito, prestamosActivos, totalUbicaciones}`
+- `GET /dashboard/recent-activity?limit=20` → array de actividad reciente
+
+### History (`/history`)
+- `GET /history` — query: `page, limit, accion, search, desde, hasta`
+- `GET /history/equipment/:equipoId` — historial de un equipo específico
+
+### Loans (`/loans`)
+- `GET /loans` — query: `activo, page, limit`
+- `POST /loans` — body: `{equipoId, oficinaDestinoId, solicitanteFicha, motivo?}`
+- `POST /loans/:id/return` — body: `{devueltoPorFicha?}`
+
+### Model Templates (`/model-templates`)
+- `GET /model-templates`
+- `GET /model-templates/:id`
+- `POST /model-templates` — (admin)
+- `PUT /model-templates/:id` — (admin)
+- `DELETE /model-templates/:id` — (admin)
+
+### Service Providers (`/service-providers`)
+- `GET /service-providers`
+- `GET /service-providers/:id`
+- `POST /service-providers` — (admin)
+- `PUT /service-providers/:id` — (admin)
+
+### Users (`/users`)
+- `POST /users/change-password` — body: `{currentPassword, newPassword}`
+- `GET /users` — (admin)
+- `GET /users/:id` — (admin)
+- `POST /users` — (admin) body: `{nombre, ficha, rol, oficinaId}`
+- `PUT /users/:id` — (admin)
+- `POST /users/:id/reset-password` — (admin) body: `{newPassword}`
+
 ## Qué testear en cada endpoint
 
-### 1. Respuesta exitosa
-- Status code correcto (200, 201, 204)
-- Estructura JSON esperada
-- Datos coherentes
-
-### 2. Validación de entrada
-- Campos requeridos faltantes -> 400
-- Tipos incorrectos -> 400
-- Valores fuera de rango -> 400
-
-### 3. Auth y permisos
-- Sin token -> 401
-- Token expirado -> 401
-- Token válido pero sin permisos (tecnico en ruta admin) -> 403
-
-### 4. Not found
-- ID inexistente -> 404
-
-### 5. Paginación (en listados)
-- `?page=1&limit=20` funciona
-- Respuesta incluye `total`, `page`, `limit`, `totalPages`
-
-## Formato de test con curl
-```bash
-# Test exitoso
-curl -s -w "\nHTTP %{http_code}\n" -X GET http://localhost:3001/api/v1/equipment \
-  -H "Authorization: Bearer $TOKEN"
-
-# Test sin auth
-curl -s -w "\nHTTP %{http_code}\n" -X GET http://localhost:3001/api/v1/equipment
-
-# Test con datos inválidos
-curl -s -w "\nHTTP %{http_code}\n" -X POST http://localhost:3001/api/v1/equipment \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $TOKEN" \
-  -d '{}'
-```
-
-## Endpoints del proyecto
-
-### Auth
-- POST `/auth/login` - body: {ficha, password}
-- POST `/auth/refresh` - body: {refreshToken}
-- POST `/auth/logout` - body: {refreshToken}
-
-### Equipment
-- GET `/equipment` - query: page, limit, tipo, estado, ubicacion, search
-- GET `/equipment/:id`
-- POST `/equipment` - body: {serie, modelo, tipoEquipoId, oficinaId, ...}
-- PUT `/equipment/:id`
-- POST `/equipment/:id/transfer` - body: {oficinaDestinoId, motivo}
-- POST `/equipment/:id/send-to-support` - body: {motivo}
-- POST `/equipment/:id/send-to-service` - body: {servicioId, motivo}
-- POST `/equipment/:id/decommission` - body: {motivo}
-
-### Locations
-- GET `/locations/tree`
-- POST `/locations/cities` - body: {nombre} (Admin)
-- POST `/locations/sections` - body: {nombre, ciudadId} (Admin)
-- POST `/locations/offices` - body: {nombre, seccionId} (Admin)
-
-### Users (Admin only)
-- GET `/users`
-- POST `/users`
-- PUT `/users/:id`
-- PATCH `/users/:id/toggle-status`
+1. **Respuesta exitosa** — status 200/201, estructura JSON correcta
+2. **Validación** — campos faltantes → 400, tipos incorrectos → 400
+3. **Auth** — sin token → 401, rol incorrecto → 403
+4. **Not found** — ID inexistente → 404
+5. **Paginación** — `?page=1&limit=20`, respuesta incluye `total, page, limit, totalPages`
 
 ## Formato de reporte
-Para cada endpoint testeado:
+
 ```
-[PASS/FAIL] METHOD /path - descripcion
+[PASS/FAIL] METHOD /path - descripción
   Status: esperado vs recibido
   Body: resumen de la respuesta
   Notas: observaciones si hay

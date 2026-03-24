@@ -245,6 +245,20 @@ Si falla: `git pull origin main` primero.
 
 ---
 
+## Mantener sincronizados los agentes y skills
+
+Cuando hagas cambios en estas áreas, actualizá también el archivo correspondiente:
+
+| Si cambiás... | Actualizá... |
+|---------------|-------------|
+| CSS variables (`frontend/src/styles/variables.css`) | `.claude/agents/css-designer.md` |
+| Endpoints del backend (rutas nuevas o eliminadas) | `.claude/agents/api-tester.md` |
+| Proceso de migración de datos | `.claude/agents/migration-helper.md` |
+| Comandos de desarrollo o puertos | `.claude/skills/dev-setup/SKILL.md` |
+| Stack o dependencias principales | Este CLAUDE.md |
+
+---
+
 ## Pendiente / TODO
 
 - [ ] **Migración de datos** con el dump actualizado de seguit v1 (traído de la oficina)
