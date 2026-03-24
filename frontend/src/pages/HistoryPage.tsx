@@ -132,16 +132,24 @@ export default function HistoryPage() {
                       ) : <span className={styles.muted}>—</span>}
                     </td>
                     <td className={styles.motivoCell}>{entry.motivo}</td>
-                    <td className={styles.ubicacionCell}>
-                      {entry.oficinaOrigen && (
-                        <span className={styles.ubicTag}>{entry.oficinaOrigen.nombre}</span>
-                      )}
-                      {entry.oficinaOrigen && entry.oficinaDestino && (
-                        <span className={styles.arrow}>→</span>
-                      )}
-                      {entry.oficinaDestino && (
-                        <span className={styles.ubicTag}>{entry.oficinaDestino.nombre}</span>
-                      )}
+                    <td>
+                      <div className={styles.ubicacionCell}>
+                        {entry.oficinaOrigen && (
+                          <div className={styles.ubicRow}>
+                            <span className={styles.ubicLabel}>De</span>
+                            <span className={styles.ubicTag}>{entry.oficinaOrigen.nombre}</span>
+                          </div>
+                        )}
+                        {entry.oficinaDestino && (
+                          <div className={styles.ubicRow}>
+                            <span className={styles.ubicLabel}>A</span>
+                            <span className={styles.ubicTag}>{entry.oficinaDestino.nombre}</span>
+                          </div>
+                        )}
+                        {!entry.oficinaOrigen && !entry.oficinaDestino && (
+                          <span className={styles.muted}>—</span>
+                        )}
+                      </div>
                     </td>
                     <td className={styles.tecnico}>{entry.usuario.nombre}</td>
                   </tr>

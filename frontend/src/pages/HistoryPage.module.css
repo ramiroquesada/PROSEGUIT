@@ -171,10 +171,25 @@
 
 .ubicacionCell {
   display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 140px;
+  max-width: 200px;
+}
+
+.ubicRow {
+  display: flex;
   align-items: center;
-  gap: var(--space-xs);
-  flex-wrap: wrap;
-  min-width: 120px;
+  gap: 4px;
+}
+
+.ubicLabel {
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+  width: 28px;
 }
 
 .ubicTag {
@@ -185,6 +200,9 @@
   border-radius: var(--radius-sm);
   border: 1px solid var(--color-border);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
 }
 
 .arrow {
