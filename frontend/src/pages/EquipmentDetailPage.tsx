@@ -414,6 +414,7 @@ export default function EquipmentDetailPage() {
                         <option value="">Seleccioná...</option>
                         {seccionSel?.oficinas.map((o) => <option key={o.id} value={o.id}>{o.nombre}</option>)}
                       </select>
+                    )}
                   </div>
                 </div>
               )}
