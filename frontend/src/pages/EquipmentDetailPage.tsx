@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useEquipmentDetail, useTransferEquipment, useSendToSupport, useSendToService, useDecommission, useReturnFromService } from '../hooks/useEquipment';
 import { useEquipmentHistory } from '../hooks/useHistory';
-import { useLocationTree } from '../hooks/useLocations';
+import { useLocationTree, useCreateCity, useCreateSection, useCreateOffice } from '../hooks/useLocations';
 import { useServiceProviders } from '../hooks/useLoans';
 import styles from './EquipmentDetailPage.module.css';
 
@@ -133,6 +133,32 @@ export default function EquipmentDetailPage() {
 
   const [action, setAction] = useState<ActionState | null>(null);
   const [actionError, setActionError] = useState('');
+
+  // Creación inline de ubicaciones en modal de transferencia
+  const [creatingLoc, setCreatingLoc] = useState<null | 'ciudad' | 'seccion' | 'oficina'>(null);
+  const [newLocNombre, setNewLocNombre] = useState('');
+  const createCity = useCreateCity();
+  const createSection = useCreateSection();
+  const createOffice = useCreateOffice();
+
+  async function handleCreateTransferLocation(type: 'ciudad' | 'seccion' | 'oficina') {
+    const nombre = newLocNombre.trim();
+    if (!nombre || !action) return;
+    try {
+      if (type === 'ciudad') {
+        const city = await createCity.mutateAsync(nombre);
+        setAction((p) => p ? { ...p, ciudadId: String(city.id), seccionId: '', oficinaId: '' } : p);
+      } else if (type === 'seccion') {
+        const sec = await createSection.mutateAsync({ nombre, ciudadId: Number(action.ciudadId) });
+        setAction((p) => p ? { ...p, seccionId: String(sec.id), oficinaId: '' } : p);
+      } else {
+        const off = await createOffice.mutateAsync({ nombre, seccionId: Number(action.seccionId) });
+        setAction((p) => p ? { ...p, oficinaId: String(off.id) } : p);
+      }
+      setCreatingLoc(null);
+      setNewLocNombre('');
+    } catch { /* silencioso */ }
+  }
 
   const isPending = transferMutation.isPending || supportMutation.isPending ||
     serviceMutation.isPending || returnServiceMutation.isPending || decommissionMutation.isPending;
@@ -337,25 +363,57 @@ export default function EquipmentDetailPage() {
               {action.type === 'transfer' && (
                 <div className={styles.locationCascade}>
                   <div className={styles.field}>
-                    <label className={styles.label}>Ciudad *</label>
-                    <select name="ciudadId" value={action.ciudadId} onChange={handleActionChange} className={styles.select}>
-                      <option value="">Seleccioná...</option>
-                      {locations?.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-                    </select>
+                    <div className={styles.labelRow}>
+                      <label className={styles.label}>Ciudad *</label>
+                      {creatingLoc !== 'ciudad' && <button type="button" className={styles.newLocBtn} onClick={() => { setCreatingLoc('ciudad'); setNewLocNombre(''); }}>+ Nueva</button>}
+                    </div>
+                    {creatingLoc === 'ciudad' ? (
+                      <div className={styles.inlineCreate}>
+                        <input autoFocus className={styles.input} value={newLocNombre} onChange={(e) => setNewLocNombre(e.target.value)} placeholder="Nombre de la ciudad" onKeyDown={(e) => e.key === 'Enter' && handleCreateTransferLocation('ciudad')} />
+                        <button type="button" className={styles.inlineConfirm} onClick={() => handleCreateTransferLocation('ciudad')} disabled={createCity.isPending}>✓</button>
+                        <button type="button" className={styles.inlineCancel} onClick={() => setCreatingLoc(null)}>✕</button>
+                      </div>
+                    ) : (
+                      <select name="ciudadId" value={action.ciudadId} onChange={handleActionChange} className={styles.select}>
+                        <option value="">Seleccioná...</option>
+                        {locations?.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                      </select>
+                    )}
                   </div>
                   <div className={styles.field}>
-                    <label className={styles.label}>Sección *</label>
-                    <select name="seccionId" value={action.seccionId} onChange={handleActionChange} className={styles.select} disabled={!action.ciudadId}>
-                      <option value="">Seleccioná...</option>
-                      {ciudadSel?.secciones.map((s) => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-                    </select>
+                    <div className={styles.labelRow}>
+                      <label className={styles.label}>Sección *</label>
+                      {creatingLoc !== 'seccion' && action.ciudadId && <button type="button" className={styles.newLocBtn} onClick={() => { setCreatingLoc('seccion'); setNewLocNombre(''); }}>+ Nueva</button>}
+                    </div>
+                    {creatingLoc === 'seccion' ? (
+                      <div className={styles.inlineCreate}>
+                        <input autoFocus className={styles.input} value={newLocNombre} onChange={(e) => setNewLocNombre(e.target.value)} placeholder="Nombre de la sección" onKeyDown={(e) => e.key === 'Enter' && handleCreateTransferLocation('seccion')} />
+                        <button type="button" className={styles.inlineConfirm} onClick={() => handleCreateTransferLocation('seccion')} disabled={createSection.isPending}>✓</button>
+                        <button type="button" className={styles.inlineCancel} onClick={() => setCreatingLoc(null)}>✕</button>
+                      </div>
+                    ) : (
+                      <select name="seccionId" value={action.seccionId} onChange={handleActionChange} className={styles.select} disabled={!action.ciudadId}>
+                        <option value="">Seleccioná...</option>
+                        {ciudadSel?.secciones.map((s) => <option key={s.id} value={s.id}>{s.nombre}</option>)}
+                      </select>
+                    )}
                   </div>
                   <div className={styles.field}>
-                    <label className={styles.label}>Oficina destino *</label>
-                    <select name="oficinaId" value={action.oficinaId} onChange={handleActionChange} className={styles.select} disabled={!action.seccionId}>
-                      <option value="">Seleccioná...</option>
-                      {seccionSel?.oficinas.map((o) => <option key={o.id} value={o.id}>{o.nombre}</option>)}
-                    </select>
+                    <div className={styles.labelRow}>
+                      <label className={styles.label}>Oficina destino *</label>
+                      {creatingLoc !== 'oficina' && action.seccionId && <button type="button" className={styles.newLocBtn} onClick={() => { setCreatingLoc('oficina'); setNewLocNombre(''); }}>+ Nueva</button>}
+                    </div>
+                    {creatingLoc === 'oficina' ? (
+                      <div className={styles.inlineCreate}>
+                        <input autoFocus className={styles.input} value={newLocNombre} onChange={(e) => setNewLocNombre(e.target.value)} placeholder="Nombre de la oficina" onKeyDown={(e) => e.key === 'Enter' && handleCreateTransferLocation('oficina')} />
+                        <button type="button" className={styles.inlineConfirm} onClick={() => handleCreateTransferLocation('oficina')} disabled={createOffice.isPending}>✓</button>
+                        <button type="button" className={styles.inlineCancel} onClick={() => setCreatingLoc(null)}>✕</button>
+                      </div>
+                    ) : (
+                      <select name="oficinaId" value={action.oficinaId} onChange={handleActionChange} className={styles.select} disabled={!action.seccionId}>
+                        <option value="">Seleccioná...</option>
+                        {seccionSel?.oficinas.map((o) => <option key={o.id} value={o.id}>{o.nombre}</option>)}
+                      </select>
                   </div>
                 </div>
               )}

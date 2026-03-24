@@ -128,6 +128,58 @@
   font-family: inherit;
 }
 
+.labelRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.newBtn {
+  font-size: var(--font-size-xs);
+  color: var(--color-primary);
+  font-weight: 600;
+  cursor: pointer;
+  padding: 1px 6px;
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  &:hover { background: var(--color-primary); color: white; }
+}
+
+.inlineCreate {
+  display: flex;
+  gap: var(--space-xs);
+  align-items: center;
+
+  & .input { flex: 1; }
+}
+
+.inlineConfirm {
+  padding: var(--space-xs) var(--space-sm);
+  background: var(--color-primary);
+  color: white;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 700;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background var(--transition-fast);
+  &:hover:not(:disabled) { background: var(--color-primary-dark); }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+.inlineCancel {
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+  &:hover { border-color: #dc2626; color: #dc2626; }
+}
+
 .hint {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
