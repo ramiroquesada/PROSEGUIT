@@ -8,6 +8,7 @@ import {
 import { useAuth } from '../lib/auth-context';
 import { useDashboardStats, useRecentActivity } from '../hooks/useDashboard';
 import styles from './DashboardPage.module.css';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 const ACTION_LABELS: Record<string, string> = {
   CREACION: 'Creación',
@@ -60,6 +61,7 @@ function formatTime(dateStr: string) {
 }
 
 export default function DashboardPage() {
+  usePageTitle('Dashboard');
   const navigate = useNavigate();
   const { user } = useAuth();
   const { data: stats, isLoading: loadingStats } = useDashboardStats();

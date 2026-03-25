@@ -1,29 +1,49 @@
 import { prisma } from '../../utils/prisma.js';
+import { EstadoEquipo } from '@prisma/client';
+
+// Equipos gestionados por acciones propias (no por ubicación)
+const ESTADOS_ESPECIALES: EstadoEquipo[] = ['PRESTADO', 'EN_SERVICIO_EXTERNO'];
 
 export async function getStats() {
   const [
     totalEquipos,
-    activos,
-    enReparacion,
-    dadosDeBaja,
     enDeposito,
+    enReparacion,
+    enServicioExterno,
     prestamosActivos,
     totalOficinas,
   ] = await Promise.all([
     prisma.equipo.count(),
-    prisma.equipo.count({ where: { estado: 'ACTIVO' } }),
-    prisma.equipo.count({ where: { estado: 'EN_REPARACION' } }),
-    prisma.equipo.count({ where: { estado: 'DADO_DE_BAJA' } }),
-    prisma.equipo.count({ where: { estado: 'EN_DEPOSITO' } }),
+    // EN_DEPOSITO: equipos en oficinas cuyo nombre contiene "deposito"
+    prisma.equipo.count({
+      where: {
+        estado: { notIn: ESTADOS_ESPECIALES },
+        oficina: {
+          OR: [
+            { nombre: { contains: 'deposito', mode: 'insensitive' } },
+            { nombre: { contains: 'depósito', mode: 'insensitive' } },
+          ],
+        },
+      },
+    }),
+    // EN_REPARACION: equipos en oficinas cuyo nombre contiene "soporte"
+    prisma.equipo.count({
+      where: {
+        estado: { notIn: ESTADOS_ESPECIALES },
+        oficina: { nombre: { contains: 'soporte', mode: 'insensitive' } },
+      },
+    }),
+    prisma.equipo.count({ where: { estado: 'EN_SERVICIO_EXTERNO' } }),
     prisma.prestamo.count({ where: { fechaDevolucion: null } }),
     prisma.oficina.count(),
   ]);
 
+  const activos = totalEquipos - enDeposito - enReparacion - enServicioExterno - prestamosActivos;
+
   return {
     totalEquipos,
-    activos,
+    activos: Math.max(0, activos),
     enReparacion,
-    dadosDeBaja,
     enDeposito,
     prestamosActivos,
     totalUbicaciones: totalOficinas,

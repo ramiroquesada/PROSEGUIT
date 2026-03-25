@@ -1,4 +1,4 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, EstadoEquipo } from '@prisma/client';
 import { prisma } from '../../utils/prisma.js';
 import { AppError } from '../../middleware/error-handler.js';
 import type { PaginationParams } from '../../utils/pagination.js';
@@ -10,29 +10,86 @@ interface EquipmentFilters {
   ciudadId?: number;
   seccionId?: number;
   search?: string;
+  sortBy?: 'serie' | 'modelo' | 'tipo';
+  sortDir?: 'asc' | 'desc';
 }
+
+// Patrones de nombre de oficina que determinan el estado
+const SOPORTE_PATTERN  = { contains: 'soporte',  mode: 'insensitive' as const };
+const DEPOSITO_PATTERNS = [
+  { contains: 'deposito',  mode: 'insensitive' as const },
+  { contains: 'dep\u00f3sito', mode: 'insensitive' as const },
+];
+const ESPECIALES: EstadoEquipo[] = ['PRESTADO', 'EN_SERVICIO_EXTERNO'];
 
 export async function listEquipment(pagination: PaginationParams, filters: EquipmentFilters) {
   const where: Prisma.EquipoWhereInput = {};
+  const andConditions: Prisma.EquipoWhereInput[] = [];
 
   if (filters.tipoEquipoId) where.tipoEquipoId = filters.tipoEquipoId;
-  if (filters.estado) where.estado = filters.estado as Prisma.EnumEstadoEquipoFilter['equals'];
-  if (filters.oficinaId) where.oficinaId = filters.oficinaId;
 
-  if (filters.seccionId) {
-    where.oficina = { seccionId: filters.seccionId };
+  // Filtro de ubicación en cascada: oficina > seccion > ciudad
+  if (filters.oficinaId) {
+    where.oficinaId = filters.oficinaId;
+  } else if (filters.seccionId) {
+    andConditions.push({ oficina: { seccionId: filters.seccionId } });
   } else if (filters.ciudadId) {
-    where.oficina = { seccion: { ciudadId: filters.ciudadId } };
+    andConditions.push({ oficina: { seccion: { ciudadId: filters.ciudadId } } });
+  }
+
+  // Filtro de estado — derivado del nombre de oficina
+  if (filters.estado === 'EN_REPARACION') {
+    andConditions.push({
+      estado: { notIn: ESPECIALES },
+      oficina: { nombre: SOPORTE_PATTERN },
+    });
+  } else if (filters.estado === 'EN_DEPOSITO') {
+    andConditions.push({
+      estado: { notIn: ESPECIALES },
+      OR: DEPOSITO_PATTERNS.map((p) => ({ oficina: { nombre: p } })),
+    });
+  } else if (filters.estado === 'ACTIVO') {
+    andConditions.push({
+      estado: { notIn: ESPECIALES },
+      NOT: {
+        OR: [
+          { oficina: { nombre: SOPORTE_PATTERN } },
+          ...DEPOSITO_PATTERNS.map((p) => ({ oficina: { nombre: p } })),
+        ],
+      },
+    });
+  } else if (filters.estado) {
+    // PRESTADO, EN_SERVICIO_EXTERNO — filtrar por campo DB directamente
+    andConditions.push({ estado: filters.estado as EstadoEquipo });
+  }
+
+  if (andConditions.length > 0) {
+    where.AND = andConditions;
   }
 
   if (filters.search) {
     const searchNum = Number(filters.search);
     where.OR = [
-      { modelo: { contains: filters.search, mode: 'insensitive' } },
+      { modelo:      { contains: filters.search, mode: 'insensitive' } },
       { observacion: { contains: filters.search, mode: 'insensitive' } },
-      { ip: { contains: filters.search, mode: 'insensitive' } },
-      ...(Number.isInteger(searchNum) ? [{ serie: searchNum }] : []),
+      { ip:          { contains: filters.search, mode: 'insensitive' } },
+      { tipoEquipo:  { nombre: { contains: filters.search, mode: 'insensitive' } } },
+      { oficina:     { nombre: { contains: filters.search, mode: 'insensitive' } } },
+      { oficina:     { seccion: { nombre: { contains: filters.search, mode: 'insensitive' } } } },
+      { oficina:     { seccion: { ciudad: { nombre: { contains: filters.search, mode: 'insensitive' } } } } },
+      ...(Number.isInteger(searchNum) && searchNum > 0 ? [{ serie: searchNum }] : []),
     ];
+  }
+
+  let orderBy: Prisma.EquipoOrderByWithRelationInput;
+  if (filters.sortBy === 'serie') {
+    orderBy = { serie: filters.sortDir ?? 'asc' };
+  } else if (filters.sortBy === 'modelo') {
+    orderBy = { modelo: filters.sortDir ?? 'asc' };
+  } else if (filters.sortBy === 'tipo') {
+    orderBy = { tipoEquipo: { nombre: filters.sortDir ?? 'asc' } };
+  } else {
+    orderBy = { updatedAt: 'desc' };
   }
 
   const [data, total] = await Promise.all([
@@ -49,7 +106,7 @@ export async function listEquipment(pagination: PaginationParams, filters: Equip
         },
         template: true,
       },
-      orderBy: { updatedAt: 'desc' },
+      orderBy,
       skip: (pagination.page - 1) * pagination.limit,
       take: pagination.limit,
     }),
@@ -183,6 +240,14 @@ export async function updateEquipment(id: number, data: {
   return updated;
 }
 
+/** Deriva el estado de un equipo según el nombre de la oficina destino */
+function estadoPorOficina(nombreOficina: string): 'ACTIVO' | 'EN_REPARACION' | 'EN_DEPOSITO' {
+  const n = nombreOficina.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  if (n.includes('deposito')) return 'EN_DEPOSITO';
+  if (n.includes('soporte')) return 'EN_REPARACION';
+  return 'ACTIVO';
+}
+
 export async function transferEquipment(id: number, data: {
   oficinaDestinoId: number;
   motivo: string;
@@ -195,11 +260,16 @@ export async function transferEquipment(id: number, data: {
     throw new AppError(400, 'La oficina destino es la misma que la actual');
   }
 
+  const oficinaDest = await prisma.oficina.findUnique({ where: { id: data.oficinaDestinoId } });
+  if (!oficinaDest) throw new AppError(404, 'Oficina destino no encontrada');
+
+  const nuevoEstado = estadoPorOficina(oficinaDest.nombre);
+
   const updated = await prisma.equipo.update({
     where: { id },
     data: {
       oficinaId: data.oficinaDestinoId,
-      estado: 'ACTIVO',
+      estado: nuevoEstado,
       historial: {
         create: {
           accion: 'TRANSFERENCIA',

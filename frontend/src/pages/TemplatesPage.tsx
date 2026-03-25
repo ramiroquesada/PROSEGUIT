@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEquipmentTypes } from '../hooks/useEquipment';
 import { api } from '../lib/api-client';
 import styles from './TemplatesPage.module.css';
+import { usePageTitle } from '../hooks/usePageTitle';
+
 
 interface Template {
   id: number;
@@ -21,6 +23,7 @@ function useTemplates(tipoEquipoId?: number) {
 }
 
 export default function TemplatesPage() {
+  usePageTitle('Plantillas');
   const qc = useQueryClient();
   const { data: tipos } = useEquipmentTypes();
   const [filterTipo, setFilterTipo] = useState<number | undefined>();

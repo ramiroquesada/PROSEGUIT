@@ -3,16 +3,9 @@ import { useNavigate } from 'react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocationTree, useEquipmentByOficina } from '../hooks/useLocations';
 import { api } from '../lib/api-client';
+import { resolveEstado, STATUS_LABEL, STATUS_COLOR } from '../lib/equipment-status';
 import styles from './LocationsPage.module.css';
-
-const STATUS_LABEL: Record<string, string> = {
-  ACTIVO: 'Activo', EN_REPARACION: 'En Reparación', DADO_DE_BAJA: 'Dado de Baja',
-  EN_DEPOSITO: 'En Depósito', PRESTADO: 'Prestado', EN_SERVICIO_EXTERNO: 'En Servicio Externo',
-};
-const STATUS_COLOR: Record<string, string> = {
-  ACTIVO: 'success', EN_REPARACION: 'warning', DADO_DE_BAJA: 'danger',
-  EN_DEPOSITO: 'info', PRESTADO: 'warning', EN_SERVICIO_EXTERNO: 'info',
-};
+import { usePageTitle } from '../hooks/usePageTitle';
 
 function useCreateLocation() {
   const qc = useQueryClient();
@@ -29,6 +22,7 @@ function useCreateLocation() {
 interface SelectedOficina { id: number; nombre: string; seccionNombre: string; ciudadNombre: string; }
 
 export default function LocationsPage() {
+  usePageTitle('Ubicaciones');
   const navigate = useNavigate();
   const { data: tree, isLoading } = useLocationTree();
   const createMutation = useCreateLocation();
@@ -177,9 +171,14 @@ export default function LocationsPage() {
                         <span className={styles.equipoTipo}>{eq.tipoEquipo.nombre}</span>
                         {eq.ip && <span className={styles.equipoIp}>{eq.ip}</span>}
                       </div>
-                      <span className={styles.statusBadge} data-color={STATUS_COLOR[eq.estado] || 'neutral'}>
-                        {STATUS_LABEL[eq.estado] || eq.estado}
-                      </span>
+                      {(() => {
+                        const est = resolveEstado(eq.estado, selectedOficina.nombre);
+                        return (
+                          <span className={styles.statusBadge} data-color={STATUS_COLOR[est] || 'neutral'}>
+                            {STATUS_LABEL[est] || est}
+                          </span>
+                        );
+                      })()}
                     </div>
                   ))}
                 </div>

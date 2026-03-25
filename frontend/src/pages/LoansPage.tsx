@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useLoans, useCreateLoan, useReturnLoan } from '../hooks/useLoans';
 import { useLocationTree } from '../hooks/useLocations';
 import styles from './LoansPage.module.css';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 type ModalType = 'nuevo' | 'devolucion' | null;
 
 export default function LoansPage() {
+  usePageTitle('Préstamos');
   const [page, setPage] = useState(1);
   const [activo, setActivo] = useState<boolean | undefined>(true);
 

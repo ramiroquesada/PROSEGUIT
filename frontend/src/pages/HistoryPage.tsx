@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useHistory } from '../hooks/useHistory';
 import styles from './HistoryPage.module.css';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 const ACCION_OPTIONS = [
   { value: '', label: 'Todas las acciones' },
@@ -26,6 +27,7 @@ const ACCION_COLOR: Record<string, string> = {
 };
 
 export default function HistoryPage() {
+  usePageTitle('Historial');
   const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [filters, setFilters] = useState({

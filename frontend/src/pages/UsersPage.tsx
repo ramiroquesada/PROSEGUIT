@@ -3,8 +3,10 @@ import { use } from 'react';
 import { useUsers, useCreateUser, useUpdateUser, useResetPassword } from '../hooks/useUsers';
 import { AuthContext } from '../lib/auth-context';
 import styles from './UsersPage.module.css';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function UsersPage() {
+  usePageTitle('Usuarios');
   const { user: currentUser } = use(AuthContext);
   const { data: users, isLoading } = useUsers();
   const createMutation = useCreateUser();
@@ -66,7 +68,6 @@ export default function UsersPage() {
                 <th>Ficha</th>
                 <th>Rol</th>
                 <th>Estado</th>
-                <th>Contraseña</th>
                 <th></th>
               </tr>
             </thead>
@@ -89,11 +90,6 @@ export default function UsersPage() {
                     >
                       {u.activo ? 'Activo' : 'Inactivo'}
                     </button>
-                  </td>
-                  <td>
-                    {u.forcePasswordChange && (
-                      <span className={styles.pendingBadge}>Pendiente de cambio</span>
-                    )}
                   </td>
                   <td className={styles.actions}>
                     {u.id !== currentUser?.id && (

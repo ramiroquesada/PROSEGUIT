@@ -6,10 +6,12 @@ interface EquipmentFilters {
   limit?: number;
   tipoEquipoId?: number;
   estado?: string;
-  oficinaId?: number;
   ciudadId?: number;
   seccionId?: number;
+  oficinaId?: number;
   search?: string;
+  sortBy?: 'serie' | 'modelo' | 'tipo';
+  sortDir?: 'asc' | 'desc';
 }
 
 export function useEquipmentList(filters: EquipmentFilters = {}) {
@@ -18,11 +20,13 @@ export function useEquipmentList(filters: EquipmentFilters = {}) {
   params.set('limit', String(filters.limit || 25));
 
   if (filters.tipoEquipoId) params.set('tipoEquipoId', String(filters.tipoEquipoId));
-  if (filters.estado) params.set('estado', filters.estado);
-  if (filters.oficinaId) params.set('oficinaId', String(filters.oficinaId));
-  if (filters.ciudadId) params.set('ciudadId', String(filters.ciudadId));
-  if (filters.seccionId) params.set('seccionId', String(filters.seccionId));
-  if (filters.search) params.set('search', filters.search);
+  if (filters.estado)       params.set('estado', filters.estado);
+  if (filters.ciudadId)     params.set('ciudadId', String(filters.ciudadId));
+  if (filters.seccionId)    params.set('seccionId', String(filters.seccionId));
+  if (filters.oficinaId)    params.set('oficinaId', String(filters.oficinaId));
+  if (filters.search)       params.set('search', filters.search);
+  if (filters.sortBy)       params.set('sortBy', filters.sortBy);
+  if (filters.sortDir)      params.set('sortDir', filters.sortDir);
 
   return useQuery({
     queryKey: ['equipment', filters],

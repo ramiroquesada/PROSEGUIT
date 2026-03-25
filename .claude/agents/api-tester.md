@@ -34,7 +34,7 @@ Usar en requests protegidos: `Authorization: Bearer <token>`
 - `POST /auth/logout` — body: `{refreshToken}`
 
 ### Equipment (`/equipment`)
-- `GET /equipment` — query: `page, limit, tipoEquipoId, estado, ciudadId, seccionId, oficinaId, search`
+- `GET /equipment` — query: `page, limit, tipoEquipoId, estado, ciudadId, seccionId, oficinaId, search, sortBy (serie|modelo|tipo), sortDir (asc|desc)`
 - `GET /equipment/types` — lista tipos de equipo
 - `GET /equipment/:id` — detalle completo
 - `POST /equipment` — body: `{serie, modelo, tipoEquipoId, oficinaId, ip?, observacion?}`

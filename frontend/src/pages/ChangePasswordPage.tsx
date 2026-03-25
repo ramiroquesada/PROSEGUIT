@@ -4,8 +4,10 @@ import { use } from 'react';
 import { useChangePassword } from '../hooks/useUsers';
 import { AuthContext } from '../lib/auth-context';
 import styles from './ChangePasswordPage.module.css';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function ChangePasswordPage() {
+  usePageTitle('Cambiar contraseña');
   const { user, logout } = use(AuthContext);
   const navigate = useNavigate();
   const mutation = useChangePassword();

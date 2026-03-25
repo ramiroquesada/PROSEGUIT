@@ -1,21 +1,15 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { useEquipmentDetail, useTransferEquipment, useSendToSupport, useSendToService, useDecommission, useReturnFromService } from '../hooks/useEquipment';
+import { useEquipmentDetail, useTransferEquipment, useSendToService, useReturnFromService } from '../hooks/useEquipment';
+import { resolveEstado, STATUS_LABEL, STATUS_COLOR } from '../lib/equipment-status';
 import { useEquipmentHistory } from '../hooks/useHistory';
 import { useLocationTree, useCreateCity, useCreateSection, useCreateOffice } from '../hooks/useLocations';
 import { useServiceProviders } from '../hooks/useLoans';
-import { ArrowRightLeft, Wrench, Building2, Ban, RotateCcw, Pencil, ChevronLeft } from 'lucide-react';
+import { ArrowRightLeft, Building2, RotateCcw, Pencil, ChevronLeft } from 'lucide-react';
 import styles from './EquipmentDetailPage.module.css';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 // ── Constantes de display ──────────────────────────────────────────────────
-const STATUS_LABEL: Record<string, string> = {
-  ACTIVO: 'Activo', EN_REPARACION: 'En Reparación', DADO_DE_BAJA: 'Dado de Baja',
-  EN_DEPOSITO: 'En Depósito', PRESTADO: 'Prestado', EN_SERVICIO_EXTERNO: 'En Servicio Externo',
-};
-const STATUS_COLOR: Record<string, string> = {
-  ACTIVO: 'success', EN_REPARACION: 'warning', DADO_DE_BAJA: 'danger',
-  EN_DEPOSITO: 'info', PRESTADO: 'warning', EN_SERVICIO_EXTERNO: 'info',
-};
 const ACCION_LABEL: Record<string, string> = {
   CREACION: 'Creación', EDICION: 'Edición', TRANSFERENCIA: 'Transferencia',
   ENVIO_SOPORTE: 'Envío a Soporte', RETORNO_SOPORTE: 'Retorno de Soporte',
@@ -30,7 +24,7 @@ const ACCION_COLOR: Record<string, string> = {
 };
 
 // ── Tipos de modal de acción ───────────────────────────────────────────────
-type ActionType = 'transfer' | 'support' | 'service' | 'returnService' | 'decommission';
+type ActionType = 'transfer' | 'service' | 'returnService';
 
 interface ActionState {
   type: ActionType;
@@ -54,35 +48,30 @@ const INITIAL_ACTION: ActionState = {
 const ACCIONES_POR_ESTADO: Record<string, { type: ActionType; label: string; variant: string }[]> = {
   ACTIVO: [
     { type: 'transfer', label: 'Transferir', variant: 'primary' },
-    { type: 'support', label: 'Enviar a Soporte', variant: 'warning' },
     { type: 'service', label: 'Enviar a Servicio Externo', variant: 'warning' },
-    { type: 'decommission', label: 'Dar de Baja', variant: 'danger' },
   ],
   EN_REPARACION: [
     { type: 'transfer', label: 'Transferir', variant: 'primary' },
-    { type: 'decommission', label: 'Dar de Baja', variant: 'danger' },
+    { type: 'service', label: 'Enviar a Servicio Externo', variant: 'warning' },
   ],
   EN_DEPOSITO: [
     { type: 'transfer', label: 'Transferir', variant: 'primary' },
-    { type: 'support', label: 'Enviar a Soporte', variant: 'warning' },
     { type: 'service', label: 'Enviar a Servicio Externo', variant: 'warning' },
-    { type: 'decommission', label: 'Dar de Baja', variant: 'danger' },
   ],
   EN_SERVICIO_EXTERNO: [
     { type: 'returnService', label: 'Registrar retorno de servicio', variant: 'primary' },
-    { type: 'decommission', label: 'Dar de Baja', variant: 'danger' },
+  ],
+  DADO_DE_BAJA: [
+    { type: 'transfer', label: 'Transferir', variant: 'primary' },
   ],
   PRESTADO: [],
-  DADO_DE_BAJA: [],
 };
 
 // ── Iconos por tipo de acción ─────────────────────────────────────────────
 const ACCION_ICON: Record<ActionType, React.ComponentType<{ size?: number }>> = {
   transfer:      ArrowRightLeft,
-  support:       Wrench,
   service:       Building2,
   returnService: RotateCcw,
-  decommission:  Ban,
 };
 
 // ── Títulos y descripciones de modal ──────────────────────────────────────
@@ -93,13 +82,6 @@ const MODAL_CONFIG: Record<ActionType, { title: string; motiLabel: string; place
     placeholder: 'Ej: Reubicación por reforma de oficina',
     confirmLabel: 'Confirmar transferencia',
     confirmVariant: 'primary',
-  },
-  support: {
-    title: 'Enviar a Soporte Técnico',
-    motiLabel: 'Motivo *',
-    placeholder: 'Ej: No enciende, pantalla rota...',
-    confirmLabel: 'Confirmar envío a soporte',
-    confirmVariant: 'warning',
   },
   service: {
     title: 'Enviar a Servicio Externo',
@@ -116,13 +98,6 @@ const MODAL_CONFIG: Record<ActionType, { title: string; motiLabel: string; place
     confirmVariant: 'primary',
     showDiagnostico: true,
   },
-  decommission: {
-    title: 'Dar de Baja',
-    motiLabel: 'Motivo de la baja *',
-    placeholder: 'Ej: Equipo obsoleto, irreparable...',
-    confirmLabel: 'Confirmar baja',
-    confirmVariant: 'danger',
-  },
 };
 
 export default function EquipmentDetailPage() {
@@ -132,14 +107,13 @@ export default function EquipmentDetailPage() {
 
   const { data: equipo, isLoading } = useEquipmentDetail(equipoId);
   const { data: historial, isLoading: loadingHistory } = useEquipmentHistory(equipoId);
+  usePageTitle(equipo ? `Equipo #${equipo.serie}` : 'Equipo');
   const { data: locations } = useLocationTree();
   const { data: servicios } = useServiceProviders();
 
   const transferMutation = useTransferEquipment();
-  const supportMutation = useSendToSupport();
   const serviceMutation = useSendToService();
   const returnServiceMutation = useReturnFromService();
-  const decommissionMutation = useDecommission();
 
   const [action, setAction] = useState<ActionState | null>(null);
   const [actionError, setActionError] = useState('');
@@ -170,8 +144,7 @@ export default function EquipmentDetailPage() {
     } catch { /* silencioso */ }
   }
 
-  const isPending = transferMutation.isPending || supportMutation.isPending ||
-    serviceMutation.isPending || returnServiceMutation.isPending || decommissionMutation.isPending;
+  const isPending = transferMutation.isPending || serviceMutation.isPending || returnServiceMutation.isPending;
 
   function openAction(type: ActionType) {
     setAction({ ...INITIAL_ACTION, type });
@@ -207,9 +180,6 @@ export default function EquipmentDetailPage() {
           if (Number(action.oficinaId) === equipo.oficina.id) { setActionError('El destino es la misma oficina actual'); return; }
           await transferMutation.mutateAsync({ ...base, oficinaDestinoId: Number(action.oficinaId) });
           break;
-        case 'support':
-          await supportMutation.mutateAsync(base);
-          break;
         case 'service':
           if (!action.servicioId) { setActionError('Seleccioná el servicio externo'); return; }
           await serviceMutation.mutateAsync({ ...base, servicioId: Number(action.servicioId) });
@@ -219,9 +189,6 @@ export default function EquipmentDetailPage() {
             ...base,
             diagnostico: action.diagnostico || undefined,
           });
-          break;
-        case 'decommission':
-          await decommissionMutation.mutateAsync(base);
           break;
       }
       closeAction();
@@ -235,7 +202,8 @@ export default function EquipmentDetailPage() {
   const seccionSel = ciudadSel?.secciones.find((s) => s.id === Number(action?.seccionId));
 
   // ── Acciones disponibles para el estado actual ───────────────────────────
-  const accionesDisponibles = equipo ? (ACCIONES_POR_ESTADO[equipo.estado] ?? []) : [];
+  const estadoReal = equipo ? resolveEstado(equipo.estado, equipo.oficina.nombre) : 'ACTIVO';
+  const accionesDisponibles = equipo ? (ACCIONES_POR_ESTADO[estadoReal] ?? []) : [];
 
   if (isLoading) return <div className={styles.loading}>Cargando equipo...</div>;
   if (!equipo) return (
@@ -262,8 +230,8 @@ export default function EquipmentDetailPage() {
               {equipo.tipoEquipo.nombre}{equipo.modelo ? ` — ${equipo.modelo}` : ''}
             </span>
           </h2>
-          <span className={styles.badge} data-color={STATUS_COLOR[equipo.estado] || 'neutral'}>
-            {STATUS_LABEL[equipo.estado] || equipo.estado}
+          <span className={styles.badge} data-color={STATUS_COLOR[estadoReal] || 'neutral'}>
+            {STATUS_LABEL[estadoReal] || estadoReal}
           </span>
         </div>
         <button className={styles.editBtn} onClick={() => navigate(`/equipos/${id}/editar`)}>
@@ -314,12 +282,12 @@ export default function EquipmentDetailPage() {
             </div>
           )}
 
-          {equipo.estado === 'DADO_DE_BAJA' && (
+          {estadoReal === 'EN_DEPOSITO' && (
             <div className={styles.bajaNotice}>
-              Este equipo está dado de baja y no puede operarse.
+              Equipo en Depósito. Transferilo a una oficina activa para reasignarlo.
             </div>
           )}
-          {equipo.estado === 'PRESTADO' && (
+          {estadoReal === 'PRESTADO' && (
             <div className={styles.prestamoNotice}>
               Equipo en préstamo. Gestioná la devolución desde la sección de Préstamos.
             </div>
@@ -450,12 +418,6 @@ export default function EquipmentDetailPage() {
                     <option value="">Seleccioná...</option>
                     {servicios?.filter((s) => s.activo).map((s) => <option key={s.id} value={s.id}>{s.nombre}</option>)}
                   </select>
-                </div>
-              )}
-
-              {action.type === 'decommission' && (
-                <div className={styles.modalWarning}>
-                  Esta acción es irreversible. El equipo quedará dado de baja.
                 </div>
               )}
 

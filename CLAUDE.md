@@ -49,7 +49,7 @@ Reemplaza a "seguit v1" (PHP/MySQL). Desarrollado por el equipo de Informática.
 | `/login` | LoginPage | Card centrada, gradiente navy, animación de entrada |
 | `/cambiar-password` | ChangePasswordPage | Forzado en primer login |
 | `/` | DashboardPage | Stats cards + actividad reciente clickeable |
-| `/equipos` | EquipmentListPage | Tabla con filtros, paginación, búsqueda |
+| `/equipos` | EquipmentListPage | Tabla con búsqueda debounced, filtros en cascada, columnas ordenables, paginación con ventana de páginas |
 | `/equipos/nuevo` | EquipmentFormPage | Formulario con plantillas de modelos |
 | `/equipos/:id` | EquipmentDetailPage | Ficha + acciones + timeline de historial |
 | `/equipos/:id/editar` | EquipmentFormPage | Edición |
@@ -71,6 +71,8 @@ Reemplaza a "seguit v1" (PHP/MySQL). Desarrollado por el equipo de Informática.
 - Header sticky con nombre del usuario logueado y breadcrumb para subrutas
 - Dashboard con saludo personalizado según hora del día
 - Script de migración desde seguit v1 (`backend/prisma/migrate-v1.ts`)
+- **Estado de equipo derivado del nombre de oficina** — no del campo DB (depósito/soporte = estado especial)
+- **EquipmentListPage**: búsqueda debounced, filtros en cascada (ciudad→sección→oficina), chips de filtros activos, columnas ordenables (serie/tipo/modelo), paginación con ventana ±5, selector de página arriba y abajo, scroll preservado al paginar
 
 ---
 
@@ -146,6 +148,9 @@ cd backend && npx tsx prisma/migrate-v1.ts
 ## Convenciones de código
 
 - **CSS**: Módulos CSS con nesting nativo y custom properties. NO Tailwind, NO styled-components
+- **Ancho de páginas**: páginas de listado (tabla) = sin `max-width`, ocupan todo el ancho del `.content`. Páginas de formulario/detalle = `max-width` centrado (ej: 800px form, 1200px detail). Nunca poner `max-width` en páginas de listado.
+- **Estado de equipo**: nunca leer el campo `estado` de DB para mostrar en UI (puede estar desactualizado). Siempre usar `resolveEstado(eq.estado, eq.oficina.nombre)` de `frontend/src/lib/equipment-status.ts`. El backend también filtra por nombre de oficina en `listEquipment`.
+- **Ordenamiento en listado**: el backend acepta `sortBy` (`serie`|`modelo`|`tipo`) y `sortDir` (`asc`|`desc`) como query params. Al cambiar filtros se resetea el orden.
 - **Íconos**: Lucide React (`import { Monitor, MapPin, ... } from 'lucide-react'`)
 - **React 19**: usar `use(AuthContext)` en vez de `useContext()`, `<Context value={}>` sin `.Provider`
 - **Prisma 7**: requiere adapter (`@prisma/adapter-pg`), config en `backend/prisma.config.ts`
@@ -190,7 +195,8 @@ PROSEGIT/
 │       ├── App.tsx                    # Router con ProtectedRoute + GuestRoute
 │       ├── lib/
 │       │   ├── api-client.ts          # Singleton con JWT auto-refresh
-│       │   └── auth-context.tsx       # AuthContext (React 19 use())
+│       │   ├── auth-context.tsx       # AuthContext (React 19 use())
+│       │   └── equipment-status.ts    # resolveEstado(), STATUS_LABEL, STATUS_COLOR — derivar estado desde nombre de oficina
 │       ├── hooks/                     # useEquipment, useLocations, useHistory, useLoans, useUsers, useDashboard
 │       ├── components/layout/         # Sidebar.tsx, Header.tsx, MainLayout.tsx
 │       ├── pages/                     # 11 páginas (ver tabla arriba)

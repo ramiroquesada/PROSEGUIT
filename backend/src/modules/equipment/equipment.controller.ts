@@ -4,6 +4,13 @@ import { parsePagination } from '../../utils/pagination.js';
 
 export async function listHandler(req: Request, res: Response) {
   const pagination = parsePagination(req.query);
+  const sortByRaw = req.query.sortBy as string | undefined;
+  const sortBy: 'serie' | 'modelo' | 'tipo' | undefined =
+    (sortByRaw === 'serie' || sortByRaw === 'modelo' || sortByRaw === 'tipo') ? sortByRaw : undefined;
+  const sortDirRaw = req.query.sortDir as string | undefined;
+  const sortDir: 'asc' | 'desc' | undefined =
+    (sortDirRaw === 'asc' || sortDirRaw === 'desc') ? sortDirRaw : undefined;
+
   const filters = {
     tipoEquipoId: req.query.tipoEquipoId ? Number(req.query.tipoEquipoId) : undefined,
     estado: req.query.estado as string | undefined,
@@ -11,6 +18,8 @@ export async function listHandler(req: Request, res: Response) {
     ciudadId: req.query.ciudadId ? Number(req.query.ciudadId) : undefined,
     seccionId: req.query.seccionId ? Number(req.query.seccionId) : undefined,
     search: req.query.search as string | undefined,
+    sortBy,
+    sortDir,
   };
 
   const result = await equipmentService.listEquipment(pagination, filters);

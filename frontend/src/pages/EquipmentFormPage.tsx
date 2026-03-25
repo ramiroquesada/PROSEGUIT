@@ -5,6 +5,7 @@ import { useEquipmentDetail, useEquipmentTypes } from '../hooks/useEquipment';
 import { useLocationTree, useCreateCity, useCreateSection, useCreateOffice } from '../hooks/useLocations';
 import { api } from '../lib/api-client';
 import styles from './EquipmentFormPage.module.css';
+import { usePageTitle } from '../hooks/usePageTitle';
 
 const ESTADOS = [
   { value: 'ACTIVO', label: 'Activo' },
@@ -19,6 +20,7 @@ export default function EquipmentFormPage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const isEditing = Boolean(id);
+  usePageTitle(isEditing ? 'Editar equipo' : 'Nuevo equipo');
   const equipoId = Number(id);
 
   const { data: equipo } = useEquipmentDetail(isEditing ? equipoId : 0);
