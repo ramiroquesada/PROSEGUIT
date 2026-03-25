@@ -11,7 +11,7 @@ Sistema web para gestionar el inventario de equipos informáticos de la Intenden
 | Capa | Stack |
 |------|-------|
 | **Backend** | Express 5 · TypeScript 5.9 · Prisma 7 · PostgreSQL 17 |
-| **Frontend** | React 19 · TypeScript 5.9 · Vite 8 · CSS Modules puro |
+| **Frontend** | React 19 · TypeScript 5.9 · Vite 8 · CSS Modules puro · Lucide React |
 | **Auth** | JWT (access + refresh tokens) · bcryptjs |
 | **Validación** | Zod 4 |
 | **Routing** | React Router 7 |
@@ -112,8 +112,8 @@ PROSEGUIT/
 │   └── src/
 │       ├── pages/                 # Una página por ruta
 │       ├── components/layout/     # MainLayout, Sidebar, Header
-│       ├── hooks/                 # useEquipment, useLoans, etc.
-│       ├── lib/                   # api-client (fetch+JWT), auth-context
+│       ├── hooks/                 # useEquipment, useLoans, usePageTitle, etc.
+│       ├── lib/                   # api-client (fetch+JWT), auth-context, equipment-status
 │       └── styles/                # variables.css, reset.css, globals.css
 │
 ├── docker-compose.yml             # PostgreSQL 17 en puerto 5433
@@ -129,7 +129,7 @@ Base URL: `http://localhost:3001/api/v1`
 | Módulo | Endpoints |
 |--------|-----------|
 | **Auth** | `POST /auth/login` · `POST /auth/refresh` · `POST /auth/logout` |
-| **Equipos** | `GET/POST /equipment` · `GET/PUT /equipment/:id` · `GET /equipment/types` |
+| **Equipos** | `GET/POST /equipment` · `GET/PUT /equipment/:id` · `GET /equipment/types` · acciones: transfer, send-to-support, send-to-service, decommission, return-from-service |
 | **Ubicaciones** | `GET /locations/tree` · `POST /locations/cities\|sections\|offices` |
 | **Historial** | `GET /history` · `GET /history/equipment/:id` |
 | **Préstamos** | `GET/POST /loans` · `POST /loans/:id/return` |
@@ -144,14 +144,15 @@ Todos los endpoints (excepto `/auth/login` y `/health`) requieren `Authorization
 
 ## Funcionalidades
 
-- **Inventario completo** — búsqueda y filtros por tipo, estado, ubicación
-- **Historial de auditoría** — toda acción queda registrada con motivo obligatorio
-- **Ubicaciones jerárquicas** — Ciudad → Sección → Oficina
+- **Inventario completo** — búsqueda debounced, filtros en cascada (ciudad→sección→oficina), columnas ordenables, paginación con selector de cantidad
+- **Estado derivado por ubicación** — equipos en oficinas "soporte" o "depósito" muestran estado correspondiente automáticamente
+- **Historial de auditoría** — toda acción queda registrada con motivo obligatorio, técnico y ubicaciones origen/destino
+- **Ubicaciones jerárquicas** — Ciudad → Sección → Oficina, con panel de equipos por oficina
+- **Acciones de equipo** — transferir, enviar a soporte, enviar a servicio externo, dar de baja, retornar de servicio
 - **Préstamos** — registro de salida y devolución con identificación del funcionario
 - **Plantillas de modelo** — especificaciones técnicas reutilizables (JSON)
-- **Servicios externos** — seguimiento de envíos a reparación
+- **Servicios externos** — seguimiento de envíos a reparación con proveedor y diagnóstico
 - **Gestión de usuarios** — roles ADMIN/TECNICO, reset de contraseña
-- **Cambio de contraseña forzado** — al primer login
 
 ---
 
@@ -176,7 +177,7 @@ Todos los endpoints (excepto `/auth/login` y `/health`) requieren `Authorization
 | Administrador | `9999` | `admin123` | ADMIN |
 | Ramiro Quesada | `7844` | `7844` | TECNICO |
 
-La contraseña del técnico debe cambiarse al primer inicio de sesión.
+La contraseña del técnico puede cambiarse desde el menú de usuario.
 
 ---
 
