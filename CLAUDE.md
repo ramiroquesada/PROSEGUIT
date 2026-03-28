@@ -61,8 +61,8 @@ Reemplaza a "seguit v1" (PHP/MySQL). Desarrollado por el equipo de Informática.
 
 ### ✅ Características implementadas
 - Auth completa con JWT access + refresh tokens
-- Cambio de contraseña forzado en primer login
-- Acciones de equipos: transferir, enviar a soporte, enviar a servicio externo, dar de baja, retornar de servicio
+- Página de cambio de contraseña (`/cambiar-password`) — accesible voluntariamente; muestra banner si `forcePasswordChange` es true pero ya no redirige forzosamente
+- Acciones de equipos: transferir (SALIDA), enviar a soporte (ENTRADA), enviar a servicio externo, dar de baja, retornar de servicio
 - Historial completo de cada acción con motivo, ubicación origen/destino, técnico y fecha
 - Préstamos: crear por número de serie, registrar devolución
 - Árbol de ubicaciones de 3 niveles con CRUD
@@ -75,6 +75,7 @@ Reemplaza a "seguit v1" (PHP/MySQL). Desarrollado por el equipo de Informática.
 - **EquipmentListPage**: búsqueda debounced, filtros en cascada (ciudad→sección→oficina), chips de filtros activos, columnas ordenables (serie/tipo/modelo), paginación con ventana ±5, selector de página arriba y abajo, scroll preservado al paginar
 - **Estado NUEVO**: equipo recién ingresado. Al crear un equipo queda en NUEVO (en soporte). Al transferirlo a cualquier oficina que no sea soporte/depósito se convierte automáticamente en ACTIVO. Ver sección "Flujo estado NUEVO" más abajo.
 - **Formulario nuevo equipo**: pre-rellena el próximo número de serie (max+1), pre-selecciona tipo "PC - Torre" y la oficina de soporte como ubicación inicial
+- **Dashboard en tiempo real**: todas las mutaciones de equipo invalidan `['dashboard']` via TanStack Query prefix matching, actualizando contadores y actividad reciente sin recargar la página
 
 ---
 
@@ -130,7 +131,7 @@ cd backend && npx tsx prisma/migrate-v1.ts
 5. **Migra funcionarios** — para solicitantes de préstamos
 6. **Migra servicios externos** — proveedores de reparación
 7. **Migra equipos** — todos con estado ACTIVO por defecto
-8. **Migra historial** — mapea texto libre de v1 a tipos de acción de v2
+8. **Migra historial** — mapea texto libre de v1 a tipos de acción de v2: "propietario" → `ASIGNACION`, "se cambio la ubicacion" → `TRANSFERENCIA`, "se ingreso" → `RETORNO_SOPORTE`, "se envio a service" → `ENVIO_SERVICIO_EXTERNO`, "se creo" → `CREACION`
 9. **Migra préstamos** — `fec_dev = '1900-01-01'` = préstamo activo
 
 ### Advertencias importantes
@@ -159,8 +160,14 @@ cd backend && npx tsx prisma/migrate-v1.ts
 - **Express 5**: async error handling nativo sin try/catch en controllers, nuevo path matching
 - **API**: prefijo `/api/v1/`
 - **Idioma UI**: Español (Uruguay) — "ficha", "técnico", "préstamo", "ubicación"
-- **Mutaciones**: TanStack Query `useMutation` + `queryClient.invalidateQueries` al completar
-- **SALIDA vs ENTRADA** (equipos): SALIDA = `POST /equipment/:id/transfer` → registra `TRANSFERENCIA` (traslado permanente a oficina destino). ENTRADA = `POST /equipment/:id/send-to-support` → registra `ENVIO_SOPORTE` (retorno temporal a Soporte para reparación, NO es traslado permanente). Nunca usar `/transfer` para representar un retorno a soporte.
+- **Mutaciones**: TanStack Query `useMutation` + `queryClient.invalidateQueries` al completar. Las mutaciones de equipos deben invalidar `['equipment']`, `['history', 'equipment', id]` **y** `['dashboard']`. Los hooks de dashboard usan claves `['dashboard', 'stats']` y `['dashboard', 'recent-activity', limit]` — el prefijo `['dashboard']` es suficiente para invalidar ambos.
+- **SALIDA vs ENTRADA** (equipos):
+  - ENTRADA = `POST /equipment/:id/send-to-support` → registra siempre `ENVIO_SOPORTE` (retorno temporal a Soporte para reparación, NO es traslado permanente).
+  - SALIDA = `POST /equipment/:id/transfer` → el tipo de acción depende del `estado` actual del equipo:
+    - `EN_REPARACION` → `RETORNO_SOPORTE` (estaba en soporte para reparación, ahora vuelve al usuario)
+    - `NUEVO` o `EN_DEPOSITO` → `ASIGNACION` (primera asignación a destino final)
+    - `ACTIVO` → `TRANSFERENCIA` (traslado entre oficinas)
+  - Nunca hardcodear `TRANSFERENCIA` en `/transfer`; el backend decide según el estado.
 
 ---
 
@@ -181,8 +188,10 @@ cd backend && npx tsx prisma/migrate-v1.ts
 
 ### Migración DB
 
-- La migración `20260328173932_add_estado_nuevo` agrega el valor al enum `estado_equipo`
-- Si se carga una nueva DB con datos de v1, **hay que aplicar esta migración antes** de importar los datos
+- `20260328173932_add_estado_nuevo` — agrega `NUEVO` al enum `estado_equipo`
+- `20260328200000_add_asignacion_accion` — agrega `ASIGNACION` al enum `accion_tipo`
+- Si se carga una nueva DB con datos de v1, **hay que aplicar ambas migraciones antes** de importar los datos
+- Nota: estas migraciones usan `prisma db push` + resolve manual (no `migrate dev`) porque PostgreSQL no permite usar valores de enum nuevo en la misma transacción que los agrega
 
 ---
 
@@ -203,7 +212,8 @@ PROSEGIT/
 │   │   ├── seed.ts                    # Usuarios iniciales (admin 9999, técnico 7844)
 │   │   ├── migrate-v1.ts              # Script migración datos de seguit v1
 │   │   ├── migrations/20260322153214_init/  # Migración inicial (schema base)
-│   │   └── migrations/20260328173932_add_estado_nuevo/  # Agrega NUEVO al enum estado_equipo
+│   │   ├── migrations/20260328173932_add_estado_nuevo/  # Agrega NUEVO al enum estado_equipo
+│   │   └── migrations/20260328200000_add_asignacion_accion/  # Agrega ASIGNACION al enum accion_tipo
 │   ├── prisma.config.ts               # Config Prisma 7 con adapter pg
 │   └── src/
 │       ├── index.ts                   # Punto de entrada Express
@@ -243,7 +253,7 @@ PROSEGIT/
 
 **Equipos:** `TipoEquipo` → `ModeloTemplate` → `Equipo` (estado: NUEVO | ACTIVO | EN_REPARACION | DADO_DE_BAJA | EN_DEPOSITO | PRESTADO | EN_SERVICIO_EXTERNO)
 
-**Acciones:** `Historial` (accion: CREACION | TRANSFERENCIA | ENVIO_SOPORTE | RETORNO_SOPORTE | PRESTAMO | DEVOLUCION | BAJA | CAMBIO_ESTADO | EDICION | ENVIO_SERVICIO_EXTERNO | RETORNO_SERVICIO_EXTERNO)
+**Acciones:** `Historial` (accion: CREACION | ASIGNACION | EDICION | TRANSFERENCIA | ENVIO_SOPORTE | RETORNO_SOPORTE | PRESTAMO | DEVOLUCION | BAJA | CAMBIO_ESTADO | ENVIO_SERVICIO_EXTERNO | RETORNO_SERVICIO_EXTERNO)
 
 **Otros:** `Prestamo`, `EnvioServicio`, `ServicioExterno`, `Usuario` (rol: ADMIN | TECNICO), `Funcionario`, `RefreshToken`
 
@@ -254,9 +264,8 @@ PROSEGIT/
 | Ficha | Contraseña | Rol | Notas |
 |-------|-----------|-----|-------|
 | `9999` | `admin123` | ADMIN | Usuario administrador |
-| `7844` | `7844` | TECNICO | Ramiro Quesada — forzar cambio de contraseña |
+| `7844` | `7844` | TECNICO | Ramiro Quesada |
 
-Después de migrar v1, todos los usuarios importados tienen `forcePasswordChange: true` y su contraseña temporal es su número de ficha.
 
 ---
 
@@ -296,7 +305,5 @@ Cuando hagas cambios en estas áreas, actualizá también el archivo correspondi
 
 - [ ] **Migración de datos** con el dump actualizado de seguit v1 (traído de la oficina)
 - [ ] Responsive completo para mobile/tablet
-- [ ] Export a Excel de equipos y historial
 - [ ] Subida de imágenes de equipos (campo `urlImage` ya existe en el schema)
 - [ ] Seguir con el rediseño visual sección por sección (en progreso)
-- [ ] Dashboard: hacer clickeables las stat cards para filtrar por estado

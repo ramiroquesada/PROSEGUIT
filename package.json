@@ -26,5 +26,8 @@
     "@prisma/adapter-pg": "^7.5.0",
     "@types/pg": "^8.20.0",
     "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "puppeteer": "^24.40.0"
   }
 }
