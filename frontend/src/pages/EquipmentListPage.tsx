@@ -9,6 +9,7 @@ import { usePageTitle } from '../hooks/usePageTitle';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'Todos los estados' },
+  { value: 'NUEVO', label: 'Nuevo' },
   { value: 'ACTIVO', label: 'Activo' },
   { value: 'EN_REPARACION', label: 'En Soporte' },
   { value: 'EN_DEPOSITO', label: 'En Depósito' },

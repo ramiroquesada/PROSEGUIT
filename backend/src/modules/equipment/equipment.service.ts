@@ -20,7 +20,8 @@ const DEPOSITO_PATTERNS = [
   { contains: 'deposito',  mode: 'insensitive' as const },
   { contains: 'dep\u00f3sito', mode: 'insensitive' as const },
 ];
-const ESPECIALES: EstadoEquipo[] = ['PRESTADO', 'EN_SERVICIO_EXTERNO'];
+// NUEVO, PRESTADO y EN_SERVICIO_EXTERNO son estados "reales" en DB (no se derivan del nombre de oficina)
+const ESPECIALES: EstadoEquipo[] = ['NUEVO', 'PRESTADO', 'EN_SERVICIO_EXTERNO'];
 
 export async function listEquipment(pagination: PaginationParams, filters: EquipmentFilters) {
   const where: Prisma.EquipoWhereInput = {};
@@ -37,8 +38,12 @@ export async function listEquipment(pagination: PaginationParams, filters: Equip
     andConditions.push({ oficina: { seccion: { ciudadId: filters.ciudadId } } });
   }
 
-  // Filtro de estado — derivado del nombre de oficina
-  if (filters.estado === 'EN_REPARACION') {
+  // Filtro de estado
+  // NUEVO, PRESTADO, EN_SERVICIO_EXTERNO → filtrar por campo DB directamente
+  // EN_REPARACION, EN_DEPOSITO, ACTIVO → derivar del nombre de oficina
+  if (filters.estado === 'NUEVO') {
+    andConditions.push({ estado: 'NUEVO' });
+  } else if (filters.estado === 'EN_REPARACION') {
     andConditions.push({
       estado: { notIn: ESPECIALES },
       oficina: { nombre: SOPORTE_PATTERN },
@@ -173,7 +178,7 @@ export async function createEquipment(data: {
       templateId: data.templateId,
       tipoEquipoId: data.tipoEquipoId,
       oficinaId: data.oficinaId,
-      estado: 'ACTIVO',
+      estado: 'NUEVO',
       ip: data.ip,
       urlImage: data.urlImage,
       observacion: data.observacion,
@@ -295,6 +300,7 @@ export async function transferEquipment(id: number, data: {
 export async function sendToSupport(id: number, data: {
   motivo: string;
   comentario?: string;
+  oficinaDestinoId?: number;
 }, usuarioId: number) {
   const equipo = await prisma.equipo.findUnique({ where: { id } });
   if (!equipo) throw new AppError(404, 'Equipo no encontrado');
@@ -303,14 +309,22 @@ export async function sendToSupport(id: number, data: {
     where: { id },
     data: {
       estado: 'EN_REPARACION',
+      ...(data.oficinaDestinoId ? { oficinaId: data.oficinaDestinoId } : {}),
       historial: {
         create: {
           accion: 'ENVIO_SOPORTE',
           oficinaOrigenId: equipo.oficinaId,
+          oficinaDestinoId: data.oficinaDestinoId,
           usuarioId,
           motivo: data.motivo,
           comentario: data.comentario,
         },
+      },
+    },
+    include: {
+      tipoEquipo: true,
+      oficina: {
+        include: { seccion: { include: { ciudad: true } } },
       },
     },
   });
@@ -431,4 +445,10 @@ export async function returnFromService(id: number, data: {
 
 export async function getEquipmentTypes() {
   return prisma.tipoEquipo.findMany({ orderBy: { nombre: 'asc' } });
+}
+
+/** Devuelve el próximo número de serie disponible (máximo actual + 1) */
+export async function getNextSerie(): Promise<number> {
+  const result = await prisma.equipo.aggregate({ _max: { serie: true } });
+  return (result._max.serie ?? 0) + 1;
 }

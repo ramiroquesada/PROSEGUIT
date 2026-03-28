@@ -1,12 +1,13 @@
 import { prisma } from '../../utils/prisma.js';
 import { EstadoEquipo } from '@prisma/client';
 
-// Equipos gestionados por acciones propias (no por ubicación)
-const ESTADOS_ESPECIALES: EstadoEquipo[] = ['PRESTADO', 'EN_SERVICIO_EXTERNO'];
+// NUEVO, PRESTADO y EN_SERVICIO_EXTERNO son estados reales en DB (no derivados de oficina)
+const ESTADOS_ESPECIALES: EstadoEquipo[] = ['NUEVO', 'PRESTADO', 'EN_SERVICIO_EXTERNO'];
 
 export async function getStats() {
   const [
     totalEquipos,
+    equiposNuevos,
     enDeposito,
     enReparacion,
     enServicioExterno,
@@ -14,6 +15,8 @@ export async function getStats() {
     totalOficinas,
   ] = await Promise.all([
     prisma.equipo.count(),
+    // NUEVO: recién ingresados, pendientes de asignación
+    prisma.equipo.count({ where: { estado: 'NUEVO' } }),
     // EN_DEPOSITO: equipos en oficinas cuyo nombre contiene "deposito"
     prisma.equipo.count({
       where: {
@@ -38,10 +41,11 @@ export async function getStats() {
     prisma.oficina.count(),
   ]);
 
-  const activos = totalEquipos - enDeposito - enReparacion - enServicioExterno - prestamosActivos;
+  const activos = totalEquipos - equiposNuevos - enDeposito - enReparacion - enServicioExterno - prestamosActivos;
 
   return {
     totalEquipos,
+    equiposNuevos,
     activos: Math.max(0, activos),
     enReparacion,
     enDeposito,

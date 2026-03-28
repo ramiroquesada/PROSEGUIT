@@ -32,6 +32,7 @@ const transferSchema = z.object({
 const supportSchema = z.object({
   motivo: z.string().min(1),
   comentario: z.string().optional(),
+  oficinaDestinoId: z.number().int().positive().optional(),
 });
 
 const serviceSchema = z.object({
@@ -48,6 +49,7 @@ const decommissionSchema = z.object({
 // Routes
 router.get('/', controller.listHandler);
 router.get('/types', controller.typesHandler);
+router.get('/next-serie', controller.nextSerieHandler);
 router.get('/:id', controller.getByIdHandler);
 router.post('/', validate(createSchema), controller.createHandler);
 router.put('/:id', validate(updateSchema), controller.updateHandler);

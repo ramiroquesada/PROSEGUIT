@@ -73,6 +73,8 @@ Reemplaza a "seguit v1" (PHP/MySQL). Desarrollado por el equipo de Informática.
 - Script de migración desde seguit v1 (`backend/prisma/migrate-v1.ts`)
 - **Estado de equipo derivado del nombre de oficina** — no del campo DB (depósito/soporte = estado especial)
 - **EquipmentListPage**: búsqueda debounced, filtros en cascada (ciudad→sección→oficina), chips de filtros activos, columnas ordenables (serie/tipo/modelo), paginación con ventana ±5, selector de página arriba y abajo, scroll preservado al paginar
+- **Estado NUEVO**: equipo recién ingresado. Al crear un equipo queda en NUEVO (en soporte). Al transferirlo a cualquier oficina que no sea soporte/depósito se convierte automáticamente en ACTIVO. Ver sección "Flujo estado NUEVO" más abajo.
+- **Formulario nuevo equipo**: pre-rellena el próximo número de serie (max+1), pre-selecciona tipo "PC - Torre" y la oficina de soporte como ubicación inicial
 
 ---
 
@@ -158,6 +160,29 @@ cd backend && npx tsx prisma/migrate-v1.ts
 - **API**: prefijo `/api/v1/`
 - **Idioma UI**: Español (Uruguay) — "ficha", "técnico", "préstamo", "ubicación"
 - **Mutaciones**: TanStack Query `useMutation` + `queryClient.invalidateQueries` al completar
+- **SALIDA vs ENTRADA** (equipos): SALIDA = `POST /equipment/:id/transfer` → registra `TRANSFERENCIA` (traslado permanente a oficina destino). ENTRADA = `POST /equipment/:id/send-to-support` → registra `ENVIO_SOPORTE` (retorno temporal a Soporte para reparación, NO es traslado permanente). Nunca usar `/transfer` para representar un retorno a soporte.
+
+---
+
+## Flujo estado NUEVO
+
+> Contexto: los equipos se compran y llegan físicamente a "Informatica - Soporte". Recién ahí se ingresan al sistema antes de distribuirse.
+
+### Ciclo de vida
+
+1. **Creación** — El equipo se registra con estado `NUEVO` en la oficina de soporte (pre-seleccionada automáticamente en el form). El número de serie se pre-rellena con `max(serie) + 1`.
+2. **Asignación** — Cuando se decide el destino, se usa "Transferir" hacia la oficina final. El backend cambia automáticamente el estado a `ACTIVO` (o `EN_REPARACION`/`EN_DEPOSITO` si va a soporte/depósito).
+3. **Sin destino inmediato** — El equipo puede quedarse en `NUEVO` todo el tiempo que sea necesario hasta que se asigne.
+
+### Regla técnica (`resolveEstado`)
+
+- `NUEVO`, `PRESTADO`, `EN_SERVICIO_EXTERNO` → se leen **directo de DB**, no se derivan del nombre de oficina
+- `EN_REPARACION`, `EN_DEPOSITO`, `ACTIVO` → se derivan del nombre de oficina
+
+### Migración DB
+
+- La migración `20260328173932_add_estado_nuevo` agrega el valor al enum `estado_equipo`
+- Si se carga una nueva DB con datos de v1, **hay que aplicar esta migración antes** de importar los datos
 
 ---
 
@@ -177,7 +202,8 @@ PROSEGIT/
 │   │   ├── schema.prisma              # ← Modelo de datos completo (12 modelos, 2 enums)
 │   │   ├── seed.ts                    # Usuarios iniciales (admin 9999, técnico 7844)
 │   │   ├── migrate-v1.ts              # Script migración datos de seguit v1
-│   │   └── migrations/20260322153214_init/  # Única migración (schema inicial)
+│   │   ├── migrations/20260322153214_init/  # Migración inicial (schema base)
+│   │   └── migrations/20260328173932_add_estado_nuevo/  # Agrega NUEVO al enum estado_equipo
 │   ├── prisma.config.ts               # Config Prisma 7 con adapter pg
 │   └── src/
 │       ├── index.ts                   # Punto de entrada Express
@@ -196,7 +222,8 @@ PROSEGIT/
 │       ├── lib/
 │       │   ├── api-client.ts          # Singleton con JWT auto-refresh
 │       │   ├── auth-context.tsx       # AuthContext (React 19 use())
-│       │   └── equipment-status.ts    # resolveEstado(), STATUS_LABEL, STATUS_COLOR — derivar estado desde nombre de oficina
+│       │   ├── equipment-status.ts    # resolveEstado(), STATUS_LABEL, STATUS_COLOR — derivar estado desde nombre de oficina
+│       │   └── find-soporte-office.ts # Busca la oficina de Soporte en el árbol de ubicaciones
 │       ├── hooks/                     # useEquipment, useLocations, useHistory, useLoans, useUsers, useDashboard
 │       ├── components/layout/         # Sidebar.tsx, Header.tsx, MainLayout.tsx
 │       ├── pages/                     # 11 páginas (ver tabla arriba)
@@ -214,7 +241,7 @@ PROSEGIT/
 
 **Ubicaciones (3 niveles):** `Ciudad` → `Seccion` → `Oficina`
 
-**Equipos:** `TipoEquipo` → `ModeloTemplate` → `Equipo` (estado: ACTIVO | EN_REPARACION | DADO_DE_BAJA | EN_DEPOSITO | PRESTADO | EN_SERVICIO_EXTERNO)
+**Equipos:** `TipoEquipo` → `ModeloTemplate` → `Equipo` (estado: NUEVO | ACTIVO | EN_REPARACION | DADO_DE_BAJA | EN_DEPOSITO | PRESTADO | EN_SERVICIO_EXTERNO)
 
 **Acciones:** `Historial` (accion: CREACION | TRANSFERENCIA | ENVIO_SOPORTE | RETORNO_SOPORTE | PRESTAMO | DEVOLUCION | BAJA | CAMBIO_ESTADO | EDICION | ENVIO_SERVICIO_EXTERNO | RETORNO_SERVICIO_EXTERNO)
 

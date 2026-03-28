@@ -55,6 +55,7 @@ model Oficina {
 // ==========================================
 
 enum EstadoEquipo {
+  NUEVO           // Equipo recién ingresado, aún no asignado a destino final
   ACTIVO
   EN_REPARACION
   DADO_DE_BAJA
@@ -99,7 +100,7 @@ model Equipo {
   tipoEquipo       TipoEquipo     @relation(fields: [tipoEquipoId], references: [id])
   oficinaId        Int            @map("oficina_id")
   oficina          Oficina        @relation(fields: [oficinaId], references: [id])
-  estado           EstadoEquipo   @default(ACTIVO)
+  estado           EstadoEquipo   @default(NUEVO)
   ip               String?        @db.VarChar(45)
   urlImage         String?        @map("url_image") @db.VarChar(500)
   observacion      String?        @db.Text

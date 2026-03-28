@@ -319,6 +319,13 @@
     border: 1px solid rgb(var(--color-primary-rgb) / 0.2);
     &::before { background: var(--color-primary); }
   }
+
+  &[data-color="new"] {
+    background: #f0f4ff;
+    color: #4361b0;
+    border: 1px solid rgba(67, 97, 176, 0.2);
+    &::before { background: #4361b0; }
+  }
 }
 
 /* ─── Sortable header buttons ─── */

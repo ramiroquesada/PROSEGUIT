@@ -1,19 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEquipmentDetail, useEquipmentTypes } from '../hooks/useEquipment';
+import { useEquipmentDetail, useEquipmentTypes, useNextSerie } from '../hooks/useEquipment';
 import { useLocationTree, useCreateCity, useCreateSection, useCreateOffice } from '../hooks/useLocations';
 import { api } from '../lib/api-client';
+import { findSoporteOffice } from '../lib/find-soporte-office';
 import styles from './EquipmentFormPage.module.css';
 import { usePageTitle } from '../hooks/usePageTitle';
-
-const ESTADOS = [
-  { value: 'ACTIVO', label: 'Activo' },
-  { value: 'EN_REPARACION', label: 'En Reparación' },
-  { value: 'DADO_DE_BAJA', label: 'Dado de Baja' },
-  { value: 'EN_DEPOSITO', label: 'En Depósito' },
-  { value: 'EN_SERVICIO_EXTERNO', label: 'En Servicio Externo' },
-];
 
 export default function EquipmentFormPage() {
   const { id } = useParams<{ id: string }>();
@@ -26,6 +19,7 @@ export default function EquipmentFormPage() {
   const { data: equipo } = useEquipmentDetail(isEditing ? equipoId : 0);
   const { data: tipos } = useEquipmentTypes();
   const { data: locations } = useLocationTree();
+  const { data: nextSerieData } = useNextSerie();
 
   const [form, setForm] = useState({
     serie: '',
@@ -34,7 +28,6 @@ export default function EquipmentFormPage() {
     ciudadId: '',
     seccionId: '',
     oficinaId: '',
-    estado: 'ACTIVO',
     ip: '',
     observacion: '',
     motivo: '',
@@ -66,8 +59,19 @@ export default function EquipmentFormPage() {
       }
       setCreating(null);
       setNewNombre('');
-    } catch {
-      // error silencioso, el select se actualiza igual
+    } catch (err: any) {
+      setError(err?.message || 'Error al crear la ubicación');
+    }
+  }
+
+  function handleInlineKeyDown(e: React.KeyboardEvent, type: 'ciudad' | 'seccion' | 'oficina') {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleCreateLocation(type);
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setCreating(null);
     }
   }
 
@@ -81,13 +85,42 @@ export default function EquipmentFormPage() {
         ciudadId: String(equipo.oficina.seccion.ciudad.id),
         seccionId: String(equipo.oficina.seccion.id),
         oficinaId: String(equipo.oficina.id),
-        estado: equipo.estado,
         ip: equipo.ip || '',
         observacion: equipo.observacion || '',
         motivo: '',
       });
     }
   }, [equipo, isEditing]);
+
+  // Pre-rellenar serie con el próximo disponible (solo en creación)
+  useEffect(() => {
+    if (!isEditing && nextSerieData?.nextSerie) {
+      setForm((p) => ({ ...p, serie: String(nextSerieData.nextSerie) }));
+    }
+  }, [isEditing, nextSerieData]);
+
+  // Pre-seleccionar tipo "PC - Torre" y oficina "soporte" (solo en creación)
+  useEffect(() => {
+    if (isEditing || !tipos || !locations) return;
+
+    const tipoPCTorre = tipos.find((t) =>
+      t.nombre.toLowerCase().replace(/\s+/g, '').includes('pctorre') ||
+      t.nombre.toLowerCase().includes('pc - torre') ||
+      t.nombre.toLowerCase().includes('pc-torre')
+    );
+
+    const soporte = findSoporteOffice(locations);
+
+    setForm((p) => ({
+      ...p,
+      ...(tipoPCTorre && !p.tipoEquipoId ? { tipoEquipoId: String(tipoPCTorre.id) } : {}),
+      ...(soporte && !p.ciudadId ? {
+        ciudadId: String(soporte.ciudadId),
+        seccionId: String(soporte.seccionId),
+        oficinaId: String(soporte.oficinaId),
+      } : {}),
+    }));
+  }, [isEditing, tipos, locations]);
 
   const mutation = useMutation({
     mutationFn: (data: Record<string, unknown>) =>
@@ -133,10 +166,9 @@ export default function EquipmentFormPage() {
     const payload: Record<string, unknown> = {
       tipoEquipoId: Number(form.tipoEquipoId),
       oficinaId: Number(form.oficinaId),
-      estado: form.estado,
-      modelo: form.modelo || null,
-      ip: form.ip || null,
-      observacion: form.observacion || null,
+      modelo: form.modelo || undefined,
+      ip: form.ip || undefined,
+      observacion: form.observacion || undefined,
     };
 
     if (!isEditing) {
@@ -205,15 +237,6 @@ export default function EquipmentFormPage() {
             </div>
 
             <div className={styles.field}>
-              <label className={styles.label}>Estado</label>
-              <select name="estado" value={form.estado} onChange={handleChange} className={styles.select}>
-                {ESTADOS.map((e) => (
-                  <option key={e.value} value={e.value}>{e.label}</option>
-                ))}
-              </select>
-            </div>
-
-            <div className={styles.field}>
               <label className={styles.label}>Dirección IP</label>
               <input
                 type="text"
@@ -241,7 +264,7 @@ export default function EquipmentFormPage() {
               </div>
               {creating === 'ciudad' ? (
                 <div className={styles.inlineCreate}>
-                  <input autoFocus className={styles.input} value={newNombre} onChange={(e) => setNewNombre(e.target.value)} placeholder="Nombre de la ciudad" onKeyDown={(e) => e.key === 'Enter' && handleCreateLocation('ciudad')} />
+                  <input autoFocus className={styles.input} value={newNombre} onChange={(e) => setNewNombre(e.target.value)} placeholder="Nombre de la ciudad" onKeyDown={(e) => handleInlineKeyDown(e, 'ciudad')} />
                   <button type="button" className={styles.inlineConfirm} onClick={() => handleCreateLocation('ciudad')} disabled={createCity.isPending}>✓</button>
                   <button type="button" className={styles.inlineCancel} onClick={() => setCreating(null)}>✕</button>
                 </div>
@@ -263,7 +286,7 @@ export default function EquipmentFormPage() {
               </div>
               {creating === 'seccion' ? (
                 <div className={styles.inlineCreate}>
-                  <input autoFocus className={styles.input} value={newNombre} onChange={(e) => setNewNombre(e.target.value)} placeholder="Nombre de la sección" onKeyDown={(e) => e.key === 'Enter' && handleCreateLocation('seccion')} />
+                  <input autoFocus className={styles.input} value={newNombre} onChange={(e) => setNewNombre(e.target.value)} placeholder="Nombre de la sección" onKeyDown={(e) => handleInlineKeyDown(e, 'seccion')} />
                   <button type="button" className={styles.inlineConfirm} onClick={() => handleCreateLocation('seccion')} disabled={createSection.isPending}>✓</button>
                   <button type="button" className={styles.inlineCancel} onClick={() => setCreating(null)}>✕</button>
                 </div>
@@ -285,7 +308,7 @@ export default function EquipmentFormPage() {
               </div>
               {creating === 'oficina' ? (
                 <div className={styles.inlineCreate}>
-                  <input autoFocus className={styles.input} value={newNombre} onChange={(e) => setNewNombre(e.target.value)} placeholder="Nombre de la oficina" onKeyDown={(e) => e.key === 'Enter' && handleCreateLocation('oficina')} />
+                  <input autoFocus className={styles.input} value={newNombre} onChange={(e) => setNewNombre(e.target.value)} placeholder="Nombre de la oficina" onKeyDown={(e) => handleInlineKeyDown(e, 'oficina')} />
                   <button type="button" className={styles.inlineConfirm} onClick={() => handleCreateLocation('oficina')} disabled={createOffice.isPending}>✓</button>
                   <button type="button" className={styles.inlineCancel} onClick={() => setCreating(null)}>✕</button>
                 </div>

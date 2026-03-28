@@ -91,7 +91,7 @@ export function useTransferEquipment() {
 export function useSendToSupport() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }: { id: number; motivo: string; comentario?: string }) =>
+    mutationFn: ({ id, ...data }: { id: number; motivo: string; comentario?: string; oficinaDestinoId?: number }) =>
       api.post(`/equipment/${id}/send-to-support`, data),
     onSuccess: (_data, { id }) => {
       qc.invalidateQueries({ queryKey: ['equipment', id] });
@@ -137,6 +137,14 @@ export function useDecommission() {
       qc.invalidateQueries({ queryKey: ['history', 'equipment', id] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
+  });
+}
+
+export function useNextSerie() {
+  return useQuery({
+    queryKey: ['equipment', 'next-serie'],
+    queryFn: () => api.get<{ nextSerie: number }>('/equipment/next-serie'),
+    staleTime: 0, // siempre refetch al abrir el formulario
   });
 }
 

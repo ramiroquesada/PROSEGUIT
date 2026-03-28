@@ -94,3 +94,8 @@ export async function typesHandler(_req: Request, res: Response) {
   const tipos = await equipmentService.getEquipmentTypes();
   res.json(tipos);
 }
+
+export async function nextSerieHandler(_req: Request, res: Response) {
+  const nextSerie = await equipmentService.getNextSerie();
+  res.json({ nextSerie });
+}

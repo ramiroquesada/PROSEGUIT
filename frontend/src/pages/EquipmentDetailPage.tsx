@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { useEquipmentDetail, useTransferEquipment, useSendToService, useReturnFromService } from '../hooks/useEquipment';
+import { useEquipmentDetail, useTransferEquipment, useSendToSupport, useSendToService, useReturnFromService } from '../hooks/useEquipment';
 import { resolveEstado, STATUS_LABEL, STATUS_COLOR } from '../lib/equipment-status';
 import { useEquipmentHistory } from '../hooks/useHistory';
 import { useLocationTree, useCreateCity, useCreateSection, useCreateOffice } from '../hooks/useLocations';
 import { useServiceProviders } from '../hooks/useLoans';
-import { ArrowRightLeft, Building2, RotateCcw, Pencil, ChevronLeft } from 'lucide-react';
+import { ArrowRightLeft, Building2, RotateCcw, Pencil, ChevronLeft, LogOut, LogIn } from 'lucide-react';
+import { findSoporteOffice } from '../lib/find-soporte-office';
 import styles from './EquipmentDetailPage.module.css';
 import { usePageTitle } from '../hooks/usePageTitle';
 
@@ -24,7 +25,7 @@ const ACCION_COLOR: Record<string, string> = {
 };
 
 // ── Tipos de modal de acción ───────────────────────────────────────────────
-type ActionType = 'transfer' | 'service' | 'returnService';
+type ActionType = 'salida' | 'entrada' | 'transfer' | 'service' | 'returnService';
 
 interface ActionState {
   type: ActionType;
@@ -46,29 +47,32 @@ const INITIAL_ACTION: ActionState = {
 
 // ── Acciones disponibles por estado ───────────────────────────────────────
 const ACCIONES_POR_ESTADO: Record<string, { type: ActionType; label: string; variant: string }[]> = {
+  NUEVO: [
+    { type: 'salida', label: 'SALIDA', variant: 'primary' },
+  ],
   ACTIVO: [
-    { type: 'transfer', label: 'Transferir', variant: 'primary' },
+    { type: 'entrada', label: 'ENTRADA', variant: 'warning' },
+    { type: 'transfer', label: 'Transferir', variant: 'secondary' },
     { type: 'service', label: 'Enviar a Servicio Externo', variant: 'warning' },
   ],
   EN_REPARACION: [
-    { type: 'transfer', label: 'Transferir', variant: 'primary' },
+    { type: 'salida', label: 'SALIDA', variant: 'primary' },
     { type: 'service', label: 'Enviar a Servicio Externo', variant: 'warning' },
   ],
   EN_DEPOSITO: [
-    { type: 'transfer', label: 'Transferir', variant: 'primary' },
-    { type: 'service', label: 'Enviar a Servicio Externo', variant: 'warning' },
+    { type: 'salida', label: 'SALIDA', variant: 'primary' },
   ],
   EN_SERVICIO_EXTERNO: [
     { type: 'returnService', label: 'Registrar retorno de servicio', variant: 'primary' },
   ],
-  DADO_DE_BAJA: [
-    { type: 'transfer', label: 'Transferir', variant: 'primary' },
-  ],
+  DADO_DE_BAJA: [],
   PRESTADO: [],
 };
 
 // ── Iconos por tipo de acción ─────────────────────────────────────────────
 const ACCION_ICON: Record<ActionType, React.ComponentType<{ size?: number }>> = {
+  salida:        LogOut,
+  entrada:       LogIn,
   transfer:      ArrowRightLeft,
   service:       Building2,
   returnService: RotateCcw,
@@ -76,6 +80,20 @@ const ACCION_ICON: Record<ActionType, React.ComponentType<{ size?: number }>> = 
 
 // ── Títulos y descripciones de modal ──────────────────────────────────────
 const MODAL_CONFIG: Record<ActionType, { title: string; motiLabel: string; placeholder: string; confirmLabel: string; confirmVariant: string; showDiagnostico?: boolean }> = {
+  salida: {
+    title: 'Salida de Equipo',
+    motiLabel: 'Motivo de la salida *',
+    placeholder: 'Ej: Asignación a oficina de Tesorería',
+    confirmLabel: 'Confirmar salida',
+    confirmVariant: 'primary',
+  },
+  entrada: {
+    title: 'Entrada de Equipo a Soporte',
+    motiLabel: 'Motivo de la entrada *',
+    placeholder: 'Ej: Equipo con falla en fuente de alimentación',
+    confirmLabel: 'Confirmar entrada',
+    confirmVariant: 'warning',
+  },
   transfer: {
     title: 'Transferir Equipo',
     motiLabel: 'Motivo de la transferencia *',
@@ -111,7 +129,10 @@ export default function EquipmentDetailPage() {
   const { data: locations } = useLocationTree();
   const { data: servicios } = useServiceProviders();
 
+  const soporteOffice = locations ? findSoporteOffice(locations) : null;
+
   const transferMutation = useTransferEquipment();
+  const supportMutation = useSendToSupport();
   const serviceMutation = useSendToService();
   const returnServiceMutation = useReturnFromService();
 
@@ -144,7 +165,7 @@ export default function EquipmentDetailPage() {
     } catch { /* silencioso */ }
   }
 
-  const isPending = transferMutation.isPending || serviceMutation.isPending || returnServiceMutation.isPending;
+  const isPending = transferMutation.isPending || supportMutation.isPending || serviceMutation.isPending || returnServiceMutation.isPending;
 
   function openAction(type: ActionType) {
     setAction({ ...INITIAL_ACTION, type });
@@ -175,10 +196,16 @@ export default function EquipmentDetailPage() {
 
     try {
       switch (action.type) {
+        case 'salida':
         case 'transfer':
           if (!action.oficinaId) { setActionError('Seleccioná la oficina de destino'); return; }
           if (Number(action.oficinaId) === equipo.oficina.id) { setActionError('El destino es la misma oficina actual'); return; }
           await transferMutation.mutateAsync({ ...base, oficinaDestinoId: Number(action.oficinaId) });
+          break;
+        case 'entrada':
+          if (!soporteOffice) { setActionError('No se encontró la oficina de Soporte en el sistema'); return; }
+          if (soporteOffice.oficinaId === equipo.oficina.id) { setActionError('El equipo ya está en Soporte'); return; }
+          await supportMutation.mutateAsync({ ...base, oficinaDestinoId: soporteOffice.oficinaId });
           break;
         case 'service':
           if (!action.servicioId) { setActionError('Seleccioná el servicio externo'); return; }
@@ -282,6 +309,11 @@ export default function EquipmentDetailPage() {
             </div>
           )}
 
+          {estadoReal === 'NUEVO' && (
+            <div className={styles.nuevoNotice}>
+              Equipo recién ingresado. Realizá una <strong>SALIDA</strong> para asignarlo a su oficina destino.
+            </div>
+          )}
           {estadoReal === 'EN_DEPOSITO' && (
             <div className={styles.bajaNotice}>
               Equipo en Depósito. Transferilo a una oficina activa para reasignarlo.
@@ -352,7 +384,18 @@ export default function EquipmentDetailPage() {
             <form onSubmit={handleActionSubmit} className={styles.modalForm}>
 
               {/* Campos específicos por tipo */}
-              {action.type === 'transfer' && (
+              {action.type === 'entrada' && soporteOffice && (
+                <div className={styles.entradaInfo}>
+                  El equipo será devuelto a <strong>{soporteOffice.fullPath}</strong>
+                </div>
+              )}
+              {action.type === 'entrada' && !soporteOffice && (
+                <div className={styles.modalError}>
+                  No se encontró la oficina de Soporte en el sistema. Creala primero en Ubicaciones.
+                </div>
+              )}
+
+              {(action.type === 'salida' || action.type === 'transfer') && (
                 <div className={styles.locationCascade}>
                   <div className={styles.field}>
                     <div className={styles.labelRow}>

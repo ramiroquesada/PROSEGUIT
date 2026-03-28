@@ -118,6 +118,7 @@
   &[data-color="danger"]  { background: #fee2e2; color: #dc2626; &::before { background: #dc2626; } }
   &[data-color="info"]    { background: #dbeafe; color: #2563eb; &::before { background: #2563eb; } }
   &[data-color="neutral"] { background: #f1f5f9; color: #64748b; &::before { background: #94a3b8; } }
+  &[data-color="new"]     { background: #f0f4ff; color: #4361b0; &::before { background: #4361b0; } }
 }
 
 .content {
@@ -177,6 +178,22 @@
     border-color: #fca5a5;
     &:hover { background: #dc2626; color: white; & svg { opacity: 1; } }
   }
+  &[data-variant="secondary"] {
+    background: var(--color-bg);
+    color: var(--color-text-secondary);
+    border-color: var(--color-border-strong, var(--color-border));
+    &:hover { background: var(--color-secondary); color: white; & svg { opacity: 1; } }
+  }
+}
+
+.nuevoNotice {
+  padding: var(--space-md);
+  background: #f0f4ff;
+  color: #4361b0;
+  border: 1px solid #a3b8d8;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
 }
 
 .bajaNotice {
@@ -439,6 +456,18 @@
   border-left: 3px solid #f59e0b;
   font-size: var(--font-size-sm);
   font-weight: 500;
+}
+
+.entradaInfo {
+  background: #f0f4ff;
+  color: #4361b0;
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-md);
+  border-left: 3px solid #4361b0;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+
+  & strong { font-weight: 700; }
 }
 
 .modalForm {
