@@ -269,6 +269,14 @@ export async function transferEquipment(id: number, data: {
   if (!oficinaDest) throw new AppError(404, 'Oficina destino no encontrada');
 
   const nuevoEstado = estadoPorOficina(oficinaDest.nombre);
+  let accionHistorial: 'ASIGNACION' | 'RETORNO_SOPORTE' | 'TRANSFERENCIA';
+  if (equipo.estado === 'EN_REPARACION') {
+    accionHistorial = 'RETORNO_SOPORTE';
+  } else if (equipo.estado === 'NUEVO' || equipo.estado === 'EN_DEPOSITO') {
+    accionHistorial = 'ASIGNACION';
+  } else {
+    accionHistorial = 'TRANSFERENCIA';
+  }
 
   const updated = await prisma.equipo.update({
     where: { id },
@@ -277,7 +285,7 @@ export async function transferEquipment(id: number, data: {
       estado: nuevoEstado,
       historial: {
         create: {
-          accion: 'TRANSFERENCIA',
+          accion: accionHistorial,
           oficinaOrigenId: equipo.oficinaId,
           oficinaDestinoId: data.oficinaDestinoId,
           usuarioId,

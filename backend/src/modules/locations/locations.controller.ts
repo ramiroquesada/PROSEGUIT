@@ -35,3 +35,28 @@ export async function updateOfficeHandler(req: Request, res: Response) {
   const office = await locationsService.updateOffice(Number(req.params.id), req.body.nombre);
   res.json(office);
 }
+
+export async function deleteCityHandler(req: Request, res: Response) {
+  await locationsService.deleteCity(Number(req.params.id));
+  res.status(204).end();
+}
+
+export async function deleteSectionHandler(req: Request, res: Response) {
+  await locationsService.deleteSection(Number(req.params.id));
+  res.status(204).end();
+}
+
+export async function deleteOfficeHandler(req: Request, res: Response) {
+  await locationsService.deleteOffice(Number(req.params.id));
+  res.status(204).end();
+}
+
+export async function moveOfficeHandler(req: Request, res: Response) {
+  const office = await locationsService.moveOffice(Number(req.params.id), req.body.seccionId);
+  res.json(office);
+}
+
+export async function moveSectionHandler(req: Request, res: Response) {
+  const section = await locationsService.moveSection(Number(req.params.id), req.body.ciudadId);
+  res.json(section);
+}

@@ -24,7 +24,7 @@ const servicioMap = new Map<number, number>();
 function mapAccion(obs: string): string {
   const lower = (obs || '').toLowerCase().trim();
   if (lower.includes('se creo')) return 'CREACION';
-  if (lower.includes('se envio al propietario')) return 'TRANSFERENCIA';
+  if (lower.includes('se envio al propietario')) return 'ASIGNACION';
   if (lower.includes('se cambio la ubicacion')) return 'TRANSFERENCIA';
   if (lower.includes('se ingreso')) return 'RETORNO_SOPORTE';
   if (lower.includes('se envio a service')) return 'ENVIO_SERVICIO_EXTERNO';

@@ -38,6 +38,8 @@ export function useEquipmentByOficina(oficinaId: number | null) {
   });
 }
 
+// ── Create ────────────────────────────────────────────────────────────────────
+
 export function useCreateCity() {
   const qc = useQueryClient();
   return useMutation({
@@ -60,6 +62,81 @@ export function useCreateOffice() {
   return useMutation({
     mutationFn: ({ nombre, seccionId }: { nombre: string; seccionId: number }) =>
       api.post<{ id: number; nombre: string; seccionId: number }>('/locations/offices', { nombre, seccionId }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['locations-tree'] }),
+  });
+}
+
+// ── Rename ────────────────────────────────────────────────────────────────────
+
+export function useRenameCity() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, nombre }: { id: number; nombre: string }) =>
+      api.put(`/locations/cities/${id}`, { nombre }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['locations-tree'] }),
+  });
+}
+
+export function useRenameSection() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, nombre }: { id: number; nombre: string }) =>
+      api.put(`/locations/sections/${id}`, { nombre }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['locations-tree'] }),
+  });
+}
+
+export function useRenameOffice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, nombre }: { id: number; nombre: string }) =>
+      api.put(`/locations/offices/${id}`, { nombre }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['locations-tree'] }),
+  });
+}
+
+// ── Delete ────────────────────────────────────────────────────────────────────
+
+export function useDeleteCity() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.delete(`/locations/cities/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['locations-tree'] }),
+  });
+}
+
+export function useDeleteSection() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.delete(`/locations/sections/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['locations-tree'] }),
+  });
+}
+
+export function useDeleteOffice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.delete(`/locations/offices/${id}`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['locations-tree'] }),
+  });
+}
+
+// ── Move (drag and drop) ──────────────────────────────────────────────────────
+
+export function useMoveOffice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, seccionId }: { id: number; seccionId: number }) =>
+      api.patch(`/locations/offices/${id}/move`, { seccionId }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['locations-tree'] }),
+  });
+}
+
+export function useMoveSection() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ciudadId }: { id: number; ciudadId: number }) =>
+      api.patch(`/locations/sections/${id}/move`, { ciudadId }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['locations-tree'] }),
   });
 }

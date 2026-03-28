@@ -1,5 +1,6 @@
 export const ACTION_TYPES = {
   CREACION: 'CREACION',
+  ASIGNACION: 'ASIGNACION',
   EDICION: 'EDICION',
   TRANSFERENCIA: 'TRANSFERENCIA',
   ENVIO_SOPORTE: 'ENVIO_SOPORTE',
@@ -16,6 +17,7 @@ export type ActionType = (typeof ACTION_TYPES)[keyof typeof ACTION_TYPES];
 
 export const ACTION_TYPE_LABELS: Record<ActionType, string> = {
   CREACION: 'Creación',
+  ASIGNACION: 'Asignación',
   EDICION: 'Edición',
   TRANSFERENCIA: 'Transferencia',
   ENVIO_SOPORTE: 'Envío a Soporte',

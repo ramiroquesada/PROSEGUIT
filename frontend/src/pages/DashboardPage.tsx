@@ -12,6 +12,7 @@ import { usePageTitle } from '../hooks/usePageTitle';
 
 const ACTION_LABELS: Record<string, string> = {
   CREACION: 'Creación',
+  ASIGNACION: 'Asignación',
   EDICION: 'Edición',
   TRANSFERENCIA: 'Transferencia',
   ENVIO_SOPORTE: 'Envío a Soporte',
@@ -25,7 +26,7 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 const ACTION_COLOR: Record<string, string> = {
-  CREACION: 'success', EDICION: 'info', TRANSFERENCIA: 'primary',
+  CREACION: 'success', EDICION: 'info', ASIGNACION: 'primary', TRANSFERENCIA: 'primary',
   ENVIO_SOPORTE: 'warning', RETORNO_SOPORTE: 'success',
   ENVIO_SERVICIO_EXTERNO: 'warning', RETORNO_SERVICIO_EXTERNO: 'success',
   BAJA: 'danger', PRESTAMO: 'info', DEVOLUCION: 'success', CAMBIO_ESTADO: 'neutral',

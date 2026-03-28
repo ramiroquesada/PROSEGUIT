@@ -24,14 +24,14 @@ interface RecentActivity {
 
 export function useDashboardStats() {
   return useQuery({
-    queryKey: ['dashboard-stats'],
+    queryKey: ['dashboard', 'stats'],
     queryFn: () => api.get<DashboardStats>('/dashboard/stats'),
   });
 }
 
 export function useRecentActivity(limit = 20) {
   return useQuery({
-    queryKey: ['recent-activity', limit],
+    queryKey: ['dashboard', 'recent-activity', limit],
     queryFn: () => api.get<RecentActivity[]>(`/dashboard/recent-activity?limit=${limit}`),
   });
 }

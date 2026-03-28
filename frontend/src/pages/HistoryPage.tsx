@@ -7,6 +7,7 @@ import { usePageTitle } from '../hooks/usePageTitle';
 const ACCION_OPTIONS = [
   { value: '', label: 'Todas las acciones' },
   { value: 'CREACION', label: 'Creación' },
+  { value: 'ASIGNACION', label: 'Asignación' },
   { value: 'EDICION', label: 'Edición' },
   { value: 'TRANSFERENCIA', label: 'Transferencia' },
   { value: 'ENVIO_SOPORTE', label: 'Envío a Soporte' },
@@ -20,7 +21,7 @@ const ACCION_OPTIONS = [
 ];
 
 const ACCION_COLOR: Record<string, string> = {
-  CREACION: 'success', EDICION: 'info', TRANSFERENCIA: 'primary',
+  CREACION: 'success', EDICION: 'info', ASIGNACION: 'primary', TRANSFERENCIA: 'primary',
   ENVIO_SOPORTE: 'warning', RETORNO_SOPORTE: 'success',
   ENVIO_SERVICIO_EXTERNO: 'warning', RETORNO_SERVICIO_EXTERNO: 'success',
   PRESTAMO: 'info', DEVOLUCION: 'success', BAJA: 'danger', CAMBIO_ESTADO: 'neutral',

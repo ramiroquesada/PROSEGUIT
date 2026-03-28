@@ -12,13 +12,13 @@ import { usePageTitle } from '../hooks/usePageTitle';
 
 // ── Constantes de display ──────────────────────────────────────────────────
 const ACCION_LABEL: Record<string, string> = {
-  CREACION: 'Creación', EDICION: 'Edición', TRANSFERENCIA: 'Transferencia',
+  CREACION: 'Creación', EDICION: 'Edición', ASIGNACION: 'Asignación', TRANSFERENCIA: 'Transferencia',
   ENVIO_SOPORTE: 'Envío a Soporte', RETORNO_SOPORTE: 'Retorno de Soporte',
   ENVIO_SERVICIO_EXTERNO: 'Envío a Servicio Externo', RETORNO_SERVICIO_EXTERNO: 'Retorno de Servicio',
   BAJA: 'Baja', PRESTAMO: 'Préstamo', DEVOLUCION: 'Devolución', CAMBIO_ESTADO: 'Cambio de Estado',
 };
 const ACCION_COLOR: Record<string, string> = {
-  CREACION: 'success', EDICION: 'info', TRANSFERENCIA: 'primary',
+  CREACION: 'success', EDICION: 'info', ASIGNACION: 'primary', TRANSFERENCIA: 'primary',
   ENVIO_SOPORTE: 'warning', RETORNO_SOPORTE: 'success',
   ENVIO_SERVICIO_EXTERNO: 'warning', RETORNO_SERVICIO_EXTERNO: 'success',
   BAJA: 'danger', PRESTAMO: 'info', DEVOLUCION: 'success', CAMBIO_ESTADO: 'neutral',
@@ -168,7 +168,28 @@ export default function EquipmentDetailPage() {
   const isPending = transferMutation.isPending || supportMutation.isPending || serviceMutation.isPending || returnServiceMutation.isPending;
 
   function openAction(type: ActionType) {
-    setAction({ ...INITIAL_ACTION, type });
+    let initial = { ...INITIAL_ACTION, type };
+
+    // Para SALIDA desde EN_REPARACION: pre-rellenar destino con la última oficina origen del ENVIO_SOPORTE
+    if (type === 'salida' && equipo && historial && locations) {
+      const estado = resolveEstado(equipo.estado, equipo.oficina.nombre);
+      if (estado === 'EN_REPARACION') {
+        const lastEnvio = historial.find((h) => h.accion === 'ENVIO_SOPORTE');
+        const origenId = lastEnvio?.oficinaOrigen?.id;
+        if (origenId) {
+          outer: for (const ciudad of locations) {
+            for (const seccion of ciudad.secciones) {
+              if (seccion.oficinas.some((o) => o.id === origenId)) {
+                initial = { ...initial, ciudadId: String(ciudad.id), seccionId: String(seccion.id), oficinaId: String(origenId) };
+                break outer;
+              }
+            }
+          }
+        }
+      }
+    }
+
+    setAction(initial);
     setActionError('');
   }
 
@@ -336,7 +357,15 @@ export default function EquipmentDetailPage() {
             <p className={styles.loadingText}>Cargando historial...</p>
           ) : historial && historial.length > 0 ? (
             <div className={styles.timeline}>
-              {historial.map((entry, index) => (
+              {[...historial].sort((a, b) => {
+                const dateA = new Date(a.fecha).toDateString();
+                const dateB = new Date(b.fecha).toDateString();
+                if (dateA === dateB) {
+                  if (a.accion === 'CREACION') return 1;
+                  if (b.accion === 'CREACION') return -1;
+                }
+                return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
+              }).map((entry, index) => (
                 <div key={entry.id} className={styles.timelineItem} data-last={index === historial.length - 1}>
                   <div className={styles.timelineDot} data-color={ACCION_COLOR[entry.accion] || 'neutral'} />
                   <div className={styles.timelineContent}>

@@ -84,6 +84,7 @@ export function useTransferEquipment() {
       qc.invalidateQueries({ queryKey: ['equipment', id] });
       qc.invalidateQueries({ queryKey: ['equipment'] });
       qc.invalidateQueries({ queryKey: ['history', 'equipment', id] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
   });
 }
