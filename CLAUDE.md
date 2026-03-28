@@ -33,7 +33,7 @@ Reemplaza a "seguit v1" (PHP/MySQL). Desarrollado por el equipo de Informática.
 | Módulo | Endpoints principales |
 |--------|----------------------|
 | `auth` | POST login, refresh, logout |
-| `equipment` | GET list/detail, POST crear, PUT editar, POST transfer/send-to-support/send-to-service/decommission/return-from-service |
+| `equipment` | GET list/detail, POST crear, PUT editar, POST transfer/send-to-support/send-to-service/return-from-service |
 | `locations` | GET tree, POST/PUT cities/sections/offices |
 | `dashboard` | GET stats, GET recent-activity |
 | `history` | GET list (paginado + filtros), GET by equipoId |
@@ -251,9 +251,9 @@ PROSEGIT/
 
 **Ubicaciones (3 niveles):** `Ciudad` → `Seccion` → `Oficina`
 
-**Equipos:** `TipoEquipo` → `ModeloTemplate` → `Equipo` (estado: NUEVO | ACTIVO | EN_REPARACION | DADO_DE_BAJA | EN_DEPOSITO | PRESTADO | EN_SERVICIO_EXTERNO)
+**Equipos:** `TipoEquipo` → `ModeloTemplate` → `Equipo` (estado: NUEVO | ACTIVO | EN_REPARACION | EN_DEPOSITO | PRESTADO | EN_SERVICIO_EXTERNO)
 
-**Acciones:** `Historial` (accion: CREACION | ASIGNACION | EDICION | TRANSFERENCIA | ENVIO_SOPORTE | RETORNO_SOPORTE | PRESTAMO | DEVOLUCION | BAJA | CAMBIO_ESTADO | ENVIO_SERVICIO_EXTERNO | RETORNO_SERVICIO_EXTERNO)
+**Acciones:** `Historial` (accion: CREACION | ASIGNACION | EDICION | TRANSFERENCIA | ENVIO_SOPORTE | RETORNO_SOPORTE | PRESTAMO | DEVOLUCION | CAMBIO_ESTADO | ENVIO_SERVICIO_EXTERNO | RETORNO_SERVICIO_EXTERNO)
 
 **Otros:** `Prestamo`, `EnvioServicio`, `ServicioExterno`, `Usuario` (rol: ADMIN | TECNICO), `Funcionario`, `RefreshToken`
 

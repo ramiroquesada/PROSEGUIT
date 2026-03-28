@@ -15,13 +15,13 @@ const ACCION_LABEL: Record<string, string> = {
   CREACION: 'Creación', EDICION: 'Edición', ASIGNACION: 'Asignación', TRANSFERENCIA: 'Transferencia',
   ENVIO_SOPORTE: 'Envío a Soporte', RETORNO_SOPORTE: 'Retorno de Soporte',
   ENVIO_SERVICIO_EXTERNO: 'Envío a Servicio Externo', RETORNO_SERVICIO_EXTERNO: 'Retorno de Servicio',
-  BAJA: 'Baja', PRESTAMO: 'Préstamo', DEVOLUCION: 'Devolución', CAMBIO_ESTADO: 'Cambio de Estado',
+  PRESTAMO: 'Préstamo', DEVOLUCION: 'Devolución', CAMBIO_ESTADO: 'Cambio de Estado',
 };
 const ACCION_COLOR: Record<string, string> = {
   CREACION: 'success', EDICION: 'info', ASIGNACION: 'primary', TRANSFERENCIA: 'primary',
   ENVIO_SOPORTE: 'warning', RETORNO_SOPORTE: 'success',
   ENVIO_SERVICIO_EXTERNO: 'warning', RETORNO_SERVICIO_EXTERNO: 'success',
-  BAJA: 'danger', PRESTAMO: 'info', DEVOLUCION: 'success', CAMBIO_ESTADO: 'neutral',
+  PRESTAMO: 'info', DEVOLUCION: 'success', CAMBIO_ESTADO: 'neutral',
 };
 
 // ── Tipos de modal de acción ───────────────────────────────────────────────
@@ -65,7 +65,6 @@ const ACCIONES_POR_ESTADO: Record<string, { type: ActionType; label: string; var
   EN_SERVICIO_EXTERNO: [
     { type: 'returnService', label: 'Registrar retorno de servicio', variant: 'primary' },
   ],
-  DADO_DE_BAJA: [],
   PRESTADO: [],
 };
 

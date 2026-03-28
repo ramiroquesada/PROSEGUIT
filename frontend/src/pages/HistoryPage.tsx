@@ -16,7 +16,6 @@ const ACCION_OPTIONS = [
   { value: 'RETORNO_SERVICIO_EXTERNO', label: 'Retorno de Servicio' },
   { value: 'PRESTAMO', label: 'Préstamo' },
   { value: 'DEVOLUCION', label: 'Devolución' },
-  { value: 'BAJA', label: 'Baja' },
   { value: 'CAMBIO_ESTADO', label: 'Cambio de Estado' },
 ];
 
@@ -24,7 +23,7 @@ const ACCION_COLOR: Record<string, string> = {
   CREACION: 'success', EDICION: 'info', ASIGNACION: 'primary', TRANSFERENCIA: 'primary',
   ENVIO_SOPORTE: 'warning', RETORNO_SOPORTE: 'success',
   ENVIO_SERVICIO_EXTERNO: 'warning', RETORNO_SERVICIO_EXTERNO: 'success',
-  PRESTAMO: 'info', DEVOLUCION: 'success', BAJA: 'danger', CAMBIO_ESTADO: 'neutral',
+  PRESTAMO: 'info', DEVOLUCION: 'success', CAMBIO_ESTADO: 'neutral',
 };
 
 export default function HistoryPage() {

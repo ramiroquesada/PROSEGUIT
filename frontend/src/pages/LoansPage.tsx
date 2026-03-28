@@ -75,7 +75,6 @@ export default function LoansPage() {
       const equipo = result.data?.find((e: any) => e.serie === serie);
       if (!equipo) { setModalError(`No se encontró ningún equipo con serie ${serie}`); return; }
       if (equipo.estado === 'PRESTADO') { setModalError('El equipo ya está en préstamo'); return; }
-      if (equipo.estado === 'DADO_DE_BAJA') { setModalError('El equipo está dado de baja'); return; }
 
       await createMutation.mutateAsync({
         equipoId: equipo.id,

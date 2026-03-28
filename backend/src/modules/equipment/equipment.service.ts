@@ -380,32 +380,6 @@ export async function sendToService(id: number, data: {
   return updated;
 }
 
-export async function decommission(id: number, data: {
-  motivo: string;
-  comentario?: string;
-}, usuarioId: number) {
-  const equipo = await prisma.equipo.findUnique({ where: { id } });
-  if (!equipo) throw new AppError(404, 'Equipo no encontrado');
-
-  const updated = await prisma.equipo.update({
-    where: { id },
-    data: {
-      estado: 'DADO_DE_BAJA',
-      historial: {
-        create: {
-          accion: 'BAJA',
-          oficinaOrigenId: equipo.oficinaId,
-          usuarioId,
-          motivo: data.motivo,
-          comentario: data.comentario,
-        },
-      },
-    },
-  });
-
-  return updated;
-}
-
 export async function returnFromService(id: number, data: {
   motivo: string;
   diagnostico?: string;

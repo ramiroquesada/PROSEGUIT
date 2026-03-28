@@ -41,11 +41,6 @@ const serviceSchema = z.object({
   comentario: z.string().optional(),
 });
 
-const decommissionSchema = z.object({
-  motivo: z.string().min(1),
-  comentario: z.string().optional(),
-});
-
 // Routes
 router.get('/', controller.listHandler);
 router.get('/types', controller.typesHandler);
@@ -56,7 +51,6 @@ router.put('/:id', validate(updateSchema), controller.updateHandler);
 router.post('/:id/transfer', validate(transferSchema), controller.transferHandler);
 router.post('/:id/send-to-support', validate(supportSchema), controller.sendToSupportHandler);
 router.post('/:id/send-to-service', validate(serviceSchema), controller.sendToServiceHandler);
-router.post('/:id/decommission', validate(decommissionSchema), controller.decommissionHandler);
 router.post('/:id/return-from-service', validate(supportSchema), controller.returnFromServiceHandler);
 
 export default router;

@@ -58,7 +58,6 @@ enum EstadoEquipo {
   NUEVO           // Equipo recién ingresado, aún no asignado a destino final
   ACTIVO
   EN_REPARACION
-  DADO_DE_BAJA
   EN_DEPOSITO
   PRESTADO
   EN_SERVICIO_EXTERNO
@@ -131,7 +130,6 @@ enum AccionTipo {
   RETORNO_SOPORTE
   PRESTAMO
   DEVOLUCION
-  BAJA
   CAMBIO_ESTADO
   EDICION
   ENVIO_SERVICIO_EXTERNO

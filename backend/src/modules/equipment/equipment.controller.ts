@@ -72,15 +72,6 @@ export async function sendToServiceHandler(req: Request, res: Response) {
   res.json(equipo);
 }
 
-export async function decommissionHandler(req: Request, res: Response) {
-  const equipo = await equipmentService.decommission(
-    Number(req.params.id),
-    req.body,
-    req.user!.userId,
-  );
-  res.json(equipo);
-}
-
 export async function returnFromServiceHandler(req: Request, res: Response) {
   const equipo = await equipmentService.returnFromService(
     Number(req.params.id),

@@ -66,7 +66,6 @@ export async function createLoan(data: {
   const equipo = await prisma.equipo.findUnique({ where: { id: data.equipoId } });
   if (!equipo) throw new AppError(404, 'Equipo no encontrado');
   if (equipo.estado === 'PRESTADO') throw new AppError(400, 'El equipo ya está prestado');
-  if (equipo.estado === 'DADO_DE_BAJA') throw new AppError(400, 'El equipo está dado de baja');
 
   // Ensure funcionario exists
   await prisma.funcionario.upsert({

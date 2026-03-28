@@ -128,19 +128,6 @@ export function useReturnFromService() {
   });
 }
 
-export function useDecommission() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, ...data }: { id: number; motivo: string; comentario?: string }) =>
-      api.post(`/equipment/${id}/decommission`, data),
-    onSuccess: (_data, { id }) => {
-      qc.invalidateQueries({ queryKey: ['equipment', id] });
-      qc.invalidateQueries({ queryKey: ['history', 'equipment', id] });
-      qc.invalidateQueries({ queryKey: ['dashboard'] });
-    },
-  });
-}
-
 export function useNextSerie() {
   return useQuery({
     queryKey: ['equipment', 'next-serie'],

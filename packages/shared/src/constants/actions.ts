@@ -7,8 +7,6 @@ export const ACTION_TYPES = {
   RETORNO_SOPORTE: 'RETORNO_SOPORTE',
   ENVIO_SERVICIO: 'ENVIO_SERVICIO',
   RETORNO_SERVICIO: 'RETORNO_SERVICIO',
-  BAJA: 'BAJA',
-  REACTIVACION: 'REACTIVACION',
   PRESTAMO: 'PRESTAMO',
   DEVOLUCION_PRESTAMO: 'DEVOLUCION_PRESTAMO',
 } as const;
@@ -24,8 +22,6 @@ export const ACTION_TYPE_LABELS: Record<ActionType, string> = {
   RETORNO_SOPORTE: 'Retorno de Soporte',
   ENVIO_SERVICIO: 'Envío a Servicio Externo',
   RETORNO_SERVICIO: 'Retorno de Servicio',
-  BAJA: 'Baja',
-  REACTIVACION: 'Reactivación',
   PRESTAMO: 'Préstamo',
   DEVOLUCION_PRESTAMO: 'Devolución de Préstamo',
 };

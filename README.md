@@ -255,9 +255,9 @@ Ciudad ──< Seccion ──< Oficina ──< Equipo
                                   EnvioServicio (ServicioExterno + diagnostico)
 ```
 
-**Estados de equipo:** `NUEVO` · `ACTIVO` · `EN_REPARACION` · `EN_DEPOSITO` · `PRESTADO` · `EN_SERVICIO_EXTERNO` · `DADO_DE_BAJA`
+**Estados de equipo:** `NUEVO` · `ACTIVO` · `EN_REPARACION` · `EN_DEPOSITO` · `PRESTADO` · `EN_SERVICIO_EXTERNO`
 
-**Tipos de acción:** `CREACION` · `ASIGNACION` · `TRANSFERENCIA` · `ENVIO_SOPORTE` · `RETORNO_SOPORTE` · `PRESTAMO` · `DEVOLUCION` · `ENVIO_SERVICIO_EXTERNO` · `RETORNO_SERVICIO_EXTERNO` · `BAJA` · `EDICION`
+**Tipos de acción:** `CREACION` · `ASIGNACION` · `TRANSFERENCIA` · `ENVIO_SOPORTE` · `RETORNO_SOPORTE` · `PRESTAMO` · `DEVOLUCION` · `CAMBIO_ESTADO` · `ENVIO_SERVICIO_EXTERNO` · `RETORNO_SERVICIO_EXTERNO` · `EDICION`
 
 > El campo `estado` en la base de datos puede quedar desactualizado. Siempre se usa `resolveEstado(estado, oficina.nombre)` para mostrar el estado real en la UI.
 
@@ -273,7 +273,7 @@ Todos los endpoints requieren `Authorization: Bearer <token>` excepto `/auth/log
 |--------|-----------|
 | **Auth** | `POST /auth/login` · `POST /auth/refresh` · `POST /auth/logout` |
 | **Equipos** | `GET /equipment` · `POST /equipment` · `GET /equipment/:id` · `PUT /equipment/:id` |
-| **Acciones equipo** | `POST /equipment/:id/transfer` · `/send-to-support` · `/send-to-service` · `/decommission` · `/return-from-service` |
+| **Acciones equipo** | `POST /equipment/:id/transfer` · `/send-to-support` · `/send-to-service` · `/return-from-service` |
 | **Tipos** | `GET /equipment/types` |
 | **Ubicaciones** | `GET /locations/tree` · `POST /locations/cities` · `POST /locations/sections` · `POST /locations/offices` |
 | **Historial** | `GET /history` · `GET /history/equipment/:id` |
