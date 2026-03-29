@@ -374,6 +374,16 @@
   }
 }
 
+.garantiaVencida {
+  color: var(--color-danger);
+  font-weight: var(--font-weight-semibold);
+}
+
+.garantiaVigente {
+  color: var(--color-success);
+  font-weight: var(--font-weight-semibold);
+}
+
 .mono {
   font-family: var(--font-mono, monospace);
   font-size: var(--font-size-xs);

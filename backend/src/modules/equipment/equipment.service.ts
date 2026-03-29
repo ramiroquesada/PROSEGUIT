@@ -78,8 +78,12 @@ export async function listEquipment(pagination: PaginationParams, filters: Equip
     const searchNum = Number(filters.search);
     where.OR = [
       { modelo:      { contains: filters.search, mode: 'insensitive' } },
+      { matricula:   { contains: filters.search, mode: 'insensitive' } },
+      { asignadoA:   { contains: filters.search, mode: 'insensitive' } },
+      { nroInventario: { contains: filters.search, mode: 'insensitive' } },
       { observacion: { contains: filters.search, mode: 'insensitive' } },
       { ip:          { contains: filters.search, mode: 'insensitive' } },
+      { mac:         { contains: filters.search, mode: 'insensitive' } },
       { tipoEquipo:  { nombre: { contains: filters.search, mode: 'insensitive' } } },
       { oficina:     { nombre: { contains: filters.search, mode: 'insensitive' } } },
       { oficina:     { seccion: { nombre: { contains: filters.search, mode: 'insensitive' } } } },
@@ -167,12 +171,24 @@ export async function createEquipment(data: {
   tipoEquipoId: number;
   oficinaId: number;
   ip?: string;
+  mac?: string;
+  matricula?: string;
+  asignadoA?: string;
+  proveedor?: string;
+  fechaAdquisicion?: Date | null;
+  nroInventario?: string;
+  garantiaHasta?: Date | null;
   urlImage?: string;
   observacion?: string;
   especificaciones?: Prisma.InputJsonValue;
 }, usuarioId: number) {
   const existing = await prisma.equipo.findUnique({ where: { serie: data.serie } });
   if (existing) throw new AppError(409, 'Ya existe un equipo con ese número de serie');
+
+  if (data.matricula) {
+    const dup = await prisma.equipo.findUnique({ where: { matricula: data.matricula } });
+    if (dup) throw new AppError(409, 'Ya existe un equipo con esa matrícula');
+  }
 
   const equipo = await prisma.equipo.create({
     data: {
@@ -183,6 +199,13 @@ export async function createEquipment(data: {
       oficinaId: data.oficinaId,
       estado: 'NUEVO',
       ip: data.ip,
+      mac: data.mac,
+      matricula: data.matricula,
+      asignadoA: data.asignadoA,
+      proveedor: data.proveedor,
+      fechaAdquisicion: data.fechaAdquisicion,
+      nroInventario: data.nroInventario,
+      garantiaHasta: data.garantiaHasta,
       urlImage: data.urlImage,
       observacion: data.observacion,
       especificaciones: data.especificaciones ?? Prisma.JsonNull,
@@ -211,6 +234,13 @@ export async function updateEquipment(id: number, data: {
   tipoEquipoId?: number;
   oficinaId?: number;
   ip?: string;
+  mac?: string;
+  matricula?: string;
+  asignadoA?: string;
+  proveedor?: string;
+  fechaAdquisicion?: Date | null;
+  nroInventario?: string;
+  garantiaHasta?: Date | null;
   urlImage?: string;
   observacion?: string;
   especificaciones?: Prisma.InputJsonValue;
@@ -222,6 +252,11 @@ export async function updateEquipment(id: number, data: {
   if (data.serie && data.serie !== equipo.serie) {
     const existing = await prisma.equipo.findUnique({ where: { serie: data.serie } });
     if (existing) throw new AppError(409, 'Ya existe un equipo con ese número de serie');
+  }
+
+  if (data.matricula && data.matricula !== equipo.matricula) {
+    const dup = await prisma.equipo.findUnique({ where: { matricula: data.matricula } });
+    if (dup) throw new AppError(409, 'Ya existe un equipo con esa matrícula');
   }
 
   const { especificaciones, motivo, ...rest } = data;

@@ -61,6 +61,13 @@ interface Equipment {
   modelo: string | null;
   estado: string;
   ip: string | null;
+  mac: string | null;
+  matricula: string | null;
+  asignadoA: string | null;
+  proveedor: string | null;
+  fechaAdquisicion: string | null;
+  nroInventario: string | null;
+  garantiaHasta: string | null;
   observacion: string | null;
   urlImage: string | null;
   tipoEquipo: { id: number; nombre: string; icono: string | null };

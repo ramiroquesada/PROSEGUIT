@@ -30,6 +30,13 @@ export default function EquipmentFormPage() {
     seccionId: '',
     oficinaId: '',
     ip: '',
+    mac: '',
+    matricula: '',
+    asignadoA: '',
+    proveedor: '',
+    fechaAdquisicion: '',
+    nroInventario: '',
+    garantiaHasta: '',
     observacion: '',
     motivo: '',
   });
@@ -47,6 +54,13 @@ export default function EquipmentFormPage() {
         seccionId: String(equipo.oficina.seccion.id),
         oficinaId: String(equipo.oficina.id),
         ip: equipo.ip || '',
+        mac: equipo.mac || '',
+        matricula: equipo.matricula || '',
+        asignadoA: equipo.asignadoA || '',
+        proveedor: equipo.proveedor || '',
+        fechaAdquisicion: equipo.fechaAdquisicion ? equipo.fechaAdquisicion.slice(0, 10) : '',
+        nroInventario: equipo.nroInventario || '',
+        garantiaHasta: equipo.garantiaHasta ? equipo.garantiaHasta.slice(0, 10) : '',
         observacion: equipo.observacion || '',
         motivo: '',
       });
@@ -120,6 +134,13 @@ export default function EquipmentFormPage() {
       oficinaId: Number(form.oficinaId),
       modelo: form.modelo || undefined,
       ip: form.ip || undefined,
+      mac: form.mac || undefined,
+      matricula: form.matricula || undefined,
+      asignadoA: form.asignadoA || undefined,
+      proveedor: form.proveedor || undefined,
+      fechaAdquisicion: form.fechaAdquisicion || null,
+      nroInventario: form.nroInventario || undefined,
+      garantiaHasta: form.garantiaHasta || null,
       observacion: form.observacion || undefined,
     };
 
@@ -148,6 +169,7 @@ export default function EquipmentFormPage() {
       <form className={styles.form} onSubmit={handleSubmit}>
         {error && <div className={styles.error}>{error}</div>}
 
+        {/* ── Datos del equipo ── */}
         <div className={styles.section}>
           <h3 className={styles.sectionTitle}>Datos del Equipo</h3>
 
@@ -189,19 +211,20 @@ export default function EquipmentFormPage() {
             </div>
 
             <div className={styles.field}>
-              <label className={styles.label}>Dirección IP</label>
+              <label className={styles.label}>Matrícula (serial fabricante)</label>
               <input
                 type="text"
-                name="ip"
-                value={form.ip}
+                name="matricula"
+                value={form.matricula}
                 onChange={handleChange}
                 className={styles.input}
-                placeholder="Ej: 192.168.1.100"
+                placeholder="Ej: NPN123456"
               />
             </div>
           </div>
         </div>
 
+        {/* ── Ubicación ── */}
         <div className={styles.section}>
           <h3 className={styles.sectionTitle}>Ubicación *</h3>
 
@@ -213,6 +236,96 @@ export default function EquipmentFormPage() {
           />
         </div>
 
+        {/* ── Datos adicionales ── */}
+        <div className={styles.section}>
+          <h3 className={styles.sectionTitle}>Datos adicionales</h3>
+
+          <div className={styles.grid2}>
+            <div className={styles.field}>
+              <label className={styles.label}>Dirección IP</label>
+              <input
+                type="text"
+                name="ip"
+                value={form.ip}
+                onChange={handleChange}
+                className={styles.input}
+                placeholder="Ej: 192.168.1.100"
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>Dirección MAC</label>
+              <input
+                type="text"
+                name="mac"
+                value={form.mac}
+                onChange={handleChange}
+                className={styles.input}
+                placeholder="Ej: AA:BB:CC:DD:EE:FF"
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>N° Inventario patrimonial</label>
+              <input
+                type="text"
+                name="nroInventario"
+                value={form.nroInventario}
+                onChange={handleChange}
+                className={styles.input}
+                placeholder="Ej: PAT-2024-001"
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>Proveedor</label>
+              <input
+                type="text"
+                name="proveedor"
+                value={form.proveedor}
+                onChange={handleChange}
+                className={styles.input}
+                placeholder="Ej: CompuShop SRL"
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>Fecha de adquisición</label>
+              <input
+                type="date"
+                name="fechaAdquisicion"
+                value={form.fechaAdquisicion}
+                onChange={handleChange}
+                className={styles.input}
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>Garantía hasta</label>
+              <input
+                type="date"
+                name="garantiaHasta"
+                value={form.garantiaHasta}
+                onChange={handleChange}
+                className={styles.input}
+              />
+            </div>
+          </div>
+
+          <div className={styles.field}>
+            <label className={styles.label}>Asignado a</label>
+            <input
+              type="text"
+              name="asignadoA"
+              value={form.asignadoA}
+              onChange={handleChange}
+              className={styles.input}
+              placeholder="Nombres de las personas que usan el equipo"
+            />
+          </div>
+        </div>
+
+        {/* ── Observaciones ── */}
         <div className={styles.section}>
           <h3 className={styles.sectionTitle}>Observaciones</h3>
           <div className={styles.field}>

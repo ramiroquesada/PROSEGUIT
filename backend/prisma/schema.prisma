@@ -101,6 +101,13 @@ model Equipo {
   oficina          Oficina        @relation(fields: [oficinaId], references: [id])
   estado           EstadoEquipo   @default(NUEVO)
   ip               String?        @db.VarChar(45)
+  mac              String?        @db.VarChar(17)
+  matricula        String?        @unique @db.VarChar(100)
+  asignadoA        String?        @map("asignado_a") @db.Text
+  proveedor        String?        @db.VarChar(200)
+  fechaAdquisicion DateTime?      @map("fecha_adquisicion")
+  nroInventario    String?        @map("nro_inventario") @db.VarChar(100)
+  garantiaHasta    DateTime?      @map("garantia_hasta")
   urlImage         String?        @map("url_image") @db.VarChar(500)
   observacion      String?        @db.Text
   especificaciones Json           @default("{}") @db.JsonB

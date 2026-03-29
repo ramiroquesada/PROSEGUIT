@@ -320,7 +320,27 @@ export default function EquipmentDetailPage() {
               <dt>Ubicación</dt>
               <dd>{equipo.oficina.seccion.ciudad.nombre} › {equipo.oficina.seccion.nombre} › {equipo.oficina.nombre}</dd>
             </div>
+            {equipo.matricula && <div className={styles.detailRow}><dt>Matrícula</dt><dd className={styles.mono}>{equipo.matricula}</dd></div>}
+            {equipo.asignadoA && <div className={styles.detailRow}><dt>Asignado a</dt><dd>{equipo.asignadoA}</dd></div>}
             {equipo.ip && <div className={styles.detailRow}><dt>IP</dt><dd className={styles.mono}>{equipo.ip}</dd></div>}
+            {equipo.mac && <div className={styles.detailRow}><dt>MAC</dt><dd className={styles.mono}>{equipo.mac}</dd></div>}
+            {equipo.nroInventario && <div className={styles.detailRow}><dt>N° Inventario</dt><dd>{equipo.nroInventario}</dd></div>}
+            {equipo.proveedor && <div className={styles.detailRow}><dt>Proveedor</dt><dd>{equipo.proveedor}</dd></div>}
+            {equipo.fechaAdquisicion && (
+              <div className={styles.detailRow}>
+                <dt>Adquirido</dt>
+                <dd>{new Date(equipo.fechaAdquisicion).toLocaleDateString('es-UY')}</dd>
+              </div>
+            )}
+            {equipo.garantiaHasta && (
+              <div className={styles.detailRow}>
+                <dt>Garantía hasta</dt>
+                <dd className={new Date(equipo.garantiaHasta) < new Date() ? styles.garantiaVencida : styles.garantiaVigente}>
+                  {new Date(equipo.garantiaHasta).toLocaleDateString('es-UY')}
+                  {new Date(equipo.garantiaHasta) < new Date() ? ' (vencida)' : ''}
+                </dd>
+              </div>
+            )}
             {equipo.observacion && <div className={styles.detailRow}><dt>Observación</dt><dd>{equipo.observacion}</dd></div>}
             <div className={styles.detailRow}><dt>Registrado</dt><dd>{new Date(equipo.createdAt).toLocaleDateString('es-UY')}</dd></div>
           </dl>
