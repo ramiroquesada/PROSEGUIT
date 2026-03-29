@@ -43,6 +43,7 @@ export function useLoans(filters: LoanFilters = {}) {
       data: Prestamo[];
       pagination: { page: number; limit: number; total: number; totalPages: number };
     }>(`/loans?${params}`),
+    staleTime: 30_000,
   });
 }
 

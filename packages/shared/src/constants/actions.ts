@@ -1,3 +1,4 @@
+// Debe mantenerse en sincronía con el enum AccionTipo de schema.prisma
 export const ACTION_TYPES = {
   CREACION: 'CREACION',
   ASIGNACION: 'ASIGNACION',
@@ -5,10 +6,11 @@ export const ACTION_TYPES = {
   TRANSFERENCIA: 'TRANSFERENCIA',
   ENVIO_SOPORTE: 'ENVIO_SOPORTE',
   RETORNO_SOPORTE: 'RETORNO_SOPORTE',
-  ENVIO_SERVICIO: 'ENVIO_SERVICIO',
-  RETORNO_SERVICIO: 'RETORNO_SERVICIO',
+  ENVIO_SERVICIO_EXTERNO: 'ENVIO_SERVICIO_EXTERNO',
+  RETORNO_SERVICIO_EXTERNO: 'RETORNO_SERVICIO_EXTERNO',
   PRESTAMO: 'PRESTAMO',
-  DEVOLUCION_PRESTAMO: 'DEVOLUCION_PRESTAMO',
+  DEVOLUCION: 'DEVOLUCION',
+  CAMBIO_ESTADO: 'CAMBIO_ESTADO',
 } as const;
 
 export type ActionType = (typeof ACTION_TYPES)[keyof typeof ACTION_TYPES];
@@ -20,8 +22,9 @@ export const ACTION_TYPE_LABELS: Record<ActionType, string> = {
   TRANSFERENCIA: 'Transferencia',
   ENVIO_SOPORTE: 'Envío a Soporte',
   RETORNO_SOPORTE: 'Retorno de Soporte',
-  ENVIO_SERVICIO: 'Envío a Servicio Externo',
-  RETORNO_SERVICIO: 'Retorno de Servicio',
+  ENVIO_SERVICIO_EXTERNO: 'Envío a Servicio Externo',
+  RETORNO_SERVICIO_EXTERNO: 'Retorno de Servicio',
   PRESTAMO: 'Préstamo',
-  DEVOLUCION_PRESTAMO: 'Devolución de Préstamo',
+  DEVOLUCION: 'Devolución',
+  CAMBIO_ESTADO: 'Cambio de Estado',
 };

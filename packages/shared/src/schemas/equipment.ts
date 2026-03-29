@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const createEquipmentSchema = z.object({
-  serie: z.string().min(1, 'El número de serie es obligatorio'),
+  serie: z.number().int().positive('El número de serie es obligatorio'),
   modelo: z.string().optional(),
   templateId: z.number().int().optional(),
   tipoEquipoId: z.number().int().positive('El tipo de equipo es obligatorio'),
@@ -9,7 +9,7 @@ export const createEquipmentSchema = z.object({
   ip: z.string().optional(),
   urlImage: z.string().url().optional().or(z.literal('')),
   observacion: z.string().optional(),
-  especificaciones: z.record(z.unknown()).optional(),
+  especificaciones: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const updateEquipmentSchema = createEquipmentSchema.partial();

@@ -1,30 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useHistory } from '../hooks/useHistory';
+import { ACCION_OPTIONS, ACCION_COLOR } from '../lib/action-types';
 import styles from './HistoryPage.module.css';
 import { usePageTitle } from '../hooks/usePageTitle';
-
-const ACCION_OPTIONS = [
-  { value: '', label: 'Todas las acciones' },
-  { value: 'CREACION', label: 'Creación' },
-  { value: 'ASIGNACION', label: 'Asignación' },
-  { value: 'EDICION', label: 'Edición' },
-  { value: 'TRANSFERENCIA', label: 'Transferencia' },
-  { value: 'ENVIO_SOPORTE', label: 'Envío a Soporte' },
-  { value: 'RETORNO_SOPORTE', label: 'Retorno de Soporte' },
-  { value: 'ENVIO_SERVICIO_EXTERNO', label: 'Envío a Servicio Externo' },
-  { value: 'RETORNO_SERVICIO_EXTERNO', label: 'Retorno de Servicio' },
-  { value: 'PRESTAMO', label: 'Préstamo' },
-  { value: 'DEVOLUCION', label: 'Devolución' },
-  { value: 'CAMBIO_ESTADO', label: 'Cambio de Estado' },
-];
-
-const ACCION_COLOR: Record<string, string> = {
-  CREACION: 'success', EDICION: 'info', ASIGNACION: 'primary', TRANSFERENCIA: 'primary',
-  ENVIO_SOPORTE: 'warning', RETORNO_SOPORTE: 'success',
-  ENVIO_SERVICIO_EXTERNO: 'warning', RETORNO_SERVICIO_EXTERNO: 'success',
-  PRESTAMO: 'info', DEVOLUCION: 'success', CAMBIO_ESTADO: 'neutral',
-};
 
 export default function HistoryPage() {
   usePageTitle('Historial');

@@ -86,7 +86,22 @@ export async function refreshAccessToken(refreshToken: string) {
     expiresIn: env.jwt.expiresIn,
   } as SignOptions);
 
-  return { accessToken };
+  // Rotación: eliminar token anterior y emitir uno nuevo
+  const newRefreshToken = jwt.sign(payload, env.jwt.refreshSecret, {
+    expiresIn: env.jwt.refreshExpiresIn,
+  } as SignOptions);
+
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 7);
+
+  await prisma.$transaction([
+    prisma.refreshToken.delete({ where: { id: stored.id } }),
+    prisma.refreshToken.create({
+      data: { token: newRefreshToken, usuarioId: stored.usuario.id, expiresAt },
+    }),
+  ]);
+
+  return { accessToken, refreshToken: newRefreshToken };
 }
 
 export async function logout(refreshToken: string) {

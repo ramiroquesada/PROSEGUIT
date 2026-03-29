@@ -2,45 +2,28 @@ import { Router } from 'express';
 import { authMiddleware } from '../../middleware/auth.js';
 import { validate } from '../../middleware/validate.js';
 import * as controller from './equipment.controller.js';
+import {
+  createEquipmentSchema,
+  transferEquipmentSchema,
+  sendToSupportSchema,
+  sendToServiceSchema,
+} from '@proseguit/shared';
 import { z } from 'zod';
 
 const router = Router();
 
 router.use(authMiddleware);
 
-// Schemas
-const createSchema = z.object({
-  serie: z.number().int().positive(),
-  modelo: z.string().optional(),
-  templateId: z.number().int().optional(),
-  tipoEquipoId: z.number().int().positive(),
-  oficinaId: z.number().int().positive(),
-  ip: z.string().optional(),
-  urlImage: z.string().optional(),
-  observacion: z.string().optional(),
-  especificaciones: z.record(z.string(), z.unknown()).optional(),
-});
-
-const updateSchema = createSchema.partial().extend({
+const updateSchema = createEquipmentSchema.partial().extend({
   motivo: z.string().min(1),
 });
 
-const transferSchema = z.object({
-  oficinaDestinoId: z.number().int().positive(),
-  motivo: z.string().min(1),
-  comentario: z.string().optional(),
+const returnFromServiceSchema = sendToSupportSchema.extend({
+  diagnostico: z.string().optional(),
 });
 
-const supportSchema = z.object({
-  motivo: z.string().min(1),
-  comentario: z.string().optional(),
+const sendToSupportExtSchema = sendToSupportSchema.extend({
   oficinaDestinoId: z.number().int().positive().optional(),
-});
-
-const serviceSchema = z.object({
-  servicioId: z.number().int().positive(),
-  motivo: z.string().min(1),
-  comentario: z.string().optional(),
 });
 
 // Routes
@@ -48,11 +31,11 @@ router.get('/', controller.listHandler);
 router.get('/types', controller.typesHandler);
 router.get('/next-serie', controller.nextSerieHandler);
 router.get('/:id', controller.getByIdHandler);
-router.post('/', validate(createSchema), controller.createHandler);
+router.post('/', validate(createEquipmentSchema), controller.createHandler);
 router.put('/:id', validate(updateSchema), controller.updateHandler);
-router.post('/:id/transfer', validate(transferSchema), controller.transferHandler);
-router.post('/:id/send-to-support', validate(supportSchema), controller.sendToSupportHandler);
-router.post('/:id/send-to-service', validate(serviceSchema), controller.sendToServiceHandler);
-router.post('/:id/return-from-service', validate(supportSchema), controller.returnFromServiceHandler);
+router.post('/:id/transfer', validate(transferEquipmentSchema), controller.transferHandler);
+router.post('/:id/send-to-support', validate(sendToSupportExtSchema), controller.sendToSupportHandler);
+router.post('/:id/send-to-service', validate(sendToServiceSchema), controller.sendToServiceHandler);
+router.post('/:id/return-from-service', validate(returnFromServiceSchema), controller.returnFromServiceHandler);
 
 export default router;

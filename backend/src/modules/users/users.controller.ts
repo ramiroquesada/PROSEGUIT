@@ -22,8 +22,8 @@ export async function updateHandler(req: Request, res: Response) {
 }
 
 export async function resetPasswordHandler(req: Request, res: Response) {
-  await usersService.resetPassword(Number(req.params.id));
-  res.json({ message: 'Contraseña reseteada exitosamente' });
+  const { tempPassword } = await usersService.resetPassword(Number(req.params.id));
+  res.json({ message: 'Contraseña reseteada exitosamente', tempPassword });
 }
 
 export async function changePasswordHandler(req: Request, res: Response) {

@@ -34,6 +34,7 @@ export function useEquipmentList(filters: EquipmentFilters = {}) {
       data: Equipment[];
       pagination: { page: number; limit: number; total: number; totalPages: number };
     }>(`/equipment?${params}`),
+    staleTime: 30_000,
   });
 }
 
@@ -42,6 +43,7 @@ export function useEquipmentDetail(id: number) {
     queryKey: ['equipment', id],
     queryFn: () => api.get<Equipment>(`/equipment/${id}`),
     enabled: id > 0,
+    staleTime: 30_000,
   });
 }
 

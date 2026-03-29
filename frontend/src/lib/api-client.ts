@@ -74,15 +74,22 @@ class ApiClient {
 
       if (!res.ok) {
         this.clearTokens();
+        window.dispatchEvent(new Event('auth:expired'));
         return false;
       }
 
       const data = await res.json();
       this.accessToken = data.accessToken;
       localStorage.setItem('accessToken', data.accessToken);
+      // Guardar el nuevo refresh token (rotación)
+      if (data.refreshToken) {
+        this.refreshToken = data.refreshToken;
+        localStorage.setItem('refreshToken', data.refreshToken);
+      }
       return true;
     } catch {
       this.clearTokens();
+      window.dispatchEvent(new Event('auth:expired'));
       return false;
     }
   }

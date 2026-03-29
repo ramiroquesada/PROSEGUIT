@@ -19,6 +19,17 @@ const app = express();
 app.use(cors(corsOptions));
 app.use(express.json());
 
+// Headers de seguridad
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  // CSP para respuestas de la API (el frontend SPA requiere CSP en el servidor que lo sirve)
+  res.setHeader('Content-Security-Policy', "default-src 'none'");
+  next();
+});
+
 // Health check
 app.get('/api/v1/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
