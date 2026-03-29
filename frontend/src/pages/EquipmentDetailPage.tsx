@@ -5,7 +5,7 @@ import { resolveEstado, STATUS_LABEL, STATUS_COLOR } from '../lib/equipment-stat
 import { useEquipmentHistory } from '../hooks/useHistory';
 import { useLocationTree, useCreateCity, useCreateSection, useCreateOffice } from '../hooks/useLocations';
 import { useServiceProviders } from '../hooks/useLoans';
-import { ArrowRightLeft, Building2, RotateCcw, Pencil, ChevronLeft, LogOut, LogIn } from 'lucide-react';
+import { ArrowRightLeft, Building2, RotateCcw, Pencil, ChevronLeft, LogOut, LogIn, Monitor } from 'lucide-react';
 import { findSoporteOffice } from '../lib/find-soporte-office';
 import styles from './EquipmentDetailPage.module.css';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -46,24 +46,24 @@ const INITIAL_ACTION: ActionState = {
 };
 
 // ── Acciones disponibles por estado ───────────────────────────────────────
-const ACCIONES_POR_ESTADO: Record<string, { type: ActionType; label: string; variant: string }[]> = {
+const ACCIONES_POR_ESTADO: Record<string, { type: ActionType; label: string; desc: string; variant: string }[]> = {
   NUEVO: [
-    { type: 'salida', label: 'SALIDA', variant: 'primary' },
+    { type: 'salida', label: 'SALIDA', desc: 'Asignar a oficina destino', variant: 'primary' },
   ],
   ACTIVO: [
-    { type: 'entrada', label: 'ENTRADA', variant: 'warning' },
-    { type: 'transfer', label: 'Transferir', variant: 'secondary' },
-    { type: 'service', label: 'Enviar a Servicio Externo', variant: 'warning' },
+    { type: 'entrada',  label: 'ENTRADA',          desc: 'Retorno temporal a Soporte', variant: 'warning'   },
+    { type: 'transfer', label: 'Transferir',        desc: 'Mover a otra oficina',       variant: 'secondary' },
+    { type: 'service',  label: 'Servicio Externo',  desc: 'Enviar a reparación',        variant: 'warning'   },
   ],
   EN_REPARACION: [
-    { type: 'salida', label: 'SALIDA', variant: 'primary' },
-    { type: 'service', label: 'Enviar a Servicio Externo', variant: 'warning' },
+    { type: 'salida',  label: 'SALIDA',           desc: 'Devolver a su oficina', variant: 'primary' },
+    { type: 'service', label: 'Servicio Externo', desc: 'Enviar a reparación',   variant: 'warning' },
   ],
   EN_DEPOSITO: [
-    { type: 'salida', label: 'SALIDA', variant: 'primary' },
+    { type: 'salida', label: 'SALIDA', desc: 'Asignar a oficina', variant: 'primary' },
   ],
   EN_SERVICIO_EXTERNO: [
-    { type: 'returnService', label: 'Registrar retorno de servicio', variant: 'primary' },
+    { type: 'returnService', label: 'Registrar retorno', desc: 'Confirmar regreso del servicio', variant: 'primary' },
   ],
   PRESTADO: [],
 };
@@ -252,6 +252,14 @@ export default function EquipmentDetailPage() {
   const estadoReal = equipo ? resolveEstado(equipo.estado, equipo.oficina.nombre) : 'ACTIVO';
   const accionesDisponibles = equipo ? (ACCIONES_POR_ESTADO[estadoReal] ?? []) : [];
 
+  // Datos para el bento row
+  const lastAction = historial && historial.length > 0
+    ? [...historial].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())[0]
+    : null;
+  const totalHistorial = historial?.length ?? 0;
+  const totalPrestamos = historial?.filter(h => h.accion === 'PRESTAMO').length ?? 0;
+  const prestamosActivos = totalPrestamos - (historial?.filter(h => h.accion === 'DEVOLUCION').length ?? 0);
+
   if (isLoading) return <div className={styles.loading}>Cargando equipo...</div>;
   if (!equipo) return (
     <div className={styles.notFound}>
@@ -264,53 +272,125 @@ export default function EquipmentDetailPage() {
 
   return (
     <div className={styles.page}>
-      {/* ── Header ─────────────────────────────────────────────────────── */}
-      <div className={styles.header}>
-        <button className={styles.backBtn} onClick={() => navigate('/equipos')}>
-          <ChevronLeft size={16} />
-          Volver
-        </button>
-        <div className={styles.headerInfo}>
-          <h2 className={styles.title}>
-            <span className={styles.titleSerie}>Serie {equipo.serie}</span>
-            <span className={styles.titleMeta}>
-              {equipo.tipoEquipo.nombre}{equipo.modelo ? ` — ${equipo.modelo}` : ''}
-            </span>
-          </h2>
-          <span className={styles.badge} data-color={STATUS_COLOR[estadoReal] || 'neutral'}>
-            {STATUS_LABEL[estadoReal] || estadoReal}
-          </span>
+      {/* ── Hero ──────────────────────────────────────────────────────── */}
+      <div className={styles.hero}>
+        <div className={styles.heroNav}>
+          <button className={styles.backBtn} onClick={() => navigate('/equipos')}>
+            <ChevronLeft size={14} />
+            Volver a equipos
+          </button>
         </div>
-        <button className={styles.editBtn} onClick={() => navigate(`/equipos/${id}/editar`)}>
-          <Pencil size={14} />
-          Editar
-        </button>
+        <div className={styles.heroBody}>
+          <div className={styles.heroIdentity}>
+            <div className={styles.heroIcon}>
+              <Monitor size={22} />
+            </div>
+            <div>
+              <div className={styles.heroTitle}>Serie {equipo.serie}</div>
+              <div className={styles.heroSubtitle}>
+                {equipo.tipoEquipo.nombre}{equipo.template ? ` · ${equipo.template.nombre}` : ''}
+              </div>
+              <div className={styles.heroLocation}>
+                <div className={styles.heroLocationDot} />
+                {equipo.oficina.seccion.ciudad.nombre} · {equipo.oficina.seccion.nombre} · {equipo.oficina.nombre}
+              </div>
+            </div>
+          </div>
+          <div className={styles.heroRight}>
+            <span className={styles.heroBadge} data-color={STATUS_COLOR[estadoReal] || 'neutral'}>
+              {STATUS_LABEL[estadoReal] || estadoReal}
+            </span>
+            <button className={styles.editBtn} onClick={() => navigate(`/equipos/${id}/editar`)}>
+              <Pencil size={14} />
+              Editar
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className={styles.content}>
-        {/* ── Columna izquierda ────────────────────────────────────────── */}
-        <div className={styles.leftCol}>
-          {/* Ficha */}
-          <div className={styles.card}>
-            <h3 className={styles.cardTitle}>Información del Equipo</h3>
-            <dl className={styles.details}>
-              <div className={styles.detailRow}><dt>Tipo</dt><dd>{equipo.tipoEquipo.nombre}</dd></div>
-              {equipo.template && <div className={styles.detailRow}><dt>Modelo</dt><dd>{equipo.template.nombre}</dd></div>}
-              <div className={styles.detailRow}>
-                <dt>Ubicación</dt>
-                <dd>{equipo.oficina.seccion.ciudad.nombre} › {equipo.oficina.seccion.nombre} › {equipo.oficina.nombre}</dd>
-              </div>
-              {equipo.ip && <div className={styles.detailRow}><dt>IP</dt><dd className={styles.mono}>{equipo.ip}</dd></div>}
-              {equipo.observacion && <div className={styles.detailRow}><dt>Observación</dt><dd>{equipo.observacion}</dd></div>}
-              <div className={styles.detailRow}><dt>Registrado</dt><dd>{new Date(equipo.createdAt).toLocaleDateString('es-UY')}</dd></div>
-            </dl>
-          </div>
+      {/* ── Bento Row ─────────────────────────────────────────────────── */}
+      <div className={styles.bentoRow}>
+        <div className={`${styles.bentoCell} ${styles.bentoCellHighlight}`}>
+          <span className={styles.bentoCellLabel}>📍 Ubicación actual</span>
+          <span className={styles.bentoCellValue}>{equipo.oficina.nombre}</span>
+          <span className={styles.bentoCellSub}>
+            {equipo.oficina.seccion.nombre} · {equipo.oficina.seccion.ciudad.nombre}
+          </span>
+        </div>
+        <div className={styles.bentoCell}>
+          <span className={styles.bentoCellLabel}>📋 Última acción</span>
+          <span className={styles.bentoCellValue} style={{ color: lastAction ? `var(--color-${ACCION_COLOR[lastAction.accion] === 'primary' ? 'primary' : ACCION_COLOR[lastAction.accion] === 'neutral' ? 'text-secondary' : ACCION_COLOR[lastAction.accion]})` : undefined }}>
+            {lastAction ? (ACCION_LABEL[lastAction.accion] || lastAction.accion) : '—'}
+          </span>
+          <span className={styles.bentoCellSub}>
+            {lastAction ? new Date(lastAction.fecha).toLocaleDateString('es-UY') : 'Sin registros'}
+          </span>
+        </div>
+        <div className={styles.bentoCell}>
+          <span className={styles.bentoCellLabel}>🔄 Préstamos</span>
+          <span className={styles.bentoCellValue} style={{ color: prestamosActivos > 0 ? 'var(--color-info)' : 'var(--color-text-tertiary)' }}>
+            {prestamosActivos} activo{prestamosActivos !== 1 ? 's' : ''}
+          </span>
+          <span className={styles.bentoCellSub}>{totalPrestamos} histórico{totalPrestamos !== 1 ? 's' : ''}</span>
+        </div>
+        <div className={styles.bentoCell}>
+          <span className={styles.bentoCellLabel}>🛠 Historial</span>
+          <span className={styles.bentoCellValue}>{totalHistorial} acción{totalHistorial !== 1 ? 'es' : ''}</span>
+          <span className={styles.bentoCellSub}>
+            {historial && historial.length > 0
+              ? `desde ${new Date([...historial].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())[0].fecha).getFullYear()}`
+              : 'Sin registros'}
+          </span>
+        </div>
+      </div>
 
-          {/* Acciones */}
-          {accionesDisponibles.length > 0 && (
-            <div className={styles.card}>
+      {/* ── Body ─────────────────────────────────────────────────────── */}
+      <div className={styles.pageBody}>
+        {/* Card: Información del equipo */}
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={styles.cardHeaderBar} style={{ background: 'var(--color-primary)' }} />
+            <h3 className={styles.cardTitle}>Información del equipo</h3>
+          </div>
+          <dl className={styles.details}>
+            <div className={styles.detailRow}><dt>Tipo</dt><dd>{equipo.tipoEquipo.nombre}</dd></div>
+            {equipo.template && <div className={styles.detailRow}><dt>Modelo</dt><dd>{equipo.template.nombre}</dd></div>}
+            <div className={styles.detailRow}>
+              <dt>Ubicación</dt>
+              <dd>{equipo.oficina.seccion.ciudad.nombre} › {equipo.oficina.seccion.nombre} › {equipo.oficina.nombre}</dd>
+            </div>
+            {equipo.ip && <div className={styles.detailRow}><dt>IP</dt><dd className={styles.mono}>{equipo.ip}</dd></div>}
+            {equipo.observacion && <div className={styles.detailRow}><dt>Observación</dt><dd>{equipo.observacion}</dd></div>}
+            <div className={styles.detailRow}><dt>Registrado</dt><dd>{new Date(equipo.createdAt).toLocaleDateString('es-UY')}</dd></div>
+          </dl>
+        </div>
+
+        {/* Notices */}
+        {estadoReal === 'NUEVO' && (
+          <div className={styles.nuevoNotice}>
+            Equipo recién ingresado. Realizá una <strong>SALIDA</strong> para asignarlo a su oficina destino.
+          </div>
+        )}
+        {estadoReal === 'EN_DEPOSITO' && (
+          <div className={styles.bajaNotice}>
+            Equipo en Depósito. Transferilo a una oficina activa para reasignarlo.
+          </div>
+        )}
+        {estadoReal === 'PRESTADO' && (
+          <div className={styles.prestamoNotice}>
+            Equipo en préstamo. Gestioná la devolución desde la sección de Préstamos.
+          </div>
+        )}
+
+        {/* Card: Acciones */}
+        {accionesDisponibles.length > 0 && (
+          <div className={styles.card}>
+            <div className={styles.cardHeader}>
+              <div className={styles.cardHeaderBar} style={{ background: 'var(--color-secondary)' }} />
               <h3 className={styles.cardTitle}>Acciones</h3>
-              <div className={styles.actionButtons}>
+            </div>
+            <div className={styles.cardBody}>
+              <div className={styles.actionsGrid}>
                 {accionesDisponibles.map((a) => {
                   const Icon = ACCION_ICON[a.type];
                   return (
@@ -320,80 +400,75 @@ export default function EquipmentDetailPage() {
                       data-variant={a.variant}
                       onClick={() => openAction(a.type)}
                     >
-                      <Icon size={15} />
-                      {a.label}
+                      <div className={styles.actionBtnIcon}>
+                        <Icon size={15} />
+                      </div>
+                      <div className={styles.actionBtnText}>
+                        <span className={styles.actionBtnName}>{a.label}</span>
+                        <span className={styles.actionBtnDesc}>{a.desc}</span>
+                      </div>
                     </button>
                   );
                 })}
               </div>
             </div>
-          )}
+          </div>
+        )}
 
-          {estadoReal === 'NUEVO' && (
-            <div className={styles.nuevoNotice}>
-              Equipo recién ingresado. Realizá una <strong>SALIDA</strong> para asignarlo a su oficina destino.
-            </div>
-          )}
-          {estadoReal === 'EN_DEPOSITO' && (
-            <div className={styles.bajaNotice}>
-              Equipo en Depósito. Transferilo a una oficina activa para reasignarlo.
-            </div>
-          )}
-          {estadoReal === 'PRESTADO' && (
-            <div className={styles.prestamoNotice}>
-              Equipo en préstamo. Gestioná la devolución desde la sección de Préstamos.
-            </div>
-          )}
-        </div>
-
-        {/* ── Columna derecha: Timeline ────────────────────────────────── */}
+        {/* Card: Historial */}
         <div className={styles.card}>
-          <h3 className={styles.cardTitle}>
-            Historial
-            {historial && <span className={styles.count}>{historial.length} registros</span>}
-          </h3>
-          {loadingHistory ? (
-            <p className={styles.loadingText}>Cargando historial...</p>
-          ) : historial && historial.length > 0 ? (
-            <div className={styles.timeline}>
-              {[...historial].sort((a, b) => {
-                const dateA = new Date(a.fecha).toDateString();
-                const dateB = new Date(b.fecha).toDateString();
-                if (dateA === dateB) {
-                  if (a.accion === 'CREACION') return 1;
-                  if (b.accion === 'CREACION') return -1;
-                }
-                return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
-              }).map((entry, index) => (
-                <div key={entry.id} className={styles.timelineItem} data-last={index === historial.length - 1}>
-                  <div className={styles.timelineDot} data-color={ACCION_COLOR[entry.accion] || 'neutral'} />
-                  <div className={styles.timelineContent}>
-                    <div className={styles.timelineHeader}>
-                      <span className={styles.timelineAccion} data-color={ACCION_COLOR[entry.accion] || 'neutral'}>
-                        {ACCION_LABEL[entry.accion] || entry.accion}
-                      </span>
-                      <span className={styles.timelineFecha}>
-                        {new Date(entry.fecha).toLocaleDateString('es-UY', { day: '2-digit', month: 'short', year: 'numeric' })}
-                      </span>
+          <div className={styles.cardHeader}>
+            <div className={styles.cardHeaderBar} style={{ background: 'var(--color-info)' }} />
+            <h3 className={styles.cardTitle}>
+              Historial de acciones
+              {historial && <span className={styles.count}>{historial.length} registros</span>}
+            </h3>
+          </div>
+          <div className={styles.cardBody}>
+            {loadingHistory ? (
+              <p className={styles.loadingText}>Cargando historial...</p>
+            ) : historial && historial.length > 0 ? (
+              <div className={styles.timeline}>
+                {[...historial].sort((a, b) => {
+                  const dateA = new Date(a.fecha).toDateString();
+                  const dateB = new Date(b.fecha).toDateString();
+                  if (dateA === dateB) {
+                    if (a.accion === 'CREACION') return 1;
+                    if (b.accion === 'CREACION') return -1;
+                  }
+                  return new Date(b.fecha).getTime() - new Date(a.fecha).getTime();
+                }).map((entry, index, arr) => (
+                  <div key={entry.id} className={styles.timelineItem}>
+                    <div className={styles.timelineLine}>
+                      <div className={styles.timelineDot} data-color={ACCION_COLOR[entry.accion] || 'neutral'} />
+                      {index < arr.length - 1 && <div className={styles.timelineConnector} />}
                     </div>
-                    <p className={styles.timelineMotivo}>{entry.motivo}</p>
-                    {(entry.oficinaOrigen || entry.oficinaDestino) && (
-                      <p className={styles.timelineUbicacion}>
-                        {entry.oficinaOrigen && <span>{entry.oficinaOrigen.nombre}</span>}
-                        {entry.oficinaOrigen && entry.oficinaDestino && (
-                          <ArrowRightLeft size={10} />
-                        )}
-                        {entry.oficinaDestino && <span>{entry.oficinaDestino.nombre}</span>}
-                      </p>
-                    )}
-                    <p className={styles.timelineTecnico}>por {entry.usuario.nombre}</p>
+                    <div className={styles.timelineContent}>
+                      <div className={styles.timelineHeader}>
+                        <span className={styles.timelineAccion} data-color={ACCION_COLOR[entry.accion] || 'neutral'}>
+                          {ACCION_LABEL[entry.accion] || entry.accion}
+                        </span>
+                        <span className={styles.timelineFecha}>
+                          {new Date(entry.fecha).toLocaleDateString('es-UY', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        </span>
+                      </div>
+                      <p className={styles.timelineMotivo}>{entry.motivo}</p>
+                      {(entry.oficinaOrigen || entry.oficinaDestino) && (
+                        <p className={styles.timelineUbicacion}>
+                          {entry.oficinaOrigen && <span>{entry.oficinaOrigen.nombre}</span>}
+                          {entry.oficinaOrigen && entry.oficinaDestino && <ArrowRightLeft size={10} />}
+                          {entry.oficinaDestino && <span>{entry.oficinaDestino.nombre}</span>}
+                        </p>
+                      )}
+                      <p className={styles.timelineTecnico}>por {entry.usuario.nombre}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className={styles.emptyText}>Sin historial registrado</p>
-          )}
+                ))}
+              </div>
+            ) : (
+              <p className={styles.emptyText}>Sin historial registrado</p>
+            )}
+          </div>
         </div>
       </div>
 
