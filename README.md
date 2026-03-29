@@ -10,6 +10,7 @@ Intendencia Departamental de Soriano — Uruguay
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Express](https://img.shields.io/badge/Express-5-000000?logo=express&logoColor=white)](https://expressjs.com/)
+[![Vitest](https://img.shields.io/badge/Vitest-tests-6E9F18?logo=vitest&logoColor=white)](https://vitest.dev/)
 
 </div>
 
@@ -26,7 +27,7 @@ Intendencia Departamental de Soriano — Uruguay
 
 ![Dashboard](docs/screenshots/dashboard.png)
 
-*Resumen ejecutivo con contadores en tiempo real, saludo personalizado y feed de actividad reciente con acceso directo a cada equipo.*
+*Resumen ejecutivo con contadores en tiempo real, saludo personalizado según hora del día y feed de actividad reciente con acceso directo a cada equipo.*
 
 </details>
 
@@ -35,7 +36,7 @@ Intendencia Departamental de Soriano — Uruguay
 
 ![Listado de equipos](docs/screenshots/equipment-list.png)
 
-*Tabla completa con búsqueda debounced, filtros en cascada (ciudad → sección → oficina), chips de filtros activos, columnas ordenables y paginación configurable.*
+*Tabla completa con búsqueda debounced, filtros en cascada (ciudad → sección → oficina), chips de filtros activos, columnas ordenables y paginación configurable con selector arriba y abajo.*
 
 </details>
 
@@ -83,6 +84,7 @@ Intendencia Departamental de Soriano — Uruguay
 |--------|-------------|
 | **Inventario** | Búsqueda debounced, filtros en cascada, ordenamiento, paginación configurable |
 | **Estado por ubicación** | El estado del equipo se deriva del nombre de la oficina — sin inconsistencias de DB |
+| **Estado NUEVO** | Equipos recién ingresados quedan en NUEVO hasta ser asignados a una oficina final |
 | **Historial de auditoría** | Toda acción registra motivo, técnico, ubicación origen/destino y timestamp |
 | **Acciones de equipo** | Transferir (SALIDA), enviar a soporte (ENTRADA), servicio externo, baja |
 | **Lógica de acciones** | El tipo de acción en SALIDA se determina automáticamente según el estado del equipo |
@@ -91,8 +93,9 @@ Intendencia Departamental de Soriano — Uruguay
 | **Dashboard en tiempo real** | Contadores e historial se actualizan sin recargar la página tras cada acción |
 | **Plantillas de modelo** | Especificaciones técnicas reutilizables en JSON |
 | **Servicios externos** | Envío a reparación con proveedor, diagnóstico y fecha de retorno |
-| **Usuarios y roles** | ADMIN / TECNICO, reset de contraseña, gestión completa |
-| **Auth JWT** | Access token (15 min) + refresh token (7 días), renovación silenciosa |
+| **Usuarios y roles** | ADMIN / TECNICO, contraseñas temporales aleatorias, cambio forzado en primer login |
+| **Auth JWT** | Access token (15 min) + refresh token (7 días) con **rotación automática** |
+| **Seguridad** | Security headers (X-Frame-Options, CSP, etc.), rutas admin protegidas |
 
 ---
 
@@ -105,12 +108,13 @@ Intendencia Departamental de Soriano — Uruguay
 | **ORM** | Prisma + adapter pg | 7.5 |
 | **Base de datos** | PostgreSQL (Docker) | 17 |
 | **Auth** | JWT + bcryptjs | — |
-| **Validación** | Zod (compartido front/back) | 4.3 |
+| **Validación** | Zod — compartido front/back via `@proseguit/shared` | 4.3 |
 | **Frontend** | React + TypeScript + Vite | 19.2 / 5.9 / 8.0 |
 | **Routing** | React Router | 7.13 |
 | **Estado servidor** | TanStack Query | 5.94 |
-| **UI** | CSS Modules + nesting nativo | — |
+| **UI** | CSS Modules + nesting nativo + custom properties | — |
 | **Íconos** | Lucide React | — |
+| **Tests** | Vitest (40 tests, sin DB) | 4.x |
 | **Dev** | Docker Compose | — |
 
 **Colores institucionales:** Teal `#00A79D` · Navy `#003366`
@@ -125,7 +129,7 @@ Intendencia Departamental de Soriano — Uruguay
 
 ---
 
-## Instalación
+## Desarrollo local
 
 ```bash
 # 1. Clonar el repositorio
@@ -135,20 +139,16 @@ cd PROSEGUIT
 # 2. Instalar todas las dependencias (backend + frontend + shared)
 npm install
 
-# 3. Configurar variables de entorno
-cp .env.example backend/.env
-# Editar backend/.env si es necesario (ver sección Variables de entorno)
-
-# 4. Levantar la base de datos
+# 3. Levantar la base de datos
 npm run db:up
 
-# 5. Aplicar migraciones
+# 4. Aplicar migraciones
 npm run db:migrate
 
-# 6. Cargar usuarios iniciales
-cd backend && npx tsx prisma/seed.ts && cd ..
+# 5. Cargar usuarios iniciales
+npm run db:seed
 
-# 7. Iniciar servidores de desarrollo
+# 6. Iniciar servidores de desarrollo
 npm run dev
 ```
 
@@ -158,7 +158,8 @@ La aplicación estará disponible en:
 |----------|-----|
 | Frontend | http://localhost:5173 |
 | Backend API | http://localhost:3001/api/v1 |
-| Health check | http://localhost:3001/api/v1/health |
+
+> El archivo `backend/.env` ya incluye los valores por defecto para desarrollo — no hace falta configurar nada extra.
 
 ---
 
@@ -170,6 +171,9 @@ npm run dev              # Backend (:3001) + Frontend (:5173) simultáneamente
 npm run dev:backend      # Solo backend
 npm run dev:frontend     # Solo frontend
 
+# Tests (no requiere base de datos)
+npm test                 # Corre los 40 tests del backend (Vitest)
+
 # Base de datos
 npm run db:up            # Levanta PostgreSQL en Docker (puerto 5433)
 npm run db:down          # Detiene PostgreSQL
@@ -180,16 +184,23 @@ npm run db:seed          # Crea usuarios admin (9999) y técnico (7844)
 
 ---
 
-## Variables de entorno
+## Deploy en producción
 
-El archivo `backend/.env` debe contener:
+Para levantar la aplicación en un servidor con Docker:
 
-```env
-DATABASE_URL="postgresql://proseguit:proseguit@localhost:5433/proseguit"
-JWT_SECRET="cambiar-en-produccion"
-JWT_REFRESH_SECRET="cambiar-en-produccion"
-PORT=3001
+```bash
+# 1. Copiar y completar las variables de entorno
+cp .env.production.example .env.production
+# Editar .env.production: POSTGRES_PASSWORD, JWT_SECRET, JWT_REFRESH_SECRET
+
+# 2. Construir y levantar (PostgreSQL + backend + nginx)
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+
+# 3. Cargar usuarios iniciales (solo la primera vez)
+docker compose -f docker-compose.prod.yml exec backend npx tsx prisma/seed.ts
 ```
+
+Las migraciones de base de datos se aplican automáticamente al iniciar. El frontend se sirve desde nginx en el puerto 80 y hace proxy de `/api` al backend.
 
 ---
 
@@ -198,46 +209,50 @@ PORT=3001
 ```
 PROSEGUIT/
 ├── backend/
+│   ├── Dockerfile                         # Imagen de producción (tsx)
+│   ├── vitest.config.ts                   # Config de tests
 │   ├── prisma/
-│   │   ├── schema.prisma              # Modelo de datos (12 modelos, 2 enums)
-│   │   ├── seed.ts                    # Usuarios iniciales
-│   │   ├── migrate-v1.ts              # Migración desde seguit v1
+│   │   ├── schema.prisma                  # Modelo de datos (12 modelos, 2 enums)
+│   │   ├── seed.ts                        # Usuarios iniciales
+│   │   ├── migrate-v1.ts                  # Migración desde seguit v1
 │   │   └── migrations/
-│   │       ├── 20260322153214_init/
-│   │       ├── 20260328173932_add_estado_nuevo/
-│   │       └── 20260328200000_add_asignacion_accion/
-│   ├── prisma.config.ts               # Config Prisma 7 con adapter pg
 │   └── src/
-│       ├── index.ts                   # Punto de entrada Express
-│       ├── config/                    # env.ts
-│       ├── middleware/                # auth, validate, error-handler
+│       ├── index.ts                       # Punto de entrada Express
+│       ├── config/                        # env.ts
+│       ├── middleware/                    # auth, validate, error-handler
 │       └── modules/
-│           ├── auth/
-│           ├── equipment/
-│           ├── locations/
-│           ├── history/
-│           ├── loans/
-│           ├── model-templates/
-│           ├── service-providers/
-│           ├── users/
-│           └── dashboard/
+│           ├── auth/                      # login, refresh, logout
+│           ├── equipment/                 # CRUD + acciones + tests
+│           ├── locations/                 # árbol Ciudad›Sección›Oficina
+│           ├── history/                   # historial global
+│           ├── loans/                     # préstamos
+│           ├── model-templates/           # plantillas de modelo
+│           ├── service-providers/         # proveedores de servicio
+│           ├── users/                     # usuarios + tests
+│           └── dashboard/                 # stats + actividad reciente
 │
 ├── frontend/
+│   ├── Dockerfile                         # Multi-stage: Vite build → nginx
+│   ├── nginx.conf                         # Config nginx (proxy /api + SPA)
 │   └── src/
-│       ├── App.tsx                    # Router con rutas protegidas
+│       ├── App.tsx                        # Router con code splitting (lazy)
 │       ├── lib/
-│       │   ├── api-client.ts          # Fetch con JWT auto-refresh
-│       │   ├── auth-context.tsx       # AuthContext (React 19)
-│       │   ├── equipment-status.ts    # resolveEstado() — estado por nombre de oficina
+│       │   ├── api-client.ts              # Fetch con JWT auto-refresh
+│       │   ├── auth-context.tsx           # AuthContext (React 19)
+│       │   ├── equipment-status.ts        # resolveEstado() — estado por nombre de oficina
+│       │   ├── action-types.ts            # Labels y colores de acciones centralizados
 │       │   └── find-soporte-office.ts
-│       ├── hooks/                     # useEquipment, useLocations, useHistory...
-│       ├── components/layout/         # Sidebar, Header, MainLayout
-│       ├── pages/                     # 12 páginas
-│       └── styles/                    # variables.css, reset.css, globals.css
+│       ├── hooks/                         # useEquipment, useLocations, useHistory...
+│       ├── components/
+│       │   ├── layout/                    # Sidebar, Header, MainLayout
+│       │   └── LocationCascadeSelect.tsx  # Selector Ciudad›Sección›Oficina reutilizable
+│       ├── pages/                         # 12 páginas
+│       └── styles/                        # variables.css, reset.css, globals.css
 │
-├── packages/shared/                   # Tipos, schemas Zod y constantes compartidas
-├── docker-compose.yml
-└── .env.example
+├── packages/shared/                       # Tipos, schemas Zod y constantes compartidas
+├── docker-compose.yml                     # PostgreSQL para desarrollo
+├── docker-compose.prod.yml                # Producción: postgres + backend + nginx
+└── .env.production.example                # Template de variables de entorno para prod
 ```
 
 ---
@@ -257,7 +272,7 @@ Ciudad ──< Seccion ──< Oficina ──< Equipo
 
 **Estados de equipo:** `NUEVO` · `ACTIVO` · `EN_REPARACION` · `EN_DEPOSITO` · `PRESTADO` · `EN_SERVICIO_EXTERNO`
 
-**Tipos de acción:** `CREACION` · `ASIGNACION` · `TRANSFERENCIA` · `ENVIO_SOPORTE` · `RETORNO_SOPORTE` · `PRESTAMO` · `DEVOLUCION` · `CAMBIO_ESTADO` · `ENVIO_SERVICIO_EXTERNO` · `RETORNO_SERVICIO_EXTERNO` · `EDICION`
+**Tipos de acción:** `CREACION` · `ASIGNACION` · `EDICION` · `TRANSFERENCIA` · `ENVIO_SOPORTE` · `RETORNO_SOPORTE` · `PRESTAMO` · `DEVOLUCION` · `CAMBIO_ESTADO` · `ENVIO_SERVICIO_EXTERNO` · `RETORNO_SERVICIO_EXTERNO`
 
 > El campo `estado` en la base de datos puede quedar desactualizado. Siempre se usa `resolveEstado(estado, oficina.nombre)` para mostrar el estado real en la UI.
 
@@ -267,20 +282,20 @@ Ciudad ──< Seccion ──< Oficina ──< Equipo
 
 Base URL: `http://localhost:3001/api/v1`
 
-Todos los endpoints requieren `Authorization: Bearer <token>` excepto `/auth/login` y `/health`.
+Todos los endpoints requieren `Authorization: Bearer <token>` excepto `POST /auth/login`.
 
 | Módulo | Endpoints |
 |--------|-----------|
 | **Auth** | `POST /auth/login` · `POST /auth/refresh` · `POST /auth/logout` |
 | **Equipos** | `GET /equipment` · `POST /equipment` · `GET /equipment/:id` · `PUT /equipment/:id` |
 | **Acciones equipo** | `POST /equipment/:id/transfer` · `/send-to-support` · `/send-to-service` · `/return-from-service` |
-| **Tipos** | `GET /equipment/types` |
-| **Ubicaciones** | `GET /locations/tree` · `POST /locations/cities` · `POST /locations/sections` · `POST /locations/offices` |
+| **Tipos** | `GET /equipment/types` · `GET /equipment/next-serie` |
+| **Ubicaciones** | `GET /locations/tree` · `POST /locations/cities` · `POST /locations/sections` · `POST /locations/offices` · `PUT` de cada uno |
 | **Historial** | `GET /history` · `GET /history/equipment/:id` |
 | **Préstamos** | `GET /loans` · `POST /loans` · `POST /loans/:id/return` |
 | **Plantillas** | `GET/POST /model-templates` · `PUT/DELETE /model-templates/:id` |
 | **Servicios** | `GET/POST /service-providers` · `PUT /service-providers/:id` |
-| **Usuarios** | `GET/POST /users` · `PUT /users/:id` · `POST /users/:id/reset-password` |
+| **Usuarios** | `GET/POST /users` · `PUT /users/:id` · `POST /users/:id/reset-password` · `POST /users/change-password` |
 | **Dashboard** | `GET /dashboard/stats` · `GET /dashboard/recent-activity` |
 
 ---
@@ -315,6 +330,8 @@ El script migra ubicaciones, tipos de equipo, usuarios, funcionarios, servicios 
 | ADMIN | `9999` | `admin123` |
 | TECNICO | `7844` | `7844` |
 
+Al crear nuevos usuarios en la app, el sistema genera una contraseña temporal aleatoria que se muestra una única vez. El usuario debe cambiarla en el primer login.
+
 ---
 
 ## Convenciones del proyecto
@@ -323,8 +340,8 @@ El script migra ubicaciones, tipos de equipo, usuarios, funcionarios, servicios 
 - **React 19**: `use(AuthContext)` en lugar de `useContext()`, `<Context value={}>` sin `.Provider`.
 - **Estado de equipo**: nunca leer el campo `estado` directamente. Usar `resolveEstado(estado, oficina.nombre)`.
 - **Mutaciones**: toda mutación de equipo debe invalidar `['equipment']`, `['history', 'equipment', id]` y `['dashboard']`.
-- **Commit messages**: en inglés con prefijo `feat:`, `fix:`, `docs:`, `refactor:`.
-- **Idioma UI**: Español (Uruguay).
+- **Code splitting**: todas las páginas se cargan con `React.lazy`. Nuevas páginas deben seguir el mismo patrón.
+- **Idioma UI**: Español (Uruguay) — "ficha", "técnico", "préstamo", "ubicación".
 
 ---
 
@@ -332,6 +349,7 @@ El script migra ubicaciones, tipos de equipo, usuarios, funcionarios, servicios 
 
 - [ ] Responsive para mobile y tablet
 - [ ] Subida de imágenes de equipos (campo `urlImage` ya existe en el schema)
+- [ ] Migración con dump actualizado de seguit v1
 
 ---
 
