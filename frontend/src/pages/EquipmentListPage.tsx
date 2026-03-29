@@ -32,27 +32,55 @@ function SortIcon({ col, sortCol, sortDir }: { col: SortCol; sortCol: SortCol | 
 export default function EquipmentListPage() {
   usePageTitle('Equipos');
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const [inputValue, setInputValue] = useState('');
-  const [search, setSearch] = useState('');
+  // inputValue es local para el debounce — se inicializa desde la URL al montar
+  const [inputValue, setInputValue] = useState(searchParams.get('q') ?? '');
 
-  const [estado, setEstado] = useState(searchParams.get('estado') ?? '');
-  const [tipoEquipoId, setTipoEquipoId] = useState<number | undefined>();
-  const [ciudadId, setCiudadId] = useState<number | undefined>();
-  const [seccionId, setSeccionId] = useState<number | undefined>();
-  const [oficinaId, setOficinaId] = useState<number | undefined>();
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(25);
+  // Todo el estado de filtros se lee de la URL
+  const search     = searchParams.get('q') ?? '';
+  const estado     = searchParams.get('estado') ?? '';
+  const tipoEquipoId = searchParams.get('tipo')    ? Number(searchParams.get('tipo'))    : undefined;
+  const ciudadId     = searchParams.get('ciudad')  ? Number(searchParams.get('ciudad'))  : undefined;
+  const seccionId    = searchParams.get('seccion') ? Number(searchParams.get('seccion')) : undefined;
+  const oficinaId    = searchParams.get('oficina') ? Number(searchParams.get('oficina')) : undefined;
+  const page         = Number(searchParams.get('page')  ?? '1');
+  const limit        = Number(searchParams.get('limit') ?? '25');
+  const sortCol      = (searchParams.get('sortBy') as SortCol | null) ?? 'serie';
+  const sortDir      = (searchParams.get('sortDir') as SortDir) ?? 'desc';
 
-  const [sortCol, setSortCol] = useState<SortCol | null>(null);
-  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  // Actualiza uno o varios params; usa replace para no acumular historial en cada cambio de filtro
+  const updateParams = useCallback((updates: Record<string, string | undefined>) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      for (const [key, value] of Object.entries(updates)) {
+        if (value === undefined || value === '') {
+          next.delete(key);
+        } else {
+          next.set(key, value);
+        }
+      }
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
 
-  // Debounce search 300ms
+  // Debounce 300ms.
+  // Condición de guarda: si inputValue ya coincide con la URL no hay nada que hacer.
+  // Esto evita el reset de página tanto en el mount normal como en la doble invocación de StrictMode
+  // (que preserva el valor de los refs entre las dos pasadas, haciendo que isFirstRender no funcione).
   useEffect(() => {
-    const t = setTimeout(() => { setSearch(inputValue); setPage(1); }, 300);
+    if (inputValue === (searchParams.get('q') ?? '')) return;
+    const t = setTimeout(() => {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        if (inputValue) next.set('q', inputValue); else next.delete('q');
+        next.delete('page');
+        return next;
+      }, { replace: true });
+    }, 300);
     return () => clearTimeout(t);
-  }, [inputValue]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [inputValue]); // searchParams y setSearchParams omitidos intencionalmente
 
   const scrollRef = useRef<number | null>(null);
 
@@ -64,17 +92,17 @@ export default function EquipmentListPage() {
     ciudadId,
     seccionId,
     oficinaId,
-    sortBy: sortCol ?? undefined,
-    sortDir: sortCol ? sortDir : undefined,
+    sortBy: sortCol,
+    sortDir: sortDir,
   });
 
-  const { data: types } = useEquipmentTypes();
+  const { data: types }     = useEquipmentTypes();
   const { data: locations } = useLocationTree();
 
   const ciudadSel  = locations?.find((c) => c.id === ciudadId);
   const seccionSel = ciudadSel?.secciones.find((s) => s.id === seccionId);
 
-  // Restaurar scroll cuando el fetch termina (no antes, porque la tabla aún no tiene altura final)
+  // Restaurar scroll cuando el fetch termina
   useEffect(() => {
     if (!isFetching && scrollRef.current !== null) {
       window.scrollTo({ top: scrollRef.current, behavior: 'instant' });
@@ -84,44 +112,31 @@ export default function EquipmentListPage() {
 
   const goToPage = useCallback((n: number) => {
     scrollRef.current = window.scrollY;
-    setPage(n);
-  }, []);
+    updateParams({ page: String(n) });
+  }, [updateParams]);
 
-  function resetPage() { setPage(1); }
-
-  function resetSort() { setSortCol(null); setSortDir('asc'); }
-
-  function handleFilterChange(fn: () => void) {
-    fn();
-    resetSort();
-    resetPage();
+  // Al cambiar filtros: resetea orden y página
+  function handleFilterChange(updates: Record<string, string | undefined>) {
+    updateParams({ ...updates, sortBy: undefined, sortDir: undefined, page: undefined });
   }
 
   function clearAll() {
-    setInputValue(''); setSearch('');
-    setEstado(''); setTipoEquipoId(undefined);
-    setCiudadId(undefined); setSeccionId(undefined); setOficinaId(undefined);
-    resetSort();
-    setPage(1);
+    setInputValue('');
+    setSearchParams({}, { replace: true });
   }
 
   function handleSort(col: SortCol) {
-    if (sortCol === col) {
-      setSortDir((d) => d === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortCol(col);
-      setSortDir('asc');
-    }
-    setPage(1);
+    const newDir = sortCol === col ? (sortDir === 'asc' ? 'desc' : 'asc') : 'asc';
+    updateParams({ sortBy: col, sortDir: newDir, page: undefined });
   }
 
   // Chips de filtros activos
   const chips = [
-    estado       && { key: 'estado',  label: `Estado: ${STATUS_OPTIONS.find((o) => o.value === estado)?.label}`,     clear: () => handleFilterChange(() => setEstado('')) },
-    tipoEquipoId && { key: 'tipo',    label: `Tipo: ${types?.find((t) => t.id === tipoEquipoId)?.nombre}`,           clear: () => handleFilterChange(() => setTipoEquipoId(undefined)) },
-    oficinaId    && { key: 'oficina', label: `Oficina: ${seccionSel?.oficinas.find((o) => o.id === oficinaId)?.nombre}`, clear: () => handleFilterChange(() => setOficinaId(undefined)) },
-    !oficinaId && seccionId && { key: 'seccion', label: `Sección: ${ciudadSel?.secciones.find((s) => s.id === seccionId)?.nombre}`, clear: () => handleFilterChange(() => { setSeccionId(undefined); setOficinaId(undefined); }) },
-    !seccionId && ciudadId  && { key: 'ciudad',  label: `Ciudad: ${locations?.find((c) => c.id === ciudadId)?.nombre}`, clear: () => handleFilterChange(() => { setCiudadId(undefined); setSeccionId(undefined); setOficinaId(undefined); }) },
+    estado       && { key: 'estado',  label: `Estado: ${STATUS_OPTIONS.find((o) => o.value === estado)?.label}`,           clear: () => handleFilterChange({ estado: undefined }) },
+    tipoEquipoId && { key: 'tipo',    label: `Tipo: ${types?.find((t) => t.id === tipoEquipoId)?.nombre}`,                 clear: () => handleFilterChange({ tipo: undefined }) },
+    oficinaId    && { key: 'oficina', label: `Oficina: ${seccionSel?.oficinas.find((o) => o.id === oficinaId)?.nombre}`,   clear: () => handleFilterChange({ oficina: undefined }) },
+    !oficinaId && seccionId && { key: 'seccion', label: `Sección: ${ciudadSel?.secciones.find((s) => s.id === seccionId)?.nombre}`, clear: () => handleFilterChange({ seccion: undefined, oficina: undefined }) },
+    !seccionId && ciudadId  && { key: 'ciudad',  label: `Ciudad: ${locations?.find((c) => c.id === ciudadId)?.nombre}`,   clear: () => handleFilterChange({ ciudad: undefined, seccion: undefined, oficina: undefined }) },
   ].filter(Boolean) as { key: string; label: string; clear: () => void }[];
 
   const total      = data?.pagination.total ?? 0;
@@ -156,7 +171,7 @@ export default function EquipmentListPage() {
         </span>
         <select
           value={limit}
-          onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
+          onChange={(e) => updateParams({ limit: e.target.value, page: undefined })}
           className={styles.pageSizeSelect}
         >
           {PAGE_SIZES.map((s) => (
@@ -205,7 +220,7 @@ export default function EquipmentListPage() {
               className={styles.searchInput}
             />
             {inputValue && (
-              <button className={styles.searchClear} onClick={() => { setInputValue(''); setSearch(''); setPage(1); }}>
+              <button className={styles.searchClear} onClick={() => { setInputValue(''); updateParams({ q: undefined, page: undefined }); }}>
                 <X size={14} />
               </button>
             )}
@@ -218,13 +233,13 @@ export default function EquipmentListPage() {
 
         {/* Fila 2: filtros en cascada */}
         <div className={styles.filterRow}>
-          <select value={estado} onChange={(e) => handleFilterChange(() => setEstado(e.target.value))} className={styles.select}>
+          <select value={estado} onChange={(e) => handleFilterChange({ estado: e.target.value || undefined })} className={styles.select}>
             {STATUS_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
 
           <select
             value={ciudadId ?? ''}
-            onChange={(e) => handleFilterChange(() => { setCiudadId(e.target.value ? Number(e.target.value) : undefined); setSeccionId(undefined); setOficinaId(undefined); })}
+            onChange={(e) => handleFilterChange({ ciudad: e.target.value || undefined, seccion: undefined, oficina: undefined })}
             className={styles.select}
           >
             <option value="">Todas las ciudades</option>
@@ -234,7 +249,7 @@ export default function EquipmentListPage() {
           {ciudadId && (
             <select
               value={seccionId ?? ''}
-              onChange={(e) => handleFilterChange(() => { setSeccionId(e.target.value ? Number(e.target.value) : undefined); setOficinaId(undefined); })}
+              onChange={(e) => handleFilterChange({ seccion: e.target.value || undefined, oficina: undefined })}
               className={styles.select}
             >
               <option value="">Todas las secciones</option>
@@ -245,7 +260,7 @@ export default function EquipmentListPage() {
           {seccionId && (
             <select
               value={oficinaId ?? ''}
-              onChange={(e) => handleFilterChange(() => setOficinaId(e.target.value ? Number(e.target.value) : undefined))}
+              onChange={(e) => handleFilterChange({ oficina: e.target.value || undefined })}
               className={styles.select}
             >
               <option value="">Todas las oficinas</option>
@@ -255,7 +270,7 @@ export default function EquipmentListPage() {
 
           <select
             value={tipoEquipoId ?? ''}
-            onChange={(e) => handleFilterChange(() => setTipoEquipoId(e.target.value ? Number(e.target.value) : undefined))}
+            onChange={(e) => handleFilterChange({ tipo: e.target.value || undefined })}
             className={styles.select}
           >
             <option value="">Todos los tipos</option>

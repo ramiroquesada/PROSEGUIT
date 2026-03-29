@@ -21,7 +21,7 @@ const upload = multer({
     destination: UPLOADS_DIR,
     filename: (req, file, cb) => {
       const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
-      cb(null, `${req.params.id}${ext}`);
+      cb(null, `${req.params.id}_${Date.now()}${ext}`);
     },
   }),
   limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
@@ -59,6 +59,7 @@ router.post('/:id/transfer', validate(transferEquipmentSchema), controller.trans
 router.post('/:id/send-to-support', validate(sendToSupportExtSchema), controller.sendToSupportHandler);
 router.post('/:id/send-to-service', validate(sendToServiceSchema), controller.sendToServiceHandler);
 router.post('/:id/return-from-service', validate(returnFromServiceSchema), controller.returnFromServiceHandler);
-router.post('/:id/image', upload.single('image'), controller.uploadImageHandler);
+router.post('/:id/images', upload.single('image'), controller.uploadImageHandler);
+router.delete('/:id/images/:imageId', controller.deleteImageHandler);
 
 export default router;

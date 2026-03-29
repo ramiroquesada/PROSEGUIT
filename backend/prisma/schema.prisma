@@ -108,7 +108,6 @@ model Equipo {
   fechaAdquisicion DateTime?      @map("fecha_adquisicion")
   nroInventario    String?        @map("nro_inventario") @db.VarChar(100)
   garantiaHasta    DateTime?      @map("garantia_hasta")
-  urlImage         String?        @map("url_image") @db.VarChar(500)
   observacion      String?        @db.Text
   especificaciones Json           @default("{}") @db.JsonB
   v1Id             Int?           @map("v1_id")
@@ -116,6 +115,7 @@ model Equipo {
   historial      Historial[]
   prestamos      Prestamo[]
   enviosServicio EnvioServicio[]
+  imagenes       EquipoImagen[]
   createdAt      DateTime        @default(now()) @map("created_at")
   updatedAt      DateTime        @updatedAt @map("updated_at")
 
@@ -123,6 +123,17 @@ model Equipo {
   @@index([oficinaId])
   @@index([estado])
   @@map("equipo")
+}
+
+model EquipoImagen {
+  id        Int      @id @default(autoincrement())
+  equipoId  Int      @map("equipo_id")
+  equipo    Equipo   @relation(fields: [equipoId], references: [id], onDelete: Cascade)
+  url       String   @db.VarChar(500)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([equipoId])
+  @@map("equipo_imagen")
 }
 
 // ==========================================

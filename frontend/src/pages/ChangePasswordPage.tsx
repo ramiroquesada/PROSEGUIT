@@ -8,7 +8,7 @@ import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function ChangePasswordPage() {
   usePageTitle('Cambiar contraseña');
-  const { user, logout } = use(AuthContext)!;
+  const { user, logout, updateUser } = use(AuthContext)!;
   const navigate = useNavigate();
   const mutation = useChangePassword();
 
@@ -36,6 +36,7 @@ export default function ChangePasswordPage() {
 
     try {
       await mutation.mutateAsync({ currentPassword: form.currentPassword, newPassword: form.newPassword });
+      updateUser({ forcePasswordChange: false });
       setSuccess(true);
       setTimeout(() => navigate('/'), 2000);
     } catch (err: any) {

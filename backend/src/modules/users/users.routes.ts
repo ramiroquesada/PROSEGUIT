@@ -16,6 +16,9 @@ const updateSchema = createUserSchema.partial().extend({
 // Cambiar contraseña propia (cualquier usuario autenticado)
 router.post('/change-password', validate(changePasswordSchema), controller.changePasswordHandler);
 
+// Ver propio usuario (cualquier usuario autenticado)
+router.get('/me', controller.getMeHandler);
+
 // CRUD usuarios (solo admin)
 router.get('/', adminOnly, controller.listHandler);
 router.get('/:id', adminOnly, controller.getByIdHandler);

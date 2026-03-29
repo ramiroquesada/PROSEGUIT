@@ -93,7 +93,8 @@ Intendencia Departamental de Soriano — Uruguay
 | **Dashboard en tiempo real** | Contadores e historial se actualizan sin recargar la página tras cada acción |
 | **Plantillas de modelo** | Especificaciones técnicas reutilizables en JSON |
 | **Servicios externos** | Envío a reparación con proveedor, diagnóstico y fecha de retorno |
-| **Usuarios y roles** | ADMIN / TECNICO, contraseñas temporales aleatorias, cambio forzado en primer login |
+| **Usuarios y roles** | ADMIN gestiona todos los usuarios; TECNICO gestiona ubicaciones, plantillas y su propio usuario |
+| **Fotos de equipos** | Galería de imágenes múltiples por equipo, subida directa desde móvil o escritorio |
 | **Auth JWT** | Access token (15 min) + refresh token (7 días) con **rotación automática** |
 | **Seguridad** | Security headers (X-Frame-Options, CSP, etc.), rutas admin protegidas |
 
@@ -289,13 +290,14 @@ Todos los endpoints requieren `Authorization: Bearer <token>` excepto `POST /aut
 | **Auth** | `POST /auth/login` · `POST /auth/refresh` · `POST /auth/logout` |
 | **Equipos** | `GET /equipment` · `POST /equipment` · `GET /equipment/:id` · `PUT /equipment/:id` |
 | **Acciones equipo** | `POST /equipment/:id/transfer` · `/send-to-support` · `/send-to-service` · `/return-from-service` |
+| **Fotos** | `POST /equipment/:id/images` · `DELETE /equipment/:id/images/:imageId` |
 | **Tipos** | `GET /equipment/types` · `GET /equipment/next-serie` |
-| **Ubicaciones** | `GET /locations/tree` · `POST /locations/cities` · `POST /locations/sections` · `POST /locations/offices` · `PUT` de cada uno |
+| **Ubicaciones** | `GET /locations/tree` · `POST/PUT/DELETE /locations/cities` · `/sections` · `/offices` |
 | **Historial** | `GET /history` · `GET /history/equipment/:id` |
 | **Préstamos** | `GET /loans` · `POST /loans` · `POST /loans/:id/return` |
 | **Plantillas** | `GET/POST /model-templates` · `PUT/DELETE /model-templates/:id` |
 | **Servicios** | `GET/POST /service-providers` · `PUT /service-providers/:id` |
-| **Usuarios** | `GET/POST /users` · `PUT /users/:id` · `POST /users/:id/reset-password` · `POST /users/change-password` |
+| **Usuarios** | `GET/POST /users` · `GET /users/me` · `PUT /users/:id` · `POST /users/:id/reset-password` · `POST /users/change-password` |
 | **Dashboard** | `GET /dashboard/stats` · `GET /dashboard/recent-activity` |
 
 ---
@@ -347,9 +349,8 @@ Al crear nuevos usuarios en la app, el sistema genera una contraseña temporal a
 
 ## Pendiente
 
-- [ ] Responsive para mobile y tablet
-- [ ] Subida de imágenes de equipos (campo `urlImage` ya existe en el schema)
 - [ ] Migración con dump actualizado de seguit v1
+- [ ] Mejoras de fotos: lightbox, descripción por imagen, soft-delete con registro en historial
 
 ---
 

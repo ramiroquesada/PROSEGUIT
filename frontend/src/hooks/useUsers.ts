@@ -21,6 +21,14 @@ export function useUsers() {
   });
 }
 
+export function useCurrentUser() {
+  return useQuery({
+    queryKey: ['users', 'me'],
+    queryFn: () => api.get<Usuario>('/users/me'),
+    staleTime: 60_000,
+  });
+}
+
 export function useCreateUser() {
   const qc = useQueryClient();
   return useMutation({

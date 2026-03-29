@@ -14,6 +14,7 @@ interface AuthState {
   isAuthenticated: boolean;
   login: (ficha: number, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateUser: (patch: Partial<User>) => void;
 }
 
 export const AuthContext = createContext<AuthState | null>(null);
@@ -34,6 +35,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     api.setTokens(data.accessToken, data.refreshToken);
     localStorage.setItem('user', JSON.stringify(data.usuario));
     setUser(data.usuario);
+  }, []);
+
+  const updateUser = useCallback((patch: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, ...patch };
+      localStorage.setItem('user', JSON.stringify(updated));
+      return updated;
+    });
   }, []);
 
   const logout = useCallback(async () => {
@@ -65,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: user !== null,
       login,
       logout,
+      updateUser,
     }}>
       {children}
     </AuthContext>

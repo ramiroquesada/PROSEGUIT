@@ -148,6 +148,7 @@ export async function getEquipmentById(id: number) {
         },
       },
       template: true,
+      imagenes: { orderBy: { createdAt: 'asc' } },
       historial: {
         include: {
           usuario: { select: { nombre: true, ficha: true } },
@@ -178,7 +179,6 @@ export async function createEquipment(data: {
   fechaAdquisicion?: Date | null;
   nroInventario?: string;
   garantiaHasta?: Date | null;
-  urlImage?: string;
   observacion?: string;
   especificaciones?: Prisma.InputJsonValue;
 }, usuarioId: number) {
@@ -241,7 +241,6 @@ export async function updateEquipment(id: number, data: {
   fechaAdquisicion?: Date | null;
   nroInventario?: string;
   garantiaHasta?: Date | null;
-  urlImage?: string;
   observacion?: string;
   especificaciones?: Prisma.InputJsonValue;
   motivo: string;
@@ -474,23 +473,29 @@ export async function getNextSerie(): Promise<number> {
   return (result._max.serie ?? 0) + 1;
 }
 
-/** Guarda la imagen subida y actualiza urlImage en DB */
-export async function saveEquipmentImage(id: number, uploadedFilePath: string): Promise<string> {
-  const equipo = await prisma.equipo.findUnique({ where: { id } });
+/** Agrega una nueva imagen al equipo */
+export async function saveEquipmentImage(equipoId: number, uploadedFilePath: string) {
+  const equipo = await prisma.equipo.findUnique({ where: { id: equipoId } });
   if (!equipo) {
     await unlink(uploadedFilePath).catch(() => {});
     throw new AppError(404, 'Equipo no encontrado');
   }
 
-  // Eliminar imagen anterior si era un archivo local
-  if (equipo.urlImage?.startsWith('/uploads/')) {
-    const oldPath = path.join(process.cwd(), equipo.urlImage.slice(1));
-    await unlink(oldPath).catch(() => {});
+  const filename = path.basename(uploadedFilePath);
+  const url = `/uploads/equipment/${filename}`;
+
+  const imagen = await prisma.equipoImagen.create({ data: { equipoId, url } });
+  return imagen;
+}
+
+/** Elimina una imagen del equipo */
+export async function deleteEquipmentImage(equipoId: number, imageId: number) {
+  const imagen = await prisma.equipoImagen.findFirst({ where: { id: imageId, equipoId } });
+  if (!imagen) throw new AppError(404, 'Imagen no encontrada');
+
+  if (imagen.url.startsWith('/uploads/')) {
+    await unlink(path.join(process.cwd(), imagen.url.slice(1))).catch(() => {});
   }
 
-  const filename = path.basename(uploadedFilePath);
-  const urlImage = `/uploads/equipment/${filename}`;
-
-  await prisma.equipo.update({ where: { id }, data: { urlImage } });
-  return urlImage;
+  await prisma.equipoImagen.delete({ where: { id: imageId } });
 }

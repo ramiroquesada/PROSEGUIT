@@ -69,7 +69,7 @@ interface Equipment {
   nroInventario: string | null;
   garantiaHasta: string | null;
   observacion: string | null;
-  urlImage: string | null;
+  imagenes: { id: number; url: string; createdAt: string }[];
   tipoEquipo: { id: number; nombre: string; icono: string | null };
   oficina: {
     id: number;
@@ -144,10 +144,21 @@ export function useUploadEquipmentImage() {
     mutationFn: ({ id, file }: { id: number; file: File }) => {
       const formData = new FormData();
       formData.append('image', file);
-      return api.upload<{ urlImage: string }>(`/equipment/${id}/image`, formData);
+      return api.upload<{ imagen: { id: number; url: string; createdAt: string } }>(`/equipment/${id}/images`, formData);
     },
     onSuccess: (_data, { id }) => {
       qc.invalidateQueries({ queryKey: ['equipment', id] });
+    },
+  });
+}
+
+export function useDeleteEquipmentImage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ equipoId, imageId }: { equipoId: number; imageId: number }) =>
+      api.delete(`/equipment/${equipoId}/images/${imageId}`),
+    onSuccess: (_data, { equipoId }) => {
+      qc.invalidateQueries({ queryKey: ['equipment', equipoId] });
     },
   });
 }

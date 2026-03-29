@@ -378,9 +378,15 @@ docker compose -f docker-compose.prod.yml logs -f frontend   # logs de nginx
 ## Pendiente / TODO
 
 - [ ] **Migración de datos** con el dump actualizado de seguit v1 (traído de la oficina)
-- [ ] Responsive completo para mobile/tablet
-- [ ] Subida de imágenes de equipos (campo `urlImage` ya existe en el schema)
-- [ ] Seguir con el rediseño visual sección por sección (en progreso)
+- [ ] **Mejoras de fotos de equipos** — las fotos múltiples ya funcionan; pendiente:
+  - Lightbox (click en imagen la muestra ampliada)
+  - Descripción por foto (texto opcional al subir, editable después)
+  - Soft-delete (ocultar sin borrar de DB, mantener referencia histórica)
+  - Registro en historial al agregar/eliminar foto (`FOTO_AGREGADA`, `FOTO_ELIMINADA`)
+  - Nota: las columnas `descripcion` y `deleted_at` en `equipo_imagen` y los enum values en la DB **ya existen** — faltan schema.prisma + prisma generate + backend + frontend
 - [x] **Tests** — backend service layer: `equipment.service`, `auth.service`, `users.service` (40 tests con Vitest, sin DB)
 - [x] **Alinear `@proseguit/shared`** — serie como `number`, enums corregidos, schemas compartidos en backend
 - [x] **Configuración de producción** — `backend/Dockerfile`, `frontend/Dockerfile`, `docker-compose.prod.yml`, `.env.production.example`
+- [x] **Responsive completo** — mobile/tablet implementado
+- [x] **Fotos de equipos** — subida múltiple, galería en detalle del equipo
+- [x] **Permisos TECNICO** — técnicos pueden gestionar ubicaciones y plantillas; panel de usuario propio con cambio de contraseña

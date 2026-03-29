@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api/v1';
+const API_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
 interface RequestOptions extends RequestInit {
   skipAuth?: boolean;
@@ -7,6 +7,7 @@ interface RequestOptions extends RequestInit {
 class ApiClient {
   private accessToken: string | null = null;
   private refreshToken: string | null = null;
+  private refreshPromise: Promise<boolean> | null = null;
 
   constructor() {
     this.accessToken = localStorage.getItem('accessToken');
@@ -64,7 +65,15 @@ class ApiClient {
     return response.json();
   }
 
-  private async tryRefresh(): Promise<boolean> {
+  private tryRefresh(): Promise<boolean> {
+    if (this.refreshPromise) return this.refreshPromise;
+    this.refreshPromise = this.doRefresh().finally(() => {
+      this.refreshPromise = null;
+    });
+    return this.refreshPromise;
+  }
+
+  private async doRefresh(): Promise<boolean> {
     try {
       const res = await fetch(`${API_URL}/auth/refresh`, {
         method: 'POST',

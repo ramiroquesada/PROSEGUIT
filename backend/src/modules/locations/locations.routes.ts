@@ -16,18 +16,18 @@ const moveSectionSchema = z.object({ ciudadId: z.number().int().positive() });
 
 router.get('/tree', controller.treeHandler);
 
-router.post('/cities', adminOnly, validate(nameSchema), controller.createCityHandler);
-router.put('/cities/:id', adminOnly, validate(nameSchema), controller.updateCityHandler);
-router.delete('/cities/:id', adminOnly, controller.deleteCityHandler);
+router.post('/cities', validate(nameSchema), controller.createCityHandler);
+router.put('/cities/:id', validate(nameSchema), controller.updateCityHandler);
+router.delete('/cities/:id', controller.deleteCityHandler);
 
-router.post('/sections', adminOnly, validate(sectionSchema), controller.createSectionHandler);
-router.put('/sections/:id', adminOnly, validate(nameSchema), controller.updateSectionHandler);
-router.delete('/sections/:id', adminOnly, controller.deleteSectionHandler);
-router.patch('/sections/:id/move', adminOnly, validate(moveSectionSchema), controller.moveSectionHandler);
+router.post('/sections', validate(sectionSchema), controller.createSectionHandler);
+router.put('/sections/:id', validate(nameSchema), controller.updateSectionHandler);
+router.delete('/sections/:id', controller.deleteSectionHandler);
+router.patch('/sections/:id/move', validate(moveSectionSchema), controller.moveSectionHandler);
 
-router.post('/offices', adminOnly, validate(officeSchema), controller.createOfficeHandler);
-router.put('/offices/:id', adminOnly, validate(nameSchema), controller.updateOfficeHandler);
-router.delete('/offices/:id', adminOnly, controller.deleteOfficeHandler);
-router.patch('/offices/:id/move', adminOnly, validate(moveOfficeSchema), controller.moveOfficeHandler);
+router.post('/offices', validate(officeSchema), controller.createOfficeHandler);
+router.put('/offices/:id', validate(nameSchema), controller.updateOfficeHandler);
+router.delete('/offices/:id', controller.deleteOfficeHandler);
+router.patch('/offices/:id/move', validate(moveOfficeSchema), controller.moveOfficeHandler);
 
 export default router;

@@ -108,7 +108,7 @@ export async function resetPassword(id: number) {
   const user = await prisma.usuario.findUnique({ where: { id } });
   if (!user) throw new AppError(404, 'Usuario no encontrado');
 
-  const tempPassword = generateTempPassword();
+  const tempPassword = String(user.ficha);
   const passwordHash = await bcrypt.hash(tempPassword, 12);
 
   await prisma.usuario.update({

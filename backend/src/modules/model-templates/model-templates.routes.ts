@@ -19,8 +19,8 @@ const updateSchema = createSchema.partial();
 
 router.get('/', controller.listHandler);
 router.get('/:id', controller.getByIdHandler);
-router.post('/', adminOnly, validate(createSchema), controller.createHandler);
-router.put('/:id', adminOnly, validate(updateSchema), controller.updateHandler);
-router.delete('/:id', adminOnly, controller.deleteHandler);
+router.post('/', validate(createSchema), controller.createHandler);
+router.put('/:id', validate(updateSchema), controller.updateHandler);
+router.delete('/:id', controller.deleteHandler);
 
 export default router;

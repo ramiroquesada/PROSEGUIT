@@ -1,12 +1,12 @@
 import { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { useEquipmentDetail, useTransferEquipment, useSendToSupport, useSendToService, useReturnFromService, useUploadEquipmentImage } from '../hooks/useEquipment';
+import { useEquipmentDetail, useTransferEquipment, useSendToSupport, useSendToService, useReturnFromService, useUploadEquipmentImage, useDeleteEquipmentImage } from '../hooks/useEquipment';
 import { resolveEstado, STATUS_LABEL, STATUS_COLOR } from '../lib/equipment-status';
 import { useEquipmentHistory } from '../hooks/useHistory';
 import { useLocationTree } from '../hooks/useLocations';
 import { useServiceProviders } from '../hooks/useLoans';
 import { ACCION_LABEL, ACCION_COLOR } from '../lib/action-types';
-import { ArrowRightLeft, Building2, RotateCcw, Pencil, ChevronLeft, LogOut, LogIn, Monitor, Camera } from 'lucide-react';
+import { ArrowRightLeft, Building2, RotateCcw, Pencil, ChevronLeft, LogOut, LogIn, Monitor, Camera, Trash2, Plus } from 'lucide-react';
 import { findSoporteOffice } from '../lib/find-soporte-office';
 import LocationCascadeSelect from '../components/LocationCascadeSelect';
 import styles from './EquipmentDetailPage.module.css';
@@ -123,6 +123,7 @@ export default function EquipmentDetailPage() {
   const serviceMutation = useSendToService();
   const returnServiceMutation = useReturnFromService();
   const uploadImageMutation = useUploadEquipmentImage();
+  const deleteImageMutation = useDeleteEquipmentImage();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [action, setAction] = useState<ActionState | null>(null);
@@ -225,7 +226,7 @@ export default function EquipmentDetailPage() {
   if (!equipo) return (
     <div className={styles.notFound}>
       <h2>Equipo no encontrado</h2>
-      <button onClick={() => navigate('/equipos')} className={styles.backBtn}>← Volver al listado</button>
+      <button onClick={() => navigate(-1)} className={styles.backBtn}>← Volver al listado</button>
     </div>
   );
 
@@ -236,7 +237,7 @@ export default function EquipmentDetailPage() {
       {/* ── Hero ──────────────────────────────────────────────────────── */}
       <div className={styles.hero}>
         <div className={styles.heroNav}>
-          <button className={styles.backBtn} onClick={() => navigate('/equipos')}>
+          <button className={styles.backBtn} onClick={() => navigate(-1)}>
             <ChevronLeft size={14} />
             Volver a equipos
           </button>
@@ -345,7 +346,7 @@ export default function EquipmentDetailPage() {
             <div className={styles.detailRow}><dt>Registrado</dt><dd>{new Date(equipo.createdAt).toLocaleDateString('es-UY')}</dd></div>
           </dl>
 
-          {/* Imagen del equipo */}
+          {/* Fotos del equipo */}
           <div className={styles.imageSection}>
             <input
               ref={fileInputRef}
@@ -355,30 +356,38 @@ export default function EquipmentDetailPage() {
               className={styles.imageInput}
               onChange={handleImageChange}
             />
-            {equipo.urlImage ? (
-              <div className={styles.imageWrapper}>
-                <img
-                  src={equipo.urlImage}
-                  alt={`Equipo serie ${equipo.serie}`}
-                  className={styles.imagePreview}
-                />
+            {(equipo.imagenes.length > 0 || uploadImageMutation.isPending) && (
+              <div className={styles.imageGallery}>
+                {equipo.imagenes.map((img) => (
+                  <div key={img.id} className={styles.imageTile}>
+                    <img src={img.url} alt={`Equipo serie ${equipo.serie}`} className={styles.imageTileImg} />
+                    <button
+                      className={styles.imageDeleteBtn}
+                      onClick={() => deleteImageMutation.mutate({ equipoId, imageId: img.id })}
+                      disabled={deleteImageMutation.isPending}
+                      title="Eliminar foto"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ))}
                 <button
-                  className={styles.imageChangeBtn}
+                  className={styles.imageAddTile}
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploadImageMutation.isPending}
                 >
-                  <Camera size={13} />
-                  {uploadImageMutation.isPending ? 'Subiendo...' : 'Cambiar foto'}
+                  {uploadImageMutation.isPending ? <Camera size={20} /> : <Plus size={20} />}
+                  <span>{uploadImageMutation.isPending ? 'Subiendo...' : 'Agregar'}</span>
                 </button>
               </div>
-            ) : (
+            )}
+            {equipo.imagenes.length === 0 && !uploadImageMutation.isPending && (
               <button
                 className={styles.imagePlaceholder}
                 onClick={() => fileInputRef.current?.click()}
-                disabled={uploadImageMutation.isPending}
               >
                 <Camera size={20} />
-                <span>{uploadImageMutation.isPending ? 'Subiendo...' : 'Agregar foto del equipo'}</span>
+                <span>Agregar foto del equipo</span>
               </button>
             )}
             {uploadImageMutation.isError && (
