@@ -81,6 +81,11 @@ class ApiClient {
       const data = await res.json();
       this.accessToken = data.accessToken;
       localStorage.setItem('accessToken', data.accessToken);
+      // Guardar el nuevo refresh token (rotación)
+      if (data.refreshToken) {
+        this.refreshToken = data.refreshToken;
+        localStorage.setItem('refreshToken', data.refreshToken);
+      }
       return true;
     } catch {
       this.clearTokens();

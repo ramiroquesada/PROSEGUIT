@@ -155,6 +155,8 @@ model Historial {
   metadata        Json       @default("{}") @db.JsonB
 
   @@index([equipoId])
+  @@index([usuarioId])
+  @@index([accion])
   @@index([fecha(sort: Desc)])
   @@map("historial")
 }
@@ -183,6 +185,8 @@ model Prestamo {
   activo            Boolean      @default(true)
   createdAt         DateTime     @default(now()) @map("created_at")
 
+  @@index([equipoId])
+  @@index([activo])
   @@map("prestamo")
 }
 
