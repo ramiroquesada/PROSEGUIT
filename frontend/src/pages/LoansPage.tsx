@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useLoans, useCreateLoan, useReturnLoan } from '../hooks/useLoans';
 import { useLocationTree } from '../hooks/useLocations';
+import { api } from '../lib/api-client';
 import styles from './LoansPage.module.css';
 import { usePageTitle } from '../hooks/usePageTitle';
 
@@ -68,11 +69,11 @@ export default function LoansPage() {
 
     // Necesitamos el ID del equipo por serie — buscamos via API
     try {
-      const result = await fetch(`/api/v1/equipment?search=${serie}&limit=5`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
-      }).then((r) => r.json());
+      const result = await api.get<{
+        data: { id: number; serie: number; estado: string }[];
+      }>(`/equipment?search=${serie}&limit=5`);
 
-      const equipo = result.data?.find((e: any) => e.serie === serie);
+      const equipo = result.data?.find((e) => e.serie === serie);
       if (!equipo) { setModalError(`No se encontró ningún equipo con serie ${serie}`); return; }
       if (equipo.estado === 'PRESTADO') { setModalError('El equipo ya está en préstamo'); return; }
 

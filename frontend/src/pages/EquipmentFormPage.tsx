@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEquipmentDetail, useEquipmentTypes, useNextSerie } from '../hooks/useEquipment';
-import { useLocationTree, useCreateCity, useCreateSection, useCreateOffice } from '../hooks/useLocations';
+import { useLocationTree } from '../hooks/useLocations';
 import { api } from '../lib/api-client';
 import { findSoporteOffice } from '../lib/find-soporte-office';
+import LocationCascadeSelect from '../components/LocationCascadeSelect';
 import styles from './EquipmentFormPage.module.css';
 import { usePageTitle } from '../hooks/usePageTitle';
 
@@ -34,46 +35,6 @@ export default function EquipmentFormPage() {
   });
 
   const [error, setError] = useState('');
-
-  // Creación inline de ubicaciones
-  const [creating, setCreating] = useState<null | 'ciudad' | 'seccion' | 'oficina'>(null);
-  const [newNombre, setNewNombre] = useState('');
-
-  const createCity = useCreateCity();
-  const createSection = useCreateSection();
-  const createOffice = useCreateOffice();
-
-  async function handleCreateLocation(type: 'ciudad' | 'seccion' | 'oficina') {
-    const nombre = newNombre.trim();
-    if (!nombre) return;
-    try {
-      if (type === 'ciudad') {
-        const city = await createCity.mutateAsync(nombre);
-        setForm((p) => ({ ...p, ciudadId: String(city.id), seccionId: '', oficinaId: '' }));
-      } else if (type === 'seccion') {
-        const sec = await createSection.mutateAsync({ nombre, ciudadId: Number(form.ciudadId) });
-        setForm((p) => ({ ...p, seccionId: String(sec.id), oficinaId: '' }));
-      } else {
-        const off = await createOffice.mutateAsync({ nombre, seccionId: Number(form.seccionId) });
-        setForm((p) => ({ ...p, oficinaId: String(off.id) }));
-      }
-      setCreating(null);
-      setNewNombre('');
-    } catch (err: any) {
-      setError(err?.message || 'Error al crear la ubicación');
-    }
-  }
-
-  function handleInlineKeyDown(e: React.KeyboardEvent, type: 'ciudad' | 'seccion' | 'oficina') {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleCreateLocation(type);
-    }
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      setCreating(null);
-    }
-  }
 
   // Prellenar al editar
   useEffect(() => {
@@ -137,18 +98,9 @@ export default function EquipmentFormPage() {
     },
   });
 
-  // Cascada de selects de ubicación
-  const ciudadSeleccionada = locations?.find((c) => c.id === Number(form.ciudadId));
-  const seccionSeleccionada = ciudadSeleccionada?.secciones.find((s) => s.id === Number(form.seccionId));
-
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     const { name, value } = e.target;
-    setForm((prev) => {
-      const next = { ...prev, [name]: value };
-      if (name === 'ciudadId') { next.seccionId = ''; next.oficinaId = ''; }
-      if (name === 'seccionId') { next.oficinaId = ''; }
-      return next;
-    });
+    setForm((prev) => ({ ...prev, [name]: value }));
     setError('');
   }
 
@@ -253,73 +205,12 @@ export default function EquipmentFormPage() {
         <div className={styles.section}>
           <h3 className={styles.sectionTitle}>Ubicación *</h3>
 
-          <div className={styles.grid3}>
-            {/* Ciudad */}
-            <div className={styles.field}>
-              <div className={styles.labelRow}>
-                <label className={styles.label}>Ciudad</label>
-                {creating !== 'ciudad' && (
-                  <button type="button" className={styles.newBtn} onClick={() => { setCreating('ciudad'); setNewNombre(''); }}>+ Nueva</button>
-                )}
-              </div>
-              {creating === 'ciudad' ? (
-                <div className={styles.inlineCreate}>
-                  <input autoFocus className={styles.input} value={newNombre} onChange={(e) => setNewNombre(e.target.value)} placeholder="Nombre de la ciudad" onKeyDown={(e) => handleInlineKeyDown(e, 'ciudad')} />
-                  <button type="button" className={styles.inlineConfirm} onClick={() => handleCreateLocation('ciudad')} disabled={createCity.isPending}>✓</button>
-                  <button type="button" className={styles.inlineCancel} onClick={() => setCreating(null)}>✕</button>
-                </div>
-              ) : (
-                <select name="ciudadId" value={form.ciudadId} onChange={handleChange} className={styles.select} required>
-                  <option value="">Ciudad...</option>
-                  {locations?.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-                </select>
-              )}
-            </div>
-
-            {/* Sección */}
-            <div className={styles.field}>
-              <div className={styles.labelRow}>
-                <label className={styles.label}>Sección</label>
-                {creating !== 'seccion' && form.ciudadId && (
-                  <button type="button" className={styles.newBtn} onClick={() => { setCreating('seccion'); setNewNombre(''); }}>+ Nueva</button>
-                )}
-              </div>
-              {creating === 'seccion' ? (
-                <div className={styles.inlineCreate}>
-                  <input autoFocus className={styles.input} value={newNombre} onChange={(e) => setNewNombre(e.target.value)} placeholder="Nombre de la sección" onKeyDown={(e) => handleInlineKeyDown(e, 'seccion')} />
-                  <button type="button" className={styles.inlineConfirm} onClick={() => handleCreateLocation('seccion')} disabled={createSection.isPending}>✓</button>
-                  <button type="button" className={styles.inlineCancel} onClick={() => setCreating(null)}>✕</button>
-                </div>
-              ) : (
-                <select name="seccionId" value={form.seccionId} onChange={handleChange} className={styles.select} disabled={!form.ciudadId} required>
-                  <option value="">Sección...</option>
-                  {ciudadSeleccionada?.secciones.map((s) => <option key={s.id} value={s.id}>{s.nombre}</option>)}
-                </select>
-              )}
-            </div>
-
-            {/* Oficina */}
-            <div className={styles.field}>
-              <div className={styles.labelRow}>
-                <label className={styles.label}>Oficina</label>
-                {creating !== 'oficina' && form.seccionId && (
-                  <button type="button" className={styles.newBtn} onClick={() => { setCreating('oficina'); setNewNombre(''); }}>+ Nueva</button>
-                )}
-              </div>
-              {creating === 'oficina' ? (
-                <div className={styles.inlineCreate}>
-                  <input autoFocus className={styles.input} value={newNombre} onChange={(e) => setNewNombre(e.target.value)} placeholder="Nombre de la oficina" onKeyDown={(e) => handleInlineKeyDown(e, 'oficina')} />
-                  <button type="button" className={styles.inlineConfirm} onClick={() => handleCreateLocation('oficina')} disabled={createOffice.isPending}>✓</button>
-                  <button type="button" className={styles.inlineCancel} onClick={() => setCreating(null)}>✕</button>
-                </div>
-              ) : (
-                <select name="oficinaId" value={form.oficinaId} onChange={handleChange} className={styles.select} disabled={!form.seccionId} required>
-                  <option value="">Oficina...</option>
-                  {seccionSeleccionada?.oficinas.map((o) => <option key={o.id} value={o.id}>{o.nombre}</option>)}
-                </select>
-              )}
-            </div>
-          </div>
+          <LocationCascadeSelect
+            required
+            value={{ ciudadId: form.ciudadId, seccionId: form.seccionId, oficinaId: form.oficinaId }}
+            onChange={(v) => setForm((p) => ({ ...p, ...v }))}
+            onError={(msg) => setError(msg)}
+          />
         </div>
 
         <div className={styles.section}>

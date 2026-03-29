@@ -35,6 +35,7 @@ export function useHistory(filters: HistoryFilters = {}) {
       data: HistorialEntry[];
       pagination: { page: number; limit: number; total: number; totalPages: number };
     }>(`/history?${params}`),
+    staleTime: 60_000,
   });
 }
 

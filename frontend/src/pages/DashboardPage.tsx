@@ -7,29 +7,9 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../lib/auth-context';
 import { useDashboardStats, useRecentActivity } from '../hooks/useDashboard';
+import { ACCION_LABEL as ACTION_LABELS, ACCION_COLOR as ACTION_COLOR } from '../lib/action-types';
 import styles from './DashboardPage.module.css';
 import { usePageTitle } from '../hooks/usePageTitle';
-
-const ACTION_LABELS: Record<string, string> = {
-  CREACION: 'Creación',
-  ASIGNACION: 'Asignación',
-  EDICION: 'Edición',
-  TRANSFERENCIA: 'Transferencia',
-  ENVIO_SOPORTE: 'Envío a Soporte',
-  RETORNO_SOPORTE: 'Retorno de Soporte',
-  ENVIO_SERVICIO_EXTERNO: 'Envío a Servicio',
-  RETORNO_SERVICIO_EXTERNO: 'Retorno de Servicio',
-  PRESTAMO: 'Préstamo',
-  DEVOLUCION: 'Devolución',
-  CAMBIO_ESTADO: 'Cambio de Estado',
-};
-
-const ACTION_COLOR: Record<string, string> = {
-  CREACION: 'success', EDICION: 'info', ASIGNACION: 'primary', TRANSFERENCIA: 'primary',
-  ENVIO_SOPORTE: 'warning', RETORNO_SOPORTE: 'success',
-  ENVIO_SERVICIO_EXTERNO: 'warning', RETORNO_SERVICIO_EXTERNO: 'success',
-  PRESTAMO: 'info', DEVOLUCION: 'success', CAMBIO_ESTADO: 'neutral',
-};
 
 function getGreeting() {
   const h = new Date().getHours();

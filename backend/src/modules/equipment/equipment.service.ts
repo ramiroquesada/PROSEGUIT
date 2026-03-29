@@ -149,6 +149,7 @@ export async function getEquipmentById(id: number) {
           oficinaDestino: { select: { nombre: true } },
         },
         orderBy: { fecha: 'desc' },
+        take: 50,
       },
     },
   });
