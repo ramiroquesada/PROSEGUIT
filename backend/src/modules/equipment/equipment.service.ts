@@ -1,4 +1,6 @@
 import { Prisma, EstadoEquipo } from '@prisma/client';
+import { unlink } from 'fs/promises';
+import path from 'path';
 import { prisma } from '../../utils/prisma.js';
 import { AppError } from '../../middleware/error-handler.js';
 import type { PaginationParams } from '../../utils/pagination.js';
@@ -435,4 +437,25 @@ export async function getEquipmentTypes() {
 export async function getNextSerie(): Promise<number> {
   const result = await prisma.equipo.aggregate({ _max: { serie: true } });
   return (result._max.serie ?? 0) + 1;
+}
+
+/** Guarda la imagen subida y actualiza urlImage en DB */
+export async function saveEquipmentImage(id: number, uploadedFilePath: string): Promise<string> {
+  const equipo = await prisma.equipo.findUnique({ where: { id } });
+  if (!equipo) {
+    await unlink(uploadedFilePath).catch(() => {});
+    throw new AppError(404, 'Equipo no encontrado');
+  }
+
+  // Eliminar imagen anterior si era un archivo local
+  if (equipo.urlImage?.startsWith('/uploads/')) {
+    const oldPath = path.join(process.cwd(), equipo.urlImage.slice(1));
+    await unlink(oldPath).catch(() => {});
+  }
+
+  const filename = path.basename(uploadedFilePath);
+  const urlImage = `/uploads/equipment/${filename}`;
+
+  await prisma.equipo.update({ where: { id }, data: { urlImage } });
+  return urlImage;
 }

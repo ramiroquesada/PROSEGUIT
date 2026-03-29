@@ -62,6 +62,7 @@ interface Equipment {
   estado: string;
   ip: string | null;
   observacion: string | null;
+  urlImage: string | null;
   tipoEquipo: { id: number; nombre: string; icono: string | null };
   oficina: {
     id: number;
@@ -126,6 +127,20 @@ export function useReturnFromService() {
       qc.invalidateQueries({ queryKey: ['equipment', id] });
       qc.invalidateQueries({ queryKey: ['history', 'equipment', id] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
+export function useUploadEquipmentImage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, file }: { id: number; file: File }) => {
+      const formData = new FormData();
+      formData.append('image', file);
+      return api.upload<{ urlImage: string }>(`/equipment/${id}/image`, formData);
+    },
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: ['equipment', id] });
     },
   });
 }

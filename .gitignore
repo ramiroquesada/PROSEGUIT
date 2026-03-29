@@ -24,6 +24,9 @@ frontend/.vite/
 # OS
 desktop.ini
 
+# Imágenes de equipos subidas por usuarios
+backend/uploads/
+
 # Dump SQL original (datos de produccion)
 db_seguit1.sql
 

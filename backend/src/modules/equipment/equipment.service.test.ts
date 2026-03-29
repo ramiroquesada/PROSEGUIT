@@ -26,7 +26,7 @@ import { transferEquipment, sendToSupport, createEquipment, getNextSerie, return
 import { prisma } from '../../utils/prisma.js';
 import { AppError } from '../../middleware/error-handler.js';
 
-const mockPrisma = prisma as {
+const mockPrisma = prisma as unknown as {
   equipo: { findUnique: ReturnType<typeof vi.fn>; create: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn>; aggregate: ReturnType<typeof vi.fn> };
   oficina: { findUnique: ReturnType<typeof vi.fn> };
   servicioExterno: { findUnique: ReturnType<typeof vi.fn> };

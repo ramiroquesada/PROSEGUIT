@@ -21,14 +21,14 @@ import { createUser, resetPassword, changePassword } from './users.service.js';
 import { prisma } from '../../utils/prisma.js';
 import bcrypt from 'bcryptjs';
 
-const mockPrisma = prisma as {
+const mockPrisma = prisma as unknown as {
   usuario: {
     findUnique: ReturnType<typeof vi.fn>;
     create: ReturnType<typeof vi.fn>;
     update: ReturnType<typeof vi.fn>;
   };
 };
-const mockBcrypt = bcrypt as { compare: ReturnType<typeof vi.fn>; hash: ReturnType<typeof vi.fn> };
+const mockBcrypt = bcrypt as unknown as { compare: ReturnType<typeof vi.fn>; hash: ReturnType<typeof vi.fn> };
 
 // ─── createUser ───────────────────────────────────────────────────────────────
 

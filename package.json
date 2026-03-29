@@ -25,7 +25,9 @@
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.5.0",
+    "@types/multer": "^2.1.0",
     "@types/pg": "^8.20.0",
+    "multer": "^2.1.1",
     "pg": "^8.20.0"
   }
 }

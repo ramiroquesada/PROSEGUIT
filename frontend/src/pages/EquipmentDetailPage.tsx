@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { useEquipmentDetail, useTransferEquipment, useSendToSupport, useSendToService, useReturnFromService } from '../hooks/useEquipment';
+import { useEquipmentDetail, useTransferEquipment, useSendToSupport, useSendToService, useReturnFromService, useUploadEquipmentImage } from '../hooks/useEquipment';
 import { resolveEstado, STATUS_LABEL, STATUS_COLOR } from '../lib/equipment-status';
 import { useEquipmentHistory } from '../hooks/useHistory';
 import { useLocationTree } from '../hooks/useLocations';
 import { useServiceProviders } from '../hooks/useLoans';
 import { ACCION_LABEL, ACCION_COLOR } from '../lib/action-types';
-import { ArrowRightLeft, Building2, RotateCcw, Pencil, ChevronLeft, LogOut, LogIn, Monitor } from 'lucide-react';
+import { ArrowRightLeft, Building2, RotateCcw, Pencil, ChevronLeft, LogOut, LogIn, Monitor, Camera } from 'lucide-react';
 import { findSoporteOffice } from '../lib/find-soporte-office';
 import LocationCascadeSelect from '../components/LocationCascadeSelect';
 import styles from './EquipmentDetailPage.module.css';
@@ -122,11 +122,20 @@ export default function EquipmentDetailPage() {
   const supportMutation = useSendToSupport();
   const serviceMutation = useSendToService();
   const returnServiceMutation = useReturnFromService();
+  const uploadImageMutation = useUploadEquipmentImage();
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [action, setAction] = useState<ActionState | null>(null);
   const [actionError, setActionError] = useState('');
 
   const isPending = transferMutation.isPending || supportMutation.isPending || serviceMutation.isPending || returnServiceMutation.isPending;
+
+  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    uploadImageMutation.mutate({ id: equipoId, file });
+    e.target.value = '';
+  }
 
   function openAction(type: ActionType) {
     let initial = { ...INITIAL_ACTION, type };
@@ -315,6 +324,46 @@ export default function EquipmentDetailPage() {
             {equipo.observacion && <div className={styles.detailRow}><dt>Observación</dt><dd>{equipo.observacion}</dd></div>}
             <div className={styles.detailRow}><dt>Registrado</dt><dd>{new Date(equipo.createdAt).toLocaleDateString('es-UY')}</dd></div>
           </dl>
+
+          {/* Imagen del equipo */}
+          <div className={styles.imageSection}>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className={styles.imageInput}
+              onChange={handleImageChange}
+            />
+            {equipo.urlImage ? (
+              <div className={styles.imageWrapper}>
+                <img
+                  src={equipo.urlImage}
+                  alt={`Equipo serie ${equipo.serie}`}
+                  className={styles.imagePreview}
+                />
+                <button
+                  className={styles.imageChangeBtn}
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadImageMutation.isPending}
+                >
+                  <Camera size={13} />
+                  {uploadImageMutation.isPending ? 'Subiendo...' : 'Cambiar foto'}
+                </button>
+              </div>
+            ) : (
+              <button
+                className={styles.imagePlaceholder}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadImageMutation.isPending}
+              >
+                <Camera size={20} />
+                <span>{uploadImageMutation.isPending ? 'Subiendo...' : 'Agregar foto del equipo'}</span>
+              </button>
+            )}
+            {uploadImageMutation.isError && (
+              <p className={styles.imageError}>{(uploadImageMutation.error as Error).message}</p>
+            )}
+          </div>
         </div>
 
         {/* Notices */}

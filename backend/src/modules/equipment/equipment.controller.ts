@@ -90,3 +90,15 @@ export async function nextSerieHandler(_req: Request, res: Response) {
   const nextSerie = await equipmentService.getNextSerie();
   res.json({ nextSerie });
 }
+
+export async function uploadImageHandler(req: Request, res: Response) {
+  if (!req.file) {
+    res.status(400).json({ error: 'No se recibió ningún archivo' });
+    return;
+  }
+  const urlImage = await equipmentService.saveEquipmentImage(
+    Number(req.params.id),
+    req.file.path,
+  );
+  res.json({ urlImage });
+}

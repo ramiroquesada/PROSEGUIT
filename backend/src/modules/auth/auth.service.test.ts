@@ -35,7 +35,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { AppError } from '../../middleware/error-handler.js';
 
-const mockPrisma = prisma as {
+const mockPrisma = prisma as unknown as {
   usuario: { findUnique: ReturnType<typeof vi.fn> };
   refreshToken: {
     create: ReturnType<typeof vi.fn>;
@@ -45,8 +45,8 @@ const mockPrisma = prisma as {
   };
   $transaction: ReturnType<typeof vi.fn>;
 };
-const mockBcrypt = bcrypt as { compare: ReturnType<typeof vi.fn>; hash: ReturnType<typeof vi.fn> };
-const mockJwt = jwt as { sign: ReturnType<typeof vi.fn>; verify: ReturnType<typeof vi.fn> };
+const mockBcrypt = bcrypt as unknown as { compare: ReturnType<typeof vi.fn>; hash: ReturnType<typeof vi.fn> };
+const mockJwt = jwt as unknown as { sign: ReturnType<typeof vi.fn>; verify: ReturnType<typeof vi.fn> };
 
 const activeUser = {
   id: 1,

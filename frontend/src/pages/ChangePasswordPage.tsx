@@ -8,7 +8,7 @@ import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function ChangePasswordPage() {
   usePageTitle('Cambiar contraseña');
-  const { user, logout } = use(AuthContext);
+  const { user, logout } = use(AuthContext)!;
   const navigate = useNavigate();
   const mutation = useChangePassword();
 

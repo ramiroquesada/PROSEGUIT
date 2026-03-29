@@ -7,14 +7,13 @@ import { usePageTitle } from '../hooks/usePageTitle';
 
 export default function UsersPage() {
   usePageTitle('Usuarios');
-  const { user: currentUser } = use(AuthContext);
+  const { user: currentUser } = use(AuthContext)!;
   const { data: users, isLoading } = useUsers();
   const createMutation = useCreateUser();
   const updateMutation = useUpdateUser();
   const resetMutation = useResetPassword();
 
   const [showCreate, setShowCreate] = useState(false);
-  const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState({ nombre: '', ficha: '', rol: 'TECNICO' as 'ADMIN' | 'TECNICO' });
   const [formError, setFormError] = useState('');
 

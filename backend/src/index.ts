@@ -1,5 +1,7 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
+import { mkdirSync } from 'fs';
 import { env } from './config/env.js';
 import { corsOptions } from './config/cors.js';
 import { errorHandler } from './middleware/error-handler.js';
@@ -15,9 +17,17 @@ import usersRoutes from './modules/users/users.routes.js';
 
 const app = express();
 
+// Directorio de uploads (se crea si no existe)
+const uploadsDir = path.join(process.cwd(), 'uploads');
+mkdirSync(path.join(uploadsDir, 'equipment'), { recursive: true });
+
 // Middleware global
 app.use(cors(corsOptions));
 app.use(express.json());
+
+// Archivos estáticos — se sirven ANTES de los headers de seguridad
+// para que las imágenes no lleven CSP innecesario
+app.use('/uploads', express.static(uploadsDir));
 
 // Headers de seguridad
 app.use((_req, res, next) => {

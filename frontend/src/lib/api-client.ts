@@ -113,15 +113,31 @@ class ApiClient {
   delete<T>(endpoint: string, options?: RequestOptions) {
     return this.request<T>(endpoint, { ...options, method: 'DELETE' });
   }
+
+  /** Sube un archivo (multipart/form-data). No pone Content-Type para que el browser lo genere con el boundary. */
+  upload<T>(endpoint: string, formData: FormData): Promise<T> {
+    const headers: Record<string, string> = {};
+    if (this.accessToken) headers['Authorization'] = `Bearer ${this.accessToken}`;
+    return fetch(`${API_URL}${endpoint}`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    }).then(async (res) => {
+      if (!res.ok) {
+        const error = await res.json().catch(() => ({ error: 'Error de red' }));
+        throw new ApiError(res.status, error.error || 'Error desconocido');
+      }
+      return res.json();
+    });
+  }
 }
 
 export class ApiError extends Error {
-  constructor(
-    public status: number,
-    message: string,
-  ) {
+  status: number;
+  constructor(status: number, message: string) {
     super(message);
     this.name = 'ApiError';
+    this.status = status;
   }
 }
 
