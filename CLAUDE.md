@@ -90,6 +90,10 @@ npm run db:migrate       # Prisma migrate dev (aplica cambios al schema)
 npm run db:studio        # Abre Prisma Studio (explorador visual de BD)
 npm run db:seed          # Seed: crea usuarios admin (9999) y técnico (7844)
 
+# Tests
+npm test                 # Corre los 40 tests del backend (no requiere DB)
+cd backend && npm run test:watch  # Modo watch durante desarrollo
+
 # Migración de datos desde seguit v1 (ver sección completa abajo)
 node extract_data.js                              # Genera export_datos_v1.json desde el .sql
 cd backend && npx tsx prisma/migrate-v1.ts        # Importa todos los datos de v1
@@ -320,12 +324,63 @@ Cuando hagas cambios en estas áreas, actualizá también el archivo correspondi
 
 ---
 
+## Configuración de producción (Docker)
+
+Los tres servicios se levantan con un solo comando usando `docker-compose.prod.yml`:
+
+| Servicio | Imagen | Puerto interno | Descripción |
+|----------|--------|----------------|-------------|
+| `postgres` | postgres:17-alpine | 5432 | Base de datos (volumen persistido) |
+| `backend` | build local | 3001 | API Express (no expuesto al host) |
+| `frontend` | build local → nginx | 80 | React SPA + proxy `/api` → backend |
+
+### Primer deploy en un servidor nuevo
+
+```bash
+# 1. Clonar el repo en el servidor
+git clone <url-del-repo> proseguit && cd proseguit
+
+# 2. Crear el archivo de variables de entorno
+cp .env.production.example .env.production
+# Editar .env.production y completar: POSTGRES_PASSWORD, JWT_SECRET, JWT_REFRESH_SECRET
+
+# 3. Construir y levantar todo
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+
+# 4. Cargar datos iniciales (admin 9999, técnico 7844)
+docker compose -f docker-compose.prod.yml exec backend npx tsx prisma/seed.ts
+```
+
+Las migraciones de DB se aplican automáticamente al iniciar el backend (`prisma migrate deploy`).
+
+### Actualizar a una versión nueva
+
+```bash
+git pull
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+```
+
+### Ver logs
+
+```bash
+docker compose -f docker-compose.prod.yml logs -f backend    # logs del API
+docker compose -f docker-compose.prod.yml logs -f frontend   # logs de nginx
+```
+
+### Notas técnicas
+- El backend corre con `tsx` (TypeScript directo), sin paso de compilación — evita problemas de resolución de módulos con `@proseguit/shared` que apunta a fuente `.ts`
+- El frontend se compila con Vite en el Docker build y nginx sirve el `dist/` estático
+- nginx también hace proxy de `/api` al servicio `backend:3001` — el frontend no necesita saber la IP del backend
+- Los secrets **nunca** van al repo; `.env.production` está en `.gitignore`
+
+---
+
 ## Pendiente / TODO
 
 - [ ] **Migración de datos** con el dump actualizado de seguit v1 (traído de la oficina)
 - [ ] Responsive completo para mobile/tablet
 - [ ] Subida de imágenes de equipos (campo `urlImage` ya existe en el schema)
 - [ ] Seguir con el rediseño visual sección por sección (en progreso)
-- [ ] **Tests** — backend service layer (al menos `equipment.service`, `auth.service`, `loans.service`)
-- [ ] **Alinear `@proseguit/shared`** — el backend redefine schemas localmente; el tipo `serie` es `string` en shared pero `number` en backend/DB; los enums `AccionTipo` tienen nombres distintos (`DEVOLUCION` vs `DEVOLUCION_PRESTAMO`)
-- [ ] **Configuración de producción** — Dockerfiles para backend y frontend, `docker-compose.prod.yml`
+- [x] **Tests** — backend service layer: `equipment.service`, `auth.service`, `users.service` (40 tests con Vitest, sin DB)
+- [x] **Alinear `@proseguit/shared`** — serie como `number`, enums corregidos, schemas compartidos en backend
+- [x] **Configuración de producción** — `backend/Dockerfile`, `frontend/Dockerfile`, `docker-compose.prod.yml`, `.env.production.example`
