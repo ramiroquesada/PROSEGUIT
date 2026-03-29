@@ -22,7 +22,12 @@ const navItems = [
   { to: '/usuarios', label: 'Usuarios', icon: Users },
 ];
 
-export default function Sidebar() {
+interface SidebarProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -36,53 +41,59 @@ export default function Sidebar() {
     : '?';
 
   return (
-    <aside className={styles.sidebar}>
-      <div className={styles.brand}>
-        <div className={styles.logoMark}>🏛</div>
-        <div className={styles.logoText}>
-          <h1 className={styles.logo}>PROSEGUIT</h1>
-          <span className={styles.logoSubtitle}>Inventario IT</span>
-        </div>
-        <span className={styles.version}>v2</span>
-      </div>
+    <>
+      {/* Overlay para cerrar en mobile */}
+      {isOpen && <div className={styles.overlay} onClick={onClose} />}
 
-      <nav className={styles.nav}>
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/'}
-              className={({ isActive }) =>
-                `${styles.navItem} ${isActive ? styles.active : ''}`
-              }
-            >
-              <span className={styles.navIcon}>
-                <Icon size={18} strokeWidth={1.75} />
-              </span>
-              {item.label}
-            </NavLink>
-          );
-        })}
-      </nav>
-
-      <div className={styles.userSection}>
-        <div className={styles.userCard}>
-          <div className={styles.userAvatar}>{initials}</div>
-          <div className={styles.userInfo}>
-            <span className={styles.userName}>{user?.nombre}</span>
-            <span className={styles.userRole}>{user?.rol}</span>
+      <aside className={`${styles.sidebar} ${isOpen ? styles.open : ''}`}>
+        <div className={styles.brand}>
+          <div className={styles.logoMark}>🏛</div>
+          <div className={styles.logoText}>
+            <h1 className={styles.logo}>PROSEGUIT</h1>
+            <span className={styles.logoSubtitle}>Inventario IT</span>
           </div>
-          <button
-            className={styles.logoutBtn}
-            onClick={handleLogout}
-            title="Cerrar sesión"
-          >
-            <LogOut size={15} strokeWidth={2} />
-          </button>
+          <span className={styles.version}>v2</span>
         </div>
-      </div>
-    </aside>
+
+        <nav className={styles.nav}>
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.to === '/'}
+                className={({ isActive }) =>
+                  `${styles.navItem} ${isActive ? styles.active : ''}`
+                }
+                onClick={onClose}
+              >
+                <span className={styles.navIcon}>
+                  <Icon size={18} strokeWidth={1.75} />
+                </span>
+                {item.label}
+              </NavLink>
+            );
+          })}
+        </nav>
+
+        <div className={styles.userSection}>
+          <div className={styles.userCard}>
+            <div className={styles.userAvatar}>{initials}</div>
+            <div className={styles.userInfo}>
+              <span className={styles.userName}>{user?.nombre}</span>
+              <span className={styles.userRole}>{user?.rol}</span>
+            </div>
+            <button
+              className={styles.logoutBtn}
+              onClick={handleLogout}
+              title="Cerrar sesión"
+            >
+              <LogOut size={15} strokeWidth={2} />
+            </button>
+          </div>
+        </div>
+      </aside>
+    </>
   );
 }

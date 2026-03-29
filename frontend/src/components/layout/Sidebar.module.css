@@ -1,3 +1,12 @@
+/* ─── Overlay (mobile) ─── */
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgb(0 0 0 / 0.5);
+  z-index: calc(var(--z-overlay) - 1);
+}
+
 /* ─── Sidebar ─── */
 .sidebar {
   width: var(--sidebar-width);
@@ -25,6 +34,26 @@
       rgb(var(--color-primary-rgb) / 0.3) 70%,
       transparent 100%
     );
+  }
+}
+
+@media (max-width: 1024px) {
+  .overlay {
+    display: block;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100dvh;
+    z-index: var(--z-overlay);
+    transform: translateX(-100%);
+    transition: transform var(--transition-base);
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
   }
 }
 

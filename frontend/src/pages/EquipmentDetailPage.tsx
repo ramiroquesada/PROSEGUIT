@@ -330,7 +330,8 @@ export default function EquipmentDetailPage() {
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept="image/*"
+              capture="environment"
               className={styles.imageInput}
               onChange={handleImageChange}
             />

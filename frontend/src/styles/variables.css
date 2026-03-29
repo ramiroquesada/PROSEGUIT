@@ -104,6 +104,10 @@
   --sidebar-collapsed: 64px;
   --header-height:     64px;
 
+  /* ─── Breakpoints ─── */
+  --bp-mobile:  640px;
+  --bp-tablet: 1024px;
+
   /* ─── Transiciones ─── */
   --transition-fast:   150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base:   200ms cubic-bezier(0.4, 0, 0.2, 1);

@@ -14,8 +14,42 @@
   z-index: var(--z-sticky);
 }
 
+/* ─── Botón hamburguesa (mobile) ─── */
+.menuBtn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  color: var(--color-text-secondary);
+  background: transparent;
+  border: 1px solid var(--color-border);
+  flex-shrink: 0;
+  transition: all var(--transition-fast);
+
+  &:hover {
+    background: var(--color-bg);
+    color: var(--color-text);
+  }
+}
+
+@media (max-width: 1024px) {
+  .menuBtn {
+    display: flex;
+  }
+}
+
 /* ─── Lado izquierdo: título + breadcrumb ─── */
 .left {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-sm);
+  min-width: 0;
+}
+
+.titleGroup {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -49,6 +83,16 @@
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 240px;
+}
+
+@media (max-width: 640px) {
+  .header {
+    padding: 0 var(--space-md);
+  }
+
+  .userChip {
+    display: none;
+  }
 }
 
 /* ─── Chip de usuario ─── */

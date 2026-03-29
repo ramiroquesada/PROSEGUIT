@@ -210,6 +210,16 @@
   margin-bottom: var(--space-md);
 }
 
+@media (max-width: 640px) {
+  .cardBody {
+    padding: var(--space-lg) var(--space-lg) var(--space-xl);
+  }
+
+  .cardHeader {
+    padding: var(--space-lg);
+  }
+}
+
 /* ─── Footer ─── */
 .cardFooter {
   text-align: center;

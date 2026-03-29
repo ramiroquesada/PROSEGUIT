@@ -883,4 +883,10 @@
   .heroTitle { font-size: var(--font-size-2xl); }
   .heroIcon { width: 40px; height: 40px; }
   .cardBody { padding: var(--space-md); }
+  .heroRight {
+    width: 100%;
+    align-items: flex-start;
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
 }

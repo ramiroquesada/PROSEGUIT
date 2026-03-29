@@ -1,4 +1,5 @@
 import { useLocation, useParams } from 'react-router';
+import { Menu } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
 import { useEquipmentDetail } from '../../hooks/useEquipment';
 import styles from './Header.module.css';
@@ -38,7 +39,11 @@ function NuevoBreadcrumb({ parent }: { parent: string }) {
   );
 }
 
-export default function Header() {
+interface HeaderProps {
+  onMenuToggle: () => void;
+}
+
+export default function Header({ onMenuToggle }: HeaderProps) {
   const { pathname } = useLocation();
   const { user } = useAuth();
   const params = useParams();
@@ -66,8 +71,13 @@ export default function Header() {
   return (
     <header className={styles.header}>
       <div className={styles.left}>
-        <h2 className={styles.title}>{title}</h2>
-        {breadcrumb && breadcrumb}
+        <button className={styles.menuBtn} onClick={onMenuToggle} aria-label="Abrir menú">
+          <Menu size={20} strokeWidth={2} />
+        </button>
+        <div className={styles.titleGroup}>
+          <h2 className={styles.title}>{title}</h2>
+          {breadcrumb && breadcrumb}
+        </div>
       </div>
 
       {user && (

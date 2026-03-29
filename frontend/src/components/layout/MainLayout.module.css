@@ -18,3 +18,9 @@
   overflow-y: auto;
   overflow-x: hidden;
 }
+
+@media (max-width: 640px) {
+  .content {
+    padding: var(--space-md);
+  }
+}
