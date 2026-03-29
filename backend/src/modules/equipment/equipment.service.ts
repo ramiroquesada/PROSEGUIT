@@ -211,6 +211,7 @@ export async function updateEquipment(id: number, data: {
   urlImage?: string;
   observacion?: string;
   especificaciones?: Prisma.InputJsonValue;
+  motivo: string;
 }, usuarioId: number) {
   const equipo = await prisma.equipo.findUnique({ where: { id } });
   if (!equipo) throw new AppError(404, 'Equipo no encontrado');
@@ -220,7 +221,7 @@ export async function updateEquipment(id: number, data: {
     if (existing) throw new AppError(409, 'Ya existe un equipo con ese número de serie');
   }
 
-  const { especificaciones, ...rest } = data;
+  const { especificaciones, motivo, ...rest } = data;
 
   const updated = await prisma.equipo.update({
     where: { id },
@@ -232,7 +233,7 @@ export async function updateEquipment(id: number, data: {
           accion: 'EDICION',
           oficinaDestinoId: data.oficinaId ?? equipo.oficinaId,
           usuarioId,
-          motivo: 'Edición de datos del equipo',
+          motivo,
         },
       },
     },

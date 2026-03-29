@@ -21,7 +21,9 @@ const createSchema = z.object({
   especificaciones: z.record(z.string(), z.unknown()).optional(),
 });
 
-const updateSchema = createSchema.partial();
+const updateSchema = createSchema.partial().extend({
+  motivo: z.string().min(1),
+});
 
 const transferSchema = z.object({
   oficinaDestinoId: z.number().int().positive(),
