@@ -27,9 +27,10 @@ export default function UsersPage() {
     e.preventDefault();
     if (!form.nombre || !form.ficha) { setFormError('Nombre y ficha son obligatorios'); return; }
     try {
-      await createMutation.mutateAsync({ nombre: form.nombre, ficha: Number(form.ficha), rol: form.rol });
+      const result = await createMutation.mutateAsync({ nombre: form.nombre, ficha: Number(form.ficha), rol: form.rol });
       setShowCreate(false);
       setForm({ nombre: '', ficha: '', rol: 'TECNICO' });
+      alert(`Usuario creado.\nContraseña temporal: ${result.tempPassword}\nGuárdala, no se mostrará de nuevo.`);
     } catch (err: any) {
       setFormError(err?.message || 'Error al crear usuario');
     }
@@ -40,8 +41,9 @@ export default function UsersPage() {
   }
 
   async function handleResetPassword(id: number, nombre: string) {
-    if (!confirm(`¿Resetear contraseña de ${nombre}? Se usará su ficha como nueva contraseña.`)) return;
-    await resetMutation.mutateAsync(id);
+    if (!confirm(`¿Resetear contraseña de ${nombre}? Se generará una contraseña temporal aleatoria.`)) return;
+    const result = await resetMutation.mutateAsync(id);
+    alert(`Contraseña reseteada.\nContraseña temporal: ${result.tempPassword}\nGuárdala, no se mostrará de nuevo.`);
   }
 
   if (currentUser?.rol !== 'ADMIN') {

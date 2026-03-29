@@ -29,7 +29,7 @@ export function useCreateUser() {
       email?: string;
       rol: 'ADMIN' | 'TECNICO';
       oficinaId?: number;
-    }) => api.post<Usuario>('/users', data),
+    }) => api.post<Usuario & { tempPassword: string }>('/users', data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
   });
 }
@@ -46,7 +46,7 @@ export function useUpdateUser() {
 export function useResetPassword() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => api.post(`/users/${id}/reset-password`, {}),
+    mutationFn: (id: number) => api.post<{ message: string; tempPassword: string }>(`/users/${id}/reset-password`, {}),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
   });
 }

@@ -1,6 +1,11 @@
 import { prisma } from '../../utils/prisma.js';
 import { AppError } from '../../middleware/error-handler.js';
 import bcrypt from 'bcryptjs';
+import { randomBytes } from 'crypto';
+
+function generateTempPassword(): string {
+  return randomBytes(4).toString('hex'); // 8 chars hex aleatorios
+}
 
 export async function listUsers() {
   return prisma.usuario.findMany({
@@ -49,9 +54,10 @@ export async function createUser(data: {
   const existing = await prisma.usuario.findUnique({ where: { ficha: data.ficha } });
   if (existing) throw new AppError(409, 'Ya existe un usuario con esa ficha');
 
-  const passwordHash = await bcrypt.hash(String(data.ficha), 12);
+  const tempPassword = generateTempPassword();
+  const passwordHash = await bcrypt.hash(tempPassword, 12);
 
-  return prisma.usuario.create({
+  const user = await prisma.usuario.create({
     data: {
       nombre: data.nombre,
       ficha: data.ficha,
@@ -70,6 +76,8 @@ export async function createUser(data: {
       activo: true,
     },
   });
+
+  return { ...user, tempPassword };
 }
 
 export async function updateUser(id: number, data: {
@@ -100,12 +108,15 @@ export async function resetPassword(id: number) {
   const user = await prisma.usuario.findUnique({ where: { id } });
   if (!user) throw new AppError(404, 'Usuario no encontrado');
 
-  const passwordHash = await bcrypt.hash(String(user.ficha), 12);
+  const tempPassword = generateTempPassword();
+  const passwordHash = await bcrypt.hash(tempPassword, 12);
 
   await prisma.usuario.update({
     where: { id },
     data: { passwordHash, forcePasswordChange: true },
   });
+
+  return { tempPassword };
 }
 
 export async function changePassword(userId: number, data: {

@@ -7,7 +7,7 @@ export async function statsHandler(_req: Request, res: Response) {
 }
 
 export async function recentActivityHandler(req: Request, res: Response) {
-  const limit = req.query.limit ? Number(req.query.limit) : 20;
+  const limit = Math.min(Number(req.query.limit) || 20, 100);
   const activity = await dashboardService.getRecentActivity(limit);
   res.json(activity);
 }

@@ -1,4 +1,4 @@
-import { createContext, use, useState, useCallback, type ReactNode } from 'react';
+import { createContext, use, useState, useCallback, useEffect, type ReactNode } from 'react';
 import { api } from './api-client';
 
 interface User {
@@ -46,6 +46,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     api.clearTokens();
     localStorage.removeItem('user');
     setUser(null);
+  }, []);
+
+  useEffect(() => {
+    function handleAuthExpired() {
+      localStorage.removeItem('user');
+      setUser(null);
+      window.location.href = '/login';
+    }
+    window.addEventListener('auth:expired', handleAuthExpired);
+    return () => window.removeEventListener('auth:expired', handleAuthExpired);
   }, []);
 
   return (

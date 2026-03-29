@@ -33,8 +33,8 @@ const changePasswordSchema = z.object({
 router.post('/change-password', validate(changePasswordSchema), controller.changePasswordHandler);
 
 // CRUD usuarios (solo admin)
-router.get('/', controller.listHandler);
-router.get('/:id', controller.getByIdHandler);
+router.get('/', adminOnly, controller.listHandler);
+router.get('/:id', adminOnly, controller.getByIdHandler);
 router.post('/', adminOnly, validate(createSchema), controller.createHandler);
 router.put('/:id', adminOnly, validate(updateSchema), controller.updateHandler);
 router.post('/:id/reset-password', adminOnly, controller.resetPasswordHandler);

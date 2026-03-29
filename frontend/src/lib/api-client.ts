@@ -74,6 +74,7 @@ class ApiClient {
 
       if (!res.ok) {
         this.clearTokens();
+        window.dispatchEvent(new Event('auth:expired'));
         return false;
       }
 
@@ -83,6 +84,7 @@ class ApiClient {
       return true;
     } catch {
       this.clearTokens();
+      window.dispatchEvent(new Event('auth:expired'));
       return false;
     }
   }

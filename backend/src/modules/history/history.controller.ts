@@ -1,6 +1,15 @@
 import type { Request, Response } from 'express';
 import * as historyService from './history.service.js';
 import { parsePagination } from '../../utils/pagination.js';
+import { z } from 'zod';
+
+const dateSchema = z.coerce.date();
+
+function parseDate(value: unknown): Date | undefined {
+  if (!value) return undefined;
+  const result = dateSchema.safeParse(value);
+  return result.success ? result.data : undefined;
+}
 
 export async function listHandler(req: Request, res: Response) {
   const pagination = parsePagination(req.query);
@@ -8,8 +17,8 @@ export async function listHandler(req: Request, res: Response) {
     equipoId: req.query.equipoId ? Number(req.query.equipoId) : undefined,
     accion: req.query.accion as string | undefined,
     usuarioId: req.query.usuarioId ? Number(req.query.usuarioId) : undefined,
-    desde: req.query.desde ? new Date(req.query.desde as string) : undefined,
-    hasta: req.query.hasta ? new Date(req.query.hasta as string) : undefined,
+    desde: parseDate(req.query.desde),
+    hasta: parseDate(req.query.hasta),
     search: req.query.search as string | undefined,
   };
 

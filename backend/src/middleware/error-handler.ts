@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
+import { env } from '../config/env.js';
 
 export class AppError extends Error {
   constructor(
@@ -29,5 +30,3 @@ export function errorHandler(
       : err.message,
   });
 }
-
-import { env } from '../config/env.js';
