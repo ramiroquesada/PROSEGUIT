@@ -60,8 +60,8 @@ Reemplaza a "seguit v1" (PHP/MySQL). Desarrollado por el equipo de Informática.
 | `/usuarios` | UsersPage | CRUD usuarios (admin) |
 
 ### ✅ Características implementadas
-- Auth completa con JWT access + refresh tokens
-- Página de cambio de contraseña (`/cambiar-password`) — accesible voluntariamente; muestra banner si `forcePasswordChange` es true pero ya no redirige forzosamente
+- Auth completa con JWT access + refresh tokens con **rotación automática** (cada refresh emite un nuevo refresh token, invalidando el anterior)
+- Página de cambio de contraseña (`/cambiar-password`) — **redirige forzosamente** si `forcePasswordChange` es true (ProtectedRoute lo intercepta)
 - Acciones de equipos: transferir (SALIDA), enviar a soporte (ENTRADA), enviar a servicio externo, dar de baja, retornar de servicio
 - Historial completo de cada acción con motivo, ubicación origen/destino, técnico y fecha
 - Préstamos: crear por número de serie, registrar devolución
@@ -161,6 +161,11 @@ cd backend && npx tsx prisma/migrate-v1.ts
 - **API**: prefijo `/api/v1/`
 - **Idioma UI**: Español (Uruguay) — "ficha", "técnico", "préstamo", "ubicación"
 - **Mutaciones**: TanStack Query `useMutation` + `queryClient.invalidateQueries` al completar. Las mutaciones de equipos deben invalidar `['equipment']`, `['history', 'equipment', id]` **y** `['dashboard']`. Los hooks de dashboard usan claves `['dashboard', 'stats']` y `['dashboard', 'recent-activity', limit]` — el prefijo `['dashboard']` es suficiente para invalidar ambos.
+- **staleTime**: todos los hooks tienen staleTime configurado (30s equipos/préstamos, 60s historial/usuarios). No modificar sin razón — evita refetch innecesario en cada cambio de ruta.
+- **LocationCascadeSelect**: componente reutilizable en `frontend/src/components/LocationCascadeSelect.tsx`. Usarlo siempre que se necesite el cascade Ciudad→Sección→Oficina con creación inline. Props: `value: CascadeValue`, `onChange`, `onError`, `disabled`, `required`.
+- **Constantes de acciones**: labels, colores y opciones de acciones de historial centralizados en `frontend/src/lib/action-types.ts` (`ACCION_LABEL`, `ACCION_COLOR`, `ACCION_OPTIONS`). No redefinir localmente en pages.
+- **Code splitting**: todas las páginas se cargan con `React.lazy` en `App.tsx`. Si agregás una nueva página, importarla con `lazy(() => import(...))`.
+- **Contraseñas de usuario**: al crear o resetear usuario, el backend genera una contraseña temporal aleatoria (8 chars hex) y la retorna una única vez en la respuesta. El frontend la muestra en un `alert()`. La ficha ya NO se usa como contraseña por defecto.
 - **SALIDA vs ENTRADA** (equipos):
   - ENTRADA = `POST /equipment/:id/send-to-support` → registra siempre `ENVIO_SOPORTE` (retorno temporal a Soporte para reparación, NO es traslado permanente).
   - SALIDA = `POST /equipment/:id/transfer` → el tipo de acción depende del `estado` actual del equipo:
@@ -272,14 +277,28 @@ PROSEGIT/
 ## Problemas conocidos (Windows)
 
 ### Proceso Node no muere al detener
-Los procesos de Node iniciados desde bash en VSCode a veces quedan corriendo como procesos huérfanos.
-Si el backend no refleja cambios:
-```bash
-# Ver qué tiene el puerto 3001
-netstat -ano | findstr :3001
-# El PID aparece al final → matar desde Task Manager o reiniciar VSCode
+Los procesos de Node iniciados desde bash en VSCode quedan corriendo como procesos huérfanos incluso al cerrar la terminal, VSCode o la PC.
+
+**Solución — matar por puerto (PowerShell):**
+```powershell
+# Mata todo lo que esté escuchando en los puertos del proyecto
+powershell -Command "Stop-Process -Id (Get-NetTCPConnection -LocalPort 3001, 5173 -State Listen).OwningProcess -Force"
 ```
-**Solución definitiva:** reiniciar VSCode (o la PC si VSCode tampoco mata los procesos).
+
+**O matar todos los procesos Node del sistema:**
+```powershell
+powershell -Command "Stop-Process -Name node -Force"
+```
+
+**Ver qué hay en un puerto específico:**
+```bash
+netstat -ano | findstr :3001
+# El PID aparece al final de cada línea
+```
+
+> **Nota:** `taskkill /F /PID` no funciona desde bash en VSCode (el sandbox interpreta `/F` como ruta). Usar siempre `powershell -Command "Stop-Process ..."`.
+
+**Solución definitiva si nada funciona:** reiniciar VSCode o la PC.
 
 ### Git push falla con "behind remote"
 El hook `.githooks/pre-push` verifica que el repo local esté actualizado antes de pushear.
@@ -307,3 +326,6 @@ Cuando hagas cambios en estas áreas, actualizá también el archivo correspondi
 - [ ] Responsive completo para mobile/tablet
 - [ ] Subida de imágenes de equipos (campo `urlImage` ya existe en el schema)
 - [ ] Seguir con el rediseño visual sección por sección (en progreso)
+- [ ] **Tests** — backend service layer (al menos `equipment.service`, `auth.service`, `loans.service`)
+- [ ] **Alinear `@proseguit/shared`** — el backend redefine schemas localmente; el tipo `serie` es `string` en shared pero `number` en backend/DB; los enums `AccionTipo` tienen nombres distintos (`DEVOLUCION` vs `DEVOLUCION_PRESTAMO`)
+- [ ] **Configuración de producción** — Dockerfiles para backend y frontend, `docker-compose.prod.yml`
