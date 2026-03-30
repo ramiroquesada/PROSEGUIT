@@ -1,5 +1,7 @@
 const fs = require('fs');
-const content = fs.readFileSync('C:/Users/ramir/Desktop/PROSEGIT/db_seguit1.sql', 'utf-8');
+const path = require('path');
+const ROOT = path.resolve(__dirname);
+const content = fs.readFileSync(path.join(ROOT, 'db_seguit1.sql'), 'utf-8');
 const lines = content.split('\n');
 
 function parseTable(tableName, columns) {
@@ -176,7 +178,7 @@ console.log(`\n  TOTAL: ${totalRows} registros`);
 
 // Save JSON
 fs.writeFileSync(
-  'C:/Users/ramir/Desktop/PROSEGIT/export_datos_v1.json',
+  path.join(ROOT, 'export_datos_v1.json'),
   JSON.stringify(data, null, 2),
   'utf-8'
 );
@@ -239,7 +241,7 @@ summary += '... (ver export_datos_v1.json para historial completo) ...\n';
 lastH.forEach(h => summary += `${h.id} | ${h.serie} | ${h.ubicacion} | ${h.fecha} | ${(h.observacion||'').substring(0,50)} | ${h.usuario}\n`);
 
 fs.writeFileSync(
-  'C:/Users/ramir/Desktop/PROSEGIT/resumen_datos_v1.txt',
+  path.join(ROOT, 'resumen_datos_v1.txt'),
   summary,
   'utf-8'
 );
@@ -263,8 +265,8 @@ data.equipo.forEach(e => {
 Object.entries(byLoc).sort((a,b) => b[1]-a[1]).slice(0, 20).forEach(([l,c]) => console.log(`  ${l}: ${c}`));
 
 // File sizes
-const jsonSize = (fs.statSync('C:/Users/ramir/Desktop/PROSEGIT/export_datos_v1.json').size / 1024).toFixed(1);
-const txtSize = (fs.statSync('C:/Users/ramir/Desktop/PROSEGIT/resumen_datos_v1.txt').size / 1024).toFixed(1);
+const jsonSize = (fs.statSync(path.join(ROOT, 'export_datos_v1.json')).size / 1024).toFixed(1);
+const txtSize = (fs.statSync(path.join(ROOT, 'resumen_datos_v1.txt')).size / 1024).toFixed(1);
 console.log(`\n=== Archivos generados ===`);
 console.log(`  export_datos_v1.json: ${jsonSize} KB`);
 console.log(`  resumen_datos_v1.txt: ${txtSize} KB`);

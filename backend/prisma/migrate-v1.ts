@@ -158,7 +158,6 @@ async function migrateEquipment() {
           oficinaId,
           estado: 'ACTIVO',
           ip: String(eq.ip ?? '').trim() || null,
-          urlImage: (eq.url_image || '').trim() || null,
           observacion: String(eq.observacion ?? '').trim() || null,
           v1Id: eq.id,
         },
