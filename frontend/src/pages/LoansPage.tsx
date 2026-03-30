@@ -155,9 +155,9 @@ export default function LoansPage() {
                     <td>{p.oficinaDestino?.nombre || '—'}</td>
                     <td>{p.tecnico.nombre}</td>
                     <td className={styles.fecha}>
-                      {new Date(p.fechaPrestamo).toLocaleDateString('es-UY')}
+                      {new Date(p.fechaPrestamo).toLocaleString('es-UY', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       {p.fechaDevolucion && (
-                        <span className={styles.devolucion}>Dev: {new Date(p.fechaDevolucion).toLocaleDateString('es-UY')}</span>
+                        <span className={styles.devolucion}>Dev: {new Date(p.fechaDevolucion).toLocaleString('es-UY', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                       )}
                     </td>
                     <td>

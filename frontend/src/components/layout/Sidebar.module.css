@@ -13,7 +13,7 @@
   height: 100dvh;
   position: sticky;
   top: 0;
-  background: linear-gradient(180deg, var(--color-secondary) 0%, #002856 60%, #001E40 100%);
+  background: linear-gradient(180deg, #003366 0%, #002856 60%, #001E40 100%);
   color: var(--color-text-inverse);
   display: flex;
   flex-direction: column;
@@ -245,6 +245,26 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
   line-height: var(--line-height-tight);
+}
+
+.themeBtn {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgb(255 255 255 / 0.4);
+  background: rgb(255 255 255 / 0.06);
+  border: 1px solid rgb(255 255 255 / 0.08);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  flex-shrink: 0;
+
+  &:hover {
+    color: rgb(255 255 255 / 0.9);
+    background: rgb(255 255 255 / 0.12);
+    border-color: rgb(255 255 255 / 0.2);
+  }
 }
 
 .logoutBtn {

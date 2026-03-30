@@ -1,6 +1,5 @@
 import { useLocation, useParams } from 'react-router';
 import { Menu } from 'lucide-react';
-import { useAuth } from '../../lib/auth-context';
 import { useEquipmentDetail } from '../../hooks/useEquipment';
 import styles from './Header.module.css';
 
@@ -45,7 +44,6 @@ interface HeaderProps {
 
 export default function Header({ onMenuToggle }: HeaderProps) {
   const { pathname } = useLocation();
-  const { user } = useAuth();
   const params = useParams();
 
   // Determinar título y breadcrumb según la ruta
@@ -80,13 +78,6 @@ export default function Header({ onMenuToggle }: HeaderProps) {
         </div>
       </div>
 
-      {user && (
-        <div className={styles.userChip}>
-          <div className={styles.userDot} />
-          <span className={styles.userName}>{user.nombre}</span>
-          <span className={styles.userRole}>{user.rol}</span>
-        </div>
-      )}
     </header>
   );
 }

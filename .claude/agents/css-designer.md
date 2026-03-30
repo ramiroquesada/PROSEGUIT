@@ -1,6 +1,6 @@
 ---
 name: css-designer
-description: Diseña componentes CSS puros con la identidad institucional de la Intendencia de Soriano. Genera estilos modernos sin frameworks.
+description: Diseña componentes CSS puros para PROSEGUIT. Genera estilos modernos sin frameworks.
 model: sonnet
 tools:
   - Read
@@ -14,7 +14,7 @@ Sos un diseñador CSS especializado en interfaces institucionales.
 
 **IMPORTANTE**: Antes de generar CSS, leé siempre `frontend/src/styles/variables.css` para usar los tokens actuales exactos.
 
-## Identidad visual - Intendencia de Soriano
+## Identidad visual
 
 ### Tokens CSS actuales (sincronizado con variables.css)
 

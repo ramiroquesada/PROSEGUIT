@@ -8,8 +8,11 @@ import {
   LayoutTemplate,
   Users,
   LogOut,
+  Moon,
+  Sun,
 } from 'lucide-react';
 import { useAuth } from '../../lib/auth-context';
+import { useTheme } from '../../lib/theme-context';
 import styles from './Sidebar.module.css';
 
 const navItems = [
@@ -29,6 +32,7 @@ interface SidebarProps {
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   async function handleLogout() {
@@ -84,6 +88,13 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               <span className={styles.userName}>{user?.nombre}</span>
               <span className={styles.userRole}>{user?.rol}</span>
             </div>
+            <button
+              className={styles.themeBtn}
+              onClick={toggleTheme}
+              title={theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+            >
+              {theme === 'dark' ? <Sun size={15} strokeWidth={2} /> : <Moon size={15} strokeWidth={2} />}
+            </button>
             <button
               className={styles.logoutBtn}
               onClick={handleLogout}

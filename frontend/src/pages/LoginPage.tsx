@@ -35,7 +35,7 @@ export default function LoginPage() {
         <div className={styles.cardHeader}>
           <div className={styles.logoMark}>🏛</div>
           <h1 className={styles.brandName}>PROSEGUIT</h1>
-          <p className={styles.brandSub}>Intendencia de Soriano</p>
+          <p className={styles.brandSub}>Gestión de Inventario IT</p>
         </div>
 
         {/* Formulario */}

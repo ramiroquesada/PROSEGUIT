@@ -3,7 +3,6 @@
 # PROSEGUIT v2
 
 **Sistema de Gestión de Inventario IT**
-Intendencia Departamental de Soriano — Uruguay
 
 [![Node.js](https://img.shields.io/badge/Node.js-22%2B-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
@@ -16,7 +15,7 @@ Intendencia Departamental de Soriano — Uruguay
 
 ---
 
-> PROSEGUIT reemplaza al sistema heredado "seguit v1" (PHP/MySQL). Gestiona más de **2.000 equipos informáticos** distribuidos en más de **100 oficinas** de la Intendencia, con historial completo de movimientos, préstamos, envíos a servicio técnico y trazabilidad total de cada equipo.
+> PROSEGUIT reemplaza al sistema heredado "seguit v1" (PHP/MySQL). Gestiona equipos informáticos distribuidos en múltiples oficinas, con historial completo de movimientos, préstamos, envíos a servicio técnico y trazabilidad total de cada equipo.
 
 ---
 
@@ -361,6 +360,6 @@ Al crear nuevos usuarios en la app, el sistema genera una contraseña temporal a
 
 <div align="center">
 
-*Intendencia Departamental de Soriano — Departamento de Informática*
+*PROSEGUIT — Sistema de Gestión de Inventario IT*
 
 </div>

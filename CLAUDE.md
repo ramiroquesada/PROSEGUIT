@@ -1,7 +1,7 @@
 # PROSEGUIT v2
 
-Sistema de Gestión de Inventario IT — Intendencia de Soriano, Uruguay.
-Reemplaza a "seguit v1" (PHP/MySQL). Desarrollado por el equipo de Informática.
+Sistema de Gestión de Inventario IT.
+Reemplaza a "seguit v1" (PHP/MySQL).
 
 ---
 

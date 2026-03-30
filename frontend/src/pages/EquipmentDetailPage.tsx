@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useEquipmentDetail, useTransferEquipment, useSendToSupport, useSendToService, useReturnFromService, useUploadEquipmentImage, useDeleteEquipmentImage } from '../hooks/useEquipment';
 import { resolveEstado, STATUS_LABEL, STATUS_COLOR } from '../lib/equipment-status';
@@ -6,7 +6,7 @@ import { useEquipmentHistory } from '../hooks/useHistory';
 import { useLocationTree } from '../hooks/useLocations';
 import { useServiceProviders } from '../hooks/useLoans';
 import { ACCION_LABEL, ACCION_COLOR } from '../lib/action-types';
-import { ArrowRightLeft, Building2, RotateCcw, Pencil, ChevronLeft, LogOut, LogIn, Monitor, Camera, Trash2, Plus } from 'lucide-react';
+import { ArrowRightLeft, Building2, RotateCcw, Pencil, ChevronLeft, LogOut, LogIn, Monitor, Camera, Trash2, Plus, X } from 'lucide-react';
 import { findSoporteOffice } from '../lib/find-soporte-office';
 import LocationCascadeSelect from '../components/LocationCascadeSelect';
 import styles from './EquipmentDetailPage.module.css';
@@ -128,6 +128,14 @@ export default function EquipmentDetailPage() {
 
   const [action, setAction] = useState<ActionState | null>(null);
   const [actionError, setActionError] = useState('');
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!lightboxUrl) return;
+    function onKey(e: KeyboardEvent) { if (e.key === 'Escape') setLightboxUrl(null); }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [lightboxUrl]);
 
   const isPending = transferMutation.isPending || supportMutation.isPending || serviceMutation.isPending || returnServiceMutation.isPending;
 
@@ -285,7 +293,7 @@ export default function EquipmentDetailPage() {
             {lastAction ? (ACCION_LABEL[lastAction.accion] || lastAction.accion) : '—'}
           </span>
           <span className={styles.bentoCellSub}>
-            {lastAction ? new Date(lastAction.fecha).toLocaleDateString('es-UY') : 'Sin registros'}
+            {lastAction ? new Date(lastAction.fecha).toLocaleString('es-UY', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Sin registros'}
           </span>
         </div>
         <div className={styles.bentoCell}>
@@ -343,7 +351,7 @@ export default function EquipmentDetailPage() {
               </div>
             )}
             {equipo.observacion && <div className={styles.detailRow}><dt>Observación</dt><dd>{equipo.observacion}</dd></div>}
-            <div className={styles.detailRow}><dt>Registrado</dt><dd>{new Date(equipo.createdAt).toLocaleDateString('es-UY')}</dd></div>
+            <div className={styles.detailRow}><dt>Registrado</dt><dd>{new Date(equipo.createdAt).toLocaleString('es-UY', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</dd></div>
           </dl>
 
           {/* Fotos del equipo */}
@@ -360,7 +368,12 @@ export default function EquipmentDetailPage() {
               <div className={styles.imageGallery}>
                 {equipo.imagenes.map((img) => (
                   <div key={img.id} className={styles.imageTile}>
-                    <img src={img.url} alt={`Equipo serie ${equipo.serie}`} className={styles.imageTileImg} />
+                    <img
+                      src={img.url}
+                      alt={`Equipo serie ${equipo.serie}`}
+                      className={styles.imageTileImg}
+                      onClick={() => setLightboxUrl(img.url)}
+                    />
                     <button
                       className={styles.imageDeleteBtn}
                       onClick={() => deleteImageMutation.mutate({ equipoId, imageId: img.id })}
@@ -480,7 +493,7 @@ export default function EquipmentDetailPage() {
                           {ACCION_LABEL[entry.accion] || entry.accion}
                         </span>
                         <span className={styles.timelineFecha}>
-                          {new Date(entry.fecha).toLocaleDateString('es-UY', { day: '2-digit', month: 'short', year: 'numeric' })}
+                          {new Date(entry.fecha).toLocaleString('es-UY', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         </span>
                       </div>
                       <p className={styles.timelineMotivo}>{entry.motivo}</p>
@@ -603,6 +616,20 @@ export default function EquipmentDetailPage() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* ── Lightbox ─────────────────────────────────────────────────────── */}
+      {lightboxUrl && (
+        <div className={styles.lightboxOverlay} onClick={() => setLightboxUrl(null)}>
+          <button className={styles.lightboxClose} onClick={() => setLightboxUrl(null)} aria-label="Cerrar">
+            <X size={20} />
+          </button>
+          <img
+            src={lightboxUrl}
+            className={styles.lightboxImg}
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>

@@ -22,19 +22,33 @@
 /* ── Filtros ─────────────────────────────────────────────────── */
 .filtersBar {
   display: flex;
-  gap: var(--space-sm);
-  align-items: center;
+  gap: var(--space-md);
+  align-items: flex-end;
   flex-wrap: wrap;
   margin-bottom: var(--space-lg);
-  padding: var(--space-md);
+  padding: var(--space-md) var(--space-lg);
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
 }
 
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.filterLabel {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .searchInput {
   flex: 1;
-  min-width: 200px;
+  min-width: 220px;
   padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
@@ -53,12 +67,6 @@
   &:focus { outline: none; border-color: var(--color-primary); }
 }
 
-.dateRange {
-  display: flex;
-  align-items: center;
-  gap: var(--space-xs);
-}
-
 .dateInput {
   padding: var(--space-sm) var(--space-sm);
   border: 1px solid var(--color-border);
@@ -66,11 +74,6 @@
   font-size: var(--font-size-sm);
   background: var(--color-bg);
   &:focus { outline: none; border-color: var(--color-primary); }
-}
-
-.dateSep {
-  color: var(--color-text-secondary);
-  font-size: var(--font-size-xs);
 }
 
 .clearBtn {
@@ -81,6 +84,7 @@
   color: var(--color-text-secondary);
   cursor: pointer;
   white-space: nowrap;
+  align-self: flex-end;
   transition: all var(--transition-fast);
   &:hover { border-color: #dc2626; color: #dc2626; background: #fee2e2; }
 }
@@ -135,9 +139,22 @@
 }
 
 .fecha {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
   white-space: nowrap;
+  vertical-align: middle;
+}
+
+.fechaDia {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--color-text);
+  font-weight: 500;
+}
+
+.fechaHora {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
+  margin-top: 2px;
 }
 
 .accionBadge {
@@ -161,12 +178,28 @@
 .modelo { font-size: var(--font-size-xs); color: var(--color-text-secondary); }
 .muted { color: var(--color-text-secondary); }
 
-.motivoCell {
-  max-width: 280px;
+.motivoTd {
+  max-width: 300px;
+}
+
+.motivo {
+  display: block;
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: var(--color-text);
+}
+
+.comentario {
+  display: block;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  font-style: italic;
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ubicacionCell {
@@ -210,10 +243,21 @@
   color: var(--color-text-secondary);
 }
 
-.tecnico {
+.tecnicoCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  white-space: nowrap;
+}
+
+.tecnicoNombre {
   font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
-  white-space: nowrap;
+}
+
+.tecnicoFicha {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-tertiary);
 }
 
 /* ── Paginación ──────────────────────────────────────────────── */
@@ -244,7 +288,9 @@
 
 @media (width < 768px) {
   .filtersBar { flex-direction: column; align-items: stretch; }
-  .searchInput { min-width: unset; }
-  .dateRange { justify-content: space-between; }
-  .motivoCell { max-width: 160px; }
+  .filterGroup { width: 100%; }
+  .searchInput { min-width: unset; width: 100%; }
+  .select { width: 100%; }
+  .clearBtn { align-self: stretch; }
+  .motivoTd { max-width: 160px; }
 }

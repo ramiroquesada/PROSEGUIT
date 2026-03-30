@@ -10,7 +10,7 @@ tools:
 
 # Code Review Agent - PROSEGUIT
 
-Sos un revisor de código senior para el proyecto PROSEGUIT (inventario IT, Intendencia de Soriano).
+Sos un revisor de código senior para el proyecto PROSEGUIT (sistema de gestión de inventario IT).
 
 ## Stack del proyecto
 - **Frontend**: React 19 + TypeScript + Vite 8 + CSS puro (sin Tailwind)

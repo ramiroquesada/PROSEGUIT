@@ -18,6 +18,8 @@ export default function HistoryPage() {
     limit: 30,
     accion: filters.accion || undefined,
     search: filters.search || undefined,
+    desde: filters.desde || undefined,
+    hasta: filters.hasta || undefined,
   });
 
   function handleFilter(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
@@ -45,27 +47,37 @@ export default function HistoryPage() {
 
       {/* ── Filtros ─────────────────────────────────────────────────── */}
       <div className={styles.filtersBar}>
-        <input
-          type="text"
-          name="search"
-          value={filters.search}
-          onChange={handleFilter}
-          placeholder="Buscar por serie, motivo..."
-          className={styles.searchInput}
-        />
+        <div className={styles.filterGroup}>
+          <label className={styles.filterLabel}>Buscar</label>
+          <input
+            type="text"
+            name="search"
+            value={filters.search}
+            onChange={handleFilter}
+            placeholder="Serie, motivo, comentario..."
+            className={styles.searchInput}
+          />
+        </div>
 
-        <select name="accion" value={filters.accion} onChange={handleFilter} className={styles.select}>
-          {ACCION_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-        </select>
+        <div className={styles.filterGroup}>
+          <label className={styles.filterLabel}>Acción</label>
+          <select name="accion" value={filters.accion} onChange={handleFilter} className={styles.select}>
+            {ACCION_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
+        </div>
 
-        <div className={styles.dateRange}>
-          <input type="date" name="desde" value={filters.desde} onChange={handleFilter} className={styles.dateInput} title="Desde" />
-          <span className={styles.dateSep}>—</span>
-          <input type="date" name="hasta" value={filters.hasta} onChange={handleFilter} className={styles.dateInput} title="Hasta" />
+        <div className={styles.filterGroup}>
+          <label className={styles.filterLabel}>Desde</label>
+          <input type="date" name="desde" value={filters.desde} onChange={handleFilter} className={styles.dateInput} />
+        </div>
+
+        <div className={styles.filterGroup}>
+          <label className={styles.filterLabel}>Hasta</label>
+          <input type="date" name="hasta" value={filters.hasta} onChange={handleFilter} className={styles.dateInput} />
         </div>
 
         {hasFilters && (
-          <button className={styles.clearBtn} onClick={handleClear}>Limpiar</button>
+          <button className={styles.clearBtn} onClick={handleClear}>Limpiar filtros</button>
         )}
       </div>
 
@@ -78,10 +90,10 @@ export default function HistoryPage() {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th>Fecha</th>
+                  <th>Fecha y hora</th>
                   <th>Acción</th>
                   <th>Equipo</th>
-                  <th>Motivo</th>
+                  <th>Motivo / Comentario</th>
                   <th>Ubicación</th>
                   <th>Técnico</th>
                 </tr>
@@ -95,9 +107,16 @@ export default function HistoryPage() {
                     data-clickable={Boolean(entry.equipo)}
                   >
                     <td className={styles.fecha}>
-                      {new Date(entry.fecha).toLocaleDateString('es-UY', {
-                        day: '2-digit', month: 'short', year: 'numeric',
-                      })}
+                      <span className={styles.fechaDia}>
+                        {new Date(entry.fecha).toLocaleDateString('es-UY', {
+                          day: '2-digit', month: 'short', year: 'numeric',
+                        })}
+                      </span>
+                      <span className={styles.fechaHora}>
+                        {new Date(entry.fecha).toLocaleTimeString('es-UY', {
+                          hour: '2-digit', minute: '2-digit',
+                        })}
+                      </span>
                     </td>
                     <td>
                       <span className={styles.accionBadge} data-color={ACCION_COLOR[entry.accion] || 'neutral'}>
@@ -112,7 +131,12 @@ export default function HistoryPage() {
                         </span>
                       ) : <span className={styles.muted}>—</span>}
                     </td>
-                    <td className={styles.motivoCell}>{entry.motivo}</td>
+                    <td className={styles.motivoTd}>
+                      <span className={styles.motivo}>{entry.motivo}</span>
+                      {entry.comentario && (
+                        <span className={styles.comentario}>{entry.comentario}</span>
+                      )}
+                    </td>
                     <td>
                       <div className={styles.ubicacionCell}>
                         {entry.oficinaOrigen && (
@@ -132,7 +156,12 @@ export default function HistoryPage() {
                         )}
                       </div>
                     </td>
-                    <td className={styles.tecnico}>{entry.usuario.nombre}</td>
+                    <td>
+                      <span className={styles.tecnicoCell}>
+                        <span className={styles.tecnicoNombre}>{entry.usuario.nombre}</span>
+                        <span className={styles.tecnicoFicha}>#{entry.usuario.ficha}</span>
+                      </span>
+                    </td>
                   </tr>
                 ))}
                 {data?.data.length === 0 && (

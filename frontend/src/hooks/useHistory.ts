@@ -19,6 +19,8 @@ interface HistoryFilters {
   equipoId?: number;
   accion?: string;
   search?: string;
+  desde?: string;
+  hasta?: string;
 }
 
 export function useHistory(filters: HistoryFilters = {}) {
@@ -28,6 +30,8 @@ export function useHistory(filters: HistoryFilters = {}) {
   if (filters.equipoId) params.set('equipoId', String(filters.equipoId));
   if (filters.accion) params.set('accion', filters.accion);
   if (filters.search) params.set('search', filters.search);
+  if (filters.desde) params.set('desde', filters.desde);
+  if (filters.hasta) params.set('hasta', filters.hasta);
 
   return useQuery({
     queryKey: ['history', filters],
