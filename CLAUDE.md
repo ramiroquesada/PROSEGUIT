@@ -95,8 +95,7 @@ npm test                 # Corre los 40 tests del backend (no requiere DB)
 cd backend && npm run test:watch  # Modo watch durante desarrollo
 
 # Migración de datos desde seguit v1 (ver sección completa abajo)
-node extract_data.js                              # Genera export_datos_v1.json desde el .sql
-cd backend && npx tsx prisma/migrate-v1.ts        # Importa todos los datos de v1
+npm run migrate:v1   # Un solo comando: extrae JSON + repara DB + aplica migraciones + importa
 
 # Individual (si concurrently falla)
 npm run dev:backend      # Solo backend
@@ -111,32 +110,33 @@ npm run dev:frontend     # Solo frontend
 
 ### Prerrequisitos
 - Docker Desktop corriendo
-- `db_seguit1.sql` colocado en la **raíz del proyecto** (`c:\Users\ramir\Desktop\PROSEGIT\`)
+- `db_seguit1.sql` colocado en la **raíz del proyecto** (`PROSEGUIT/`)
 
-### Pasos en orden
+### Un solo comando
 
 ```bash
-# 1. Extraer los datos del dump SQL a JSON
-node extract_data.js
-# → genera export_datos_v1.json (~1-2 MB) en la raíz del proyecto
-
-# 2. Asegurarse de que la base de datos esté corriendo
-npm run db:up
-
-# 3. Correr el script de migración
-cd backend && npx tsx prisma/migrate-v1.ts
+npm run db:up      # Solo si la DB no está corriendo
+npm run migrate:v1 # Hace todo: extrae JSON + repara DB + aplica migraciones + importa datos
 ```
 
-### Qué hace el script de migración
-1. **Limpia** los datos existentes (historial, préstamos, equipos, tipos, servicios, oficinas v1)
-2. **Migra ubicaciones** — todas las ubicaciones de v1 se crean como Oficinas bajo `Mercedes > General`
-3. **Migra tipos de equipo** — 35 tipos de v1
-4. **Migra usuarios** — password temporal = ficha, forcePasswordChange = true (excepto admin 9999)
-5. **Migra funcionarios** — para solicitantes de préstamos
-6. **Migra servicios externos** — proveedores de reparación
-7. **Migra equipos** — todos con estado ACTIVO por defecto
-8. **Migra historial** — mapea texto libre de v1 a tipos de acción de v2: "propietario" → `ASIGNACION`, "se cambio la ubicacion" → `TRANSFERENCIA`, "se ingreso" → `RETORNO_SOPORTE`, "se envio a service" → `ENVIO_SERVICIO_EXTERNO`, "se creo" → `CREACION`
-9. **Migra préstamos** — `fec_dev = '1900-01-01'` = préstamo activo
+### Qué hace `npm run migrate:v1`
+
+1. **`node extract_data.js`** — lee `db_seguit1.sql` y genera `export_datos_v1.json`
+2. **Pre-flight checks** (dentro de `migrate-v1.ts`):
+   - Verifica que `export_datos_v1.json` existe — falla con mensaje claro si no
+   - Verifica conexión a la DB — falla con `npm run db:up` si no responde
+   - Detecta y repara migración incompleta `estado_equipo_old` automáticamente si existe
+   - Corre `prisma migrate deploy` para aplicar migraciones pendientes
+   - Regenera el Prisma Client
+3. **Importación de datos:**
+   - Limpia datos existentes (historial, préstamos, equipos, tipos, servicios, oficinas v1)
+   - Migra ubicaciones → Oficinas bajo `Mercedes > General`
+   - Migra 35 tipos de equipo
+   - Migra usuarios (password temporal = ficha, forcePasswordChange = true, excepto admin 9999)
+   - Migra funcionarios, servicios externos
+   - Migra equipos con estado ACTIVO
+   - Migra historial mapeando texto libre a acciones: "propietario" → `ASIGNACION`, "se cambio la ubicacion" → `TRANSFERENCIA`, "se ingreso" → `RETORNO_SOPORTE`, "se envio a service" → `ENVIO_SERVICIO_EXTERNO`, "se creo" → `CREACION`
+   - Migra préstamos (`fec_dev = '1900-01-01'` = préstamo activo)
 
 ### Advertencias importantes
 - ⚠️ El script **borra datos existentes** antes de migrar — no correr sobre datos de producción con cambios nuevos
@@ -145,10 +145,10 @@ cd backend && npx tsx prisma/migrate-v1.ts
 - Los warns que aparecen en consola son normales — son registros de historial con datos incompletos
 
 ### Si el script tira errores
-- `Cannot find module` → verificar que `export_datos_v1.json` existe en la raíz
-- `Connection refused` → correr `npm run db:up` primero
+- `ERROR: export_datos_v1.json no encontrado` → `db_seguit1.sql` no está en la raíz del proyecto
+- `ERROR: No se puede conectar a la base de datos` → correr `npm run db:up` primero
+- `ERROR: prisma migrate deploy falló` → revisar `cd backend && npx prisma migrate status`
 - `P2002 Unique constraint` en tipos/ubicaciones → normal, son upserts, no es un error real
-- `Error: invalid input syntax for type integer` → el dump tiene datos corruptos, son skipped automáticamente
 
 ---
 

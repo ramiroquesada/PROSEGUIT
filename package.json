@@ -18,7 +18,8 @@
     "db:migrate": "npm run migrate --workspace=backend",
     "db:studio": "npm run studio --workspace=backend",
     "db:seed": "npm run seed --workspace=backend",
-    "test": "npm run test --workspace=backend"
+    "test": "npm run test --workspace=backend",
+    "migrate:v1": "node extract_data.js && npm run migrate:v1 --workspace=backend"
   },
   "engines": {
     "node": ">=22.0.0"

@@ -12,6 +12,7 @@
     "generate": "prisma generate",
     "studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
+    "migrate:v1": "tsx prisma/migrate-v1.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },

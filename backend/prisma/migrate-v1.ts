@@ -1,7 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
-import { readFileSync } from 'node:fs';
+import { execSync } from 'node:child_process';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import dotenv from 'dotenv';
 
@@ -10,7 +11,62 @@ dotenv.config();
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
 
+const backendDir = resolve(import.meta.dirname, '..');
 const dataPath = resolve(import.meta.dirname, '..', '..', 'export_datos_v1.json');
+
+async function preflight() {
+  // 1. Verificar que el JSON de datos existe
+  if (!existsSync(dataPath)) {
+    console.error('ERROR: export_datos_v1.json no encontrado.');
+    console.error('  Correr primero: node extract_data.js');
+    process.exit(1);
+  }
+
+  // 2. Verificar conexión a la DB
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+  } catch {
+    console.error('ERROR: No se puede conectar a la base de datos.');
+    console.error('  Correr primero: npm run db:up');
+    process.exit(1);
+  }
+
+  // 3. Detectar y reparar migración incompleta (estado_equipo_old)
+  //    Ocurre cuando remove_baja_estado renombró el enum pero no completó el ALTER TABLE.
+  const rows = await prisma.$queryRaw<{ exists: boolean }[]>`
+    SELECT EXISTS (
+      SELECT 1 FROM pg_type WHERE typname = 'estado_equipo_old'
+    ) AS exists
+  `;
+  if (rows[0]?.exists) {
+    console.log('⚠  Migración incompleta detectada (estado_equipo_old). Reparando...');
+    await prisma.$executeRaw`ALTER TABLE "equipo" ALTER COLUMN "estado" DROP DEFAULT`;
+    await prisma.$executeRaw`ALTER TABLE "equipo" ALTER COLUMN "estado" TYPE "estado_equipo" USING "estado"::text::"estado_equipo"`;
+    await prisma.$executeRaw`ALTER TABLE "equipo" ALTER COLUMN "estado" SET DEFAULT 'ACTIVO'::"estado_equipo"`;
+    await prisma.$executeRaw`DROP TYPE "estado_equipo_old"`;
+    // Marcar la migración fallida como aplicada en el historial de Prisma
+    await prisma.$executeRaw`
+      UPDATE "_prisma_migrations"
+      SET finished_at = NOW(), logs = NULL
+      WHERE migration_name = '20260328210000_remove_baja_estado'
+        AND finished_at IS NULL
+    `;
+    console.log('   -> Reparado.\n');
+  }
+
+  // 4. Aplicar migraciones pendientes
+  console.log('Verificando migraciones...');
+  try {
+    execSync('npx prisma migrate deploy', { stdio: 'inherit', cwd: backendDir });
+  } catch {
+    console.error('ERROR: prisma migrate deploy falló. Revisar el estado de la DB.');
+    process.exit(1);
+  }
+
+  // 5. Regenerar Prisma Client para reflejar el schema actual
+  execSync('npx prisma generate', { stdio: 'pipe', cwd: backendDir });
+  console.log('');
+}
 const v1 = JSON.parse(readFileSync(dataPath, 'utf8'));
 
 // Maps
@@ -305,6 +361,8 @@ async function migrateLoans() {
 
 async function main() {
   console.log('=== Migracion seguit v1 -> PROSEGUIT v2 ===\n');
+
+  await preflight();
 
   console.log('Limpiando datos existentes...');
   await prisma.historial.deleteMany();

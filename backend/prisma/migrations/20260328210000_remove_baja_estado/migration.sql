@@ -1,8 +1,10 @@
 -- Remove DADO_DE_BAJA from estado_equipo enum
 -- No rows use this value (confirmed: SELECT COUNT(*) FROM equipo WHERE estado = 'DADO_DE_BAJA' = 0)
+ALTER TABLE "equipo" ALTER COLUMN "estado" DROP DEFAULT;
 ALTER TYPE "estado_equipo" RENAME TO "estado_equipo_old";
 CREATE TYPE "estado_equipo" AS ENUM ('NUEVO', 'ACTIVO', 'EN_REPARACION', 'EN_DEPOSITO', 'PRESTADO', 'EN_SERVICIO_EXTERNO');
 ALTER TABLE "equipo" ALTER COLUMN "estado" TYPE "estado_equipo" USING "estado"::text::"estado_equipo";
+ALTER TABLE "equipo" ALTER COLUMN "estado" SET DEFAULT 'ACTIVO'::"estado_equipo";
 DROP TYPE "estado_equipo_old";
 
 -- Remove BAJA from accion_tipo enum

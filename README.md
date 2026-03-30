@@ -181,7 +181,12 @@ npm run db:down          # Detiene PostgreSQL
 npm run db:migrate       # Aplica migraciones de Prisma
 npm run db:studio        # Abre Prisma Studio (explorador visual)
 npm run db:seed          # Crea usuarios admin (9999) y técnico (7844)
+
+# Migración desde seguit v1
+npm run migrate:v1       # Extrae datos del dump SQL, repara DB si es necesario e importa todo
 ```
+
+> **Migración desde seguit v1:** colocar `db_seguit1.sql` en la raíz del proyecto y correr `npm run db:up && npm run migrate:v1`. El script detecta y repara automáticamente estados inconsistentes de la base de datos antes de importar.
 
 ---
 
