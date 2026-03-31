@@ -53,10 +53,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className={styles.brand}>
           <div className={styles.logoMark}>🏛</div>
           <div className={styles.logoText}>
-            <h1 className={styles.logo}>PROSEGUIT</h1>
-            <span className={styles.logoSubtitle}>Inventario IT</span>
+            <h1 className={styles.logo}>Inventario IT</h1>
+            <span className={styles.logoSubtitle}>PROSEGUIT</span>
           </div>
-          <span className={styles.version}>v2</span>
         </div>
 
         <nav className={styles.nav}>
