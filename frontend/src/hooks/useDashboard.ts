@@ -5,7 +5,6 @@ export interface DashboardStats {
   totalEquipos: number;
   activos: number;
   enReparacion: number;
-  dadosDeBaja: number;
   enDeposito: number;
   enServicioExterno: number;
   equiposNuevos: number;
