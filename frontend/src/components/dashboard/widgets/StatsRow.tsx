@@ -77,7 +77,7 @@ function StatCard({ label, value, loading, color, icon, onClick }: {
   onClick: () => void;
 }) {
   return (
-    <div className={styles.statCard} data-color={color} onClick={onClick} role="button" tabIndex={0}>
+    <div className={styles.statCard} data-color={color} onClick={onClick} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick(); } }}>
       <div className={styles.statHeader}>
         <div className={styles.statIcon}>{icon}</div>
         <span className={styles.statArrow}>→</span>
