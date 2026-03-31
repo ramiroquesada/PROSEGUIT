@@ -194,7 +194,7 @@
   min-width: 680px;
 
   & thead {
-    background: var(--color-secondary);
+    background: var(--color-table-head);
   }
 
   & th {
@@ -315,16 +315,16 @@
 
   &[data-color="neutral"] {
     background: var(--color-primary-light);
-    color: var(--color-primary-dark);
+    color: var(--color-primary);
     border: 1px solid rgb(var(--color-primary-rgb) / 0.2);
     &::before { background: var(--color-primary); }
   }
 
   &[data-color="new"] {
-    background: #f0f4ff;
-    color: #4361b0;
-    border: 1px solid rgba(67, 97, 176, 0.2);
-    &::before { background: #4361b0; }
+    background: var(--color-new-bg);
+    color: var(--color-new);
+    border: 1px solid var(--color-new-border);
+    &::before { background: var(--color-new); }
   }
 }
 

@@ -94,7 +94,7 @@
   color: var(--color-text-secondary);
   cursor: pointer;
   transition: all var(--transition-fast);
-  &:hover { background: #fee2e2; color: #dc2626; }
+  &:hover { background: var(--color-danger-subtle); color: var(--color-danger); }
 }
 
 .templateNombre { font-size: var(--font-size-base); font-weight: 700; color: var(--color-secondary); }
@@ -123,7 +123,7 @@
 .overlay { position: fixed; inset: 0; background: rgb(0 0 0 / 0.4); display: flex; align-items: center; justify-content: center; z-index: 100; padding: var(--space-lg); }
 .modal { background: var(--color-surface); border-radius: var(--radius-xl); padding: var(--space-xl); width: 100%; max-width: 480px; box-shadow: var(--shadow-xl); }
 .modalTitle { font-size: var(--font-size-lg); font-weight: 700; color: var(--color-secondary); margin-bottom: var(--space-md); }
-.modalError { background: #fee2e2; color: #dc2626; padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); font-size: var(--font-size-sm); margin-bottom: var(--space-md); }
+.modalError { background: var(--color-danger-subtle); color: var(--color-danger); padding: var(--space-sm) var(--space-md); border-radius: var(--radius-md); font-size: var(--font-size-sm); margin-bottom: var(--space-md); }
 .modalForm { display: flex; flex-direction: column; gap: var(--space-md); }
 .field { display: flex; flex-direction: column; gap: var(--space-xs); }
 .label { font-size: var(--font-size-xs); font-weight: 600; color: var(--color-text-secondary); text-transform: uppercase; }

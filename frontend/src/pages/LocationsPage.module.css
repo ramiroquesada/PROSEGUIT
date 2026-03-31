@@ -213,8 +213,8 @@
   &:disabled { opacity: 0.4; cursor: not-allowed; }
 
   &.danger:hover {
-    background: #fee2e2;
-    color: #dc2626;
+    background: var(--color-danger-subtle);
+    color: var(--color-danger);
   }
 }
 
@@ -243,7 +243,7 @@
 
 .confirmText {
   font-size: var(--font-size-xs);
-  color: #dc2626;
+  color: var(--color-danger);
   font-weight: 600;
 }
 
@@ -251,13 +251,13 @@
   font-size: var(--font-size-xs);
   font-weight: 600;
   padding: 3px 10px;
-  background: #dc2626;
+  background: var(--color-danger);
   color: white;
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: background var(--transition-fast);
 
-  &:hover { background: #b91c1c; }
+  &:hover { background: var(--color-danger-hover); }
 }
 
 .confirmNo {
@@ -273,10 +273,10 @@
 
 .deleteError {
   font-size: var(--font-size-xs);
-  color: #dc2626;
-  background: #fee2e2;
+  color: var(--color-danger);
+  background: var(--color-danger-subtle);
   padding: var(--space-xs) var(--space-md);
-  border-left: 3px solid #dc2626;
+  border-left: 3px solid var(--color-danger);
 }
 
 /* ── Add row ─────────────────────────────────────────────────────────────── */
@@ -308,7 +308,7 @@
 .addError {
   width: 100%;
   font-size: var(--font-size-xs);
-  color: #dc2626;
+  color: var(--color-danger);
 }
 
 /* ── Empty state ─────────────────────────────────────────────────────────── */
@@ -446,12 +446,12 @@
   white-space: nowrap;
   flex-shrink: 0;
 
-  &[data-color="success"]  { background: #dcfce7; color: #16a34a; }
-  &[data-color="warning"]  { background: #fef3c7; color: #d97706; }
-  &[data-color="danger"]   { background: #fee2e2; color: #dc2626; }
-  &[data-color="info"]     { background: #dbeafe; color: #2563eb; }
-  &[data-color="neutral"]  { background: #f1f5f9; color: #64748b; }
-  &[data-color="new"]      { background: #f0fdf4; color: #15803d; }
+  &[data-color="success"]  { background: var(--color-success-light);  color: var(--color-success); }
+  &[data-color="warning"]  { background: var(--color-warning-light);  color: var(--color-warning); }
+  &[data-color="danger"]   { background: var(--color-danger-light);   color: var(--color-danger); }
+  &[data-color="info"]     { background: var(--color-info-light);     color: var(--color-info); }
+  &[data-color="neutral"]  { background: var(--color-bg-subtle);      color: var(--color-text-secondary); }
+  &[data-color="new"]      { background: var(--color-success-subtle); color: var(--color-success); }
 }
 
 .verTodosBtn {

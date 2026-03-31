@@ -10,8 +10,12 @@ const ThemeContext = createContext<{ theme: Theme; toggleTheme: () => void }>({
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
     const saved = localStorage.getItem('theme') as Theme | null;
-    if (saved === 'light' || saved === 'dark') return saved;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    const resolved = (saved === 'light' || saved === 'dark')
+      ? saved
+      : window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    // Aplicar inmediatamente para evitar flash de tema incorrecto
+    document.documentElement.dataset.theme = resolved;
+    return resolved;
   });
 
   useEffect(() => {

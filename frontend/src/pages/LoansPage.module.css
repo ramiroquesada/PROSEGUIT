@@ -143,8 +143,8 @@
   font-size: var(--font-size-xs);
   font-weight: 600;
 
-  &[data-active="true"] { background: #dbeafe; color: #2563eb; }
-  &[data-active="false"] { background: #dcfce7; color: #16a34a; }
+  &[data-active="true"]  { background: var(--color-info-light);    color: var(--color-info); }
+  &[data-active="false"] { background: var(--color-success-light); color: var(--color-success); }
 }
 
 .returnBtn {
@@ -225,8 +225,8 @@
 }
 
 .modalError {
-  background: #fee2e2;
-  color: #dc2626;
+  background: var(--color-danger-subtle);
+  color: var(--color-danger);
   padding: var(--space-sm) var(--space-md);
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);

@@ -91,7 +91,7 @@
   font-size: var(--font-size-base);
   font-weight: var(--font-weight-bold);
   letter-spacing: 0.08em;
-  color: var(--color-text-inverse);
+  color: #fff;
   line-height: 1;
 }
 
@@ -144,7 +144,7 @@
     transform var(--transition-fast);
 
   &:hover {
-    color: var(--color-text-inverse);
+    color: #fff;
     background: rgb(255 255 255 / 0.07);
     transform: translateX(2px);
     text-decoration: none;
@@ -152,7 +152,7 @@
 }
 
 .active {
-  color: var(--color-text-inverse);
+  color: #fff;
   background: rgb(var(--color-primary-rgb) / 0.18);
   font-weight: var(--font-weight-semibold);
 
@@ -216,7 +216,7 @@
   justify-content: center;
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-bold);
-  color: var(--color-text-inverse);
+  color: #fff;
   flex-shrink: 0;
   box-shadow: 0 2px 6px rgb(0 0 0 / 0.2);
 }
@@ -232,7 +232,7 @@
 .userName {
   font-size: var(--font-size-sm);
   font-weight: var(--font-weight-semibold);
-  color: var(--color-text-inverse);
+  color: #fff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

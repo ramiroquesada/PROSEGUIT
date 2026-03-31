@@ -49,6 +49,15 @@
   --color-info-subtle:     #EFF6FF;
   --color-info-rgb:        37, 99, 235;
 
+  --color-new:             #4361B0;
+  --color-new-bg:          #F0F4FF;
+  --color-new-border:      #A3B8D8;
+
+  --color-violet:          #7C3AED;
+  --color-violet-light:    #EDE9FE;
+
+  --color-table-head:      #003366;
+
   /* ─── Espaciado ─── */
   --space-xs:  0.25rem;   /*  4px */
   --space-sm:  0.5rem;    /*  8px */
@@ -149,4 +158,13 @@
   --color-danger-subtle:   rgb(220 38 38 / 0.1);
   --color-info-light:      rgb(37 99 235 / 0.2);
   --color-info-subtle:     rgb(37 99 235 / 0.1);
+
+  --color-new:             #A5B4FC;
+  --color-new-bg:          rgb(67 97 176 / 0.2);
+  --color-new-border:      rgb(67 97 176 / 0.35);
+
+  --color-violet:          #C4B5FD;
+  --color-violet-light:    rgb(124 58 237 / 0.2);
+
+  --color-table-head:      #1A2E4A;
 }

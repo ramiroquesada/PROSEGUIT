@@ -86,7 +86,7 @@
   white-space: nowrap;
   align-self: flex-end;
   transition: all var(--transition-fast);
-  &:hover { border-color: #dc2626; color: #dc2626; background: #fee2e2; }
+  &:hover { border-color: var(--color-danger); color: var(--color-danger); background: var(--color-danger-subtle); }
 }
 
 /* ── Tabla ───────────────────────────────────────────────────── */
@@ -165,12 +165,12 @@
   font-weight: 600;
   white-space: nowrap;
 
-  &[data-color="success"]  { background: #dcfce7; color: #16a34a; }
-  &[data-color="warning"]  { background: #fef3c7; color: #d97706; }
-  &[data-color="danger"]   { background: #fee2e2; color: #dc2626; }
-  &[data-color="info"]     { background: #dbeafe; color: #2563eb; }
+  &[data-color="success"]  { background: var(--color-success-light);  color: var(--color-success); }
+  &[data-color="warning"]  { background: var(--color-warning-light);  color: var(--color-warning); }
+  &[data-color="danger"]   { background: var(--color-danger-light);   color: var(--color-danger); }
+  &[data-color="info"]     { background: var(--color-info-light);     color: var(--color-info); }
   &[data-color="primary"]  { background: rgb(from var(--color-primary) r g b / 0.1); color: var(--color-primary); }
-  &[data-color="neutral"]  { background: #f1f5f9; color: #64748b; }
+  &[data-color="neutral"]  { background: var(--color-bg-subtle);      color: var(--color-text-secondary); }
 }
 
 .equipoCell { display: flex; flex-direction: column; gap: 2px; }
