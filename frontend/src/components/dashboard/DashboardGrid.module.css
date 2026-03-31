@@ -1,0 +1,15 @@
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-lg);
+}
+
+/* Activity feed siempre ocupa todo el ancho */
+.fullWidth {
+  grid-column: 1 / -1;
+}
+
+@media (width < 900px) {
+  .grid { grid-template-columns: 1fr; }
+  .fullWidth { grid-column: auto; }
+}
