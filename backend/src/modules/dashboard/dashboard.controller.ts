@@ -8,6 +8,24 @@ export async function statsHandler(_req: Request, res: Response) {
 
 export async function recentActivityHandler(req: Request, res: Response) {
   const limit = Math.min(Number(req.query.limit) || 20, 100);
-  const activity = await dashboardService.getRecentActivity(limit);
+  const accion = typeof req.query.accion === 'string' ? req.query.accion : undefined;
+  const activity = await dashboardService.getRecentActivity(limit, accion);
   res.json(activity);
+}
+
+export async function loansAlertsHandler(req: Request, res: Response) {
+  const limit = Math.min(Number(req.query.limit) || 5, 20);
+  const data = await dashboardService.getLoansAlerts(limit);
+  res.json(data);
+}
+
+export async function repairAlertsHandler(req: Request, res: Response) {
+  const limit = Math.min(Number(req.query.limit) || 5, 20);
+  const data = await dashboardService.getRepairAlerts(limit);
+  res.json(data);
+}
+
+export async function equipmentByTypeHandler(_req: Request, res: Response) {
+  const data = await dashboardService.getEquipmentByType();
+  res.json(data);
 }
