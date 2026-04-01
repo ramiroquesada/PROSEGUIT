@@ -351,10 +351,30 @@ Al crear nuevos usuarios en la app, el sistema genera una contraseña temporal a
 
 ---
 
-## Pendiente
+## Roadmap
 
+El sistema está diseñado para evolucionar hacia una plataforma ITSM liviana. Las próximas mejoras planificadas:
+
+### Corto plazo
+- [ ] **Ciclo de vida del activo** — fecha de compra, garantía y fin de vida en la ficha del equipo
+- [ ] **Mejoras de fotos** — lightbox, descripción por imagen, soft-delete con registro en historial
+- [ ] **Rol usuario final** — tercera capa de permisos (solo lectura propia)
+- [ ] **Tags flexibles** — etiquetar equipos con categorías configurables y filtros avanzados
+- [ ] **Exportación CSV** — listados de equipos, historial y préstamos
 - [ ] Migración con dump actualizado de seguit v1
-- [ ] Mejoras de fotos: lightbox, descripción por imagen, soft-delete con registro en historial
+
+### Medio plazo
+- [ ] **Asignación permanente a funcionario** — titularidad de equipos más allá del préstamo temporal
+- [ ] **Documentos asociados** — facturas, contratos y manuales por equipo
+- [ ] **Gestión de licencias de software** — disponibles vs. usadas, expiración, asignación
+- [ ] **Sistema de alertas** — garantías por vencer, equipos sin mantenimiento, licencias próximas
+- [ ] **Gestión de costos** — precio de compra, depreciación, costo por área
+- [ ] **Dashboard analítico** — widgets de costos, gráficos de estado, comparativas por período
+
+### Largo plazo
+- [ ] **Módulo de tickets / helpdesk** — reporte de problemas por funcionarios, tickets asociados a activos
+- [ ] **Automatizaciones** — recordatorios, reglas de cambio de estado, notificaciones al técnico
+- [ ] **Importación masiva** — carga de equipos y usuarios desde CSV/Excel
 
 ---
 

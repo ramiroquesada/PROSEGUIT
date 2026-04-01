@@ -382,14 +382,9 @@ docker compose -f docker-compose.prod.yml logs -f frontend   # logs de nginx
 - [ ] **Migración de datos** con el dump actualizado de seguit v1 (traído de la oficina)
 - [x] **Mejoras de fotos de equipos** — lightbox, descripción por foto editable inline, soft-delete, registro en historial (`FOTO_AGREGADA`, `FOTO_ELIMINADA`)
 - [x] **Ciclo de vida del activo** — `fechaFinVida` y `precioCompra` agregados al modelo `Equipo`. Badge de garantía en ficha: rojo (vencida), amarillo (vence en ≤30 días), verde (vigente). Helper `getWarrantyStatus` en `equipment-status.ts` reutilizable para alertas futuras
-- [ ] **Rol USUARIO FINAL** — tercera capa de permisos (solo lectura propia): ver qué equipos tiene asignados, ver historial de sus equipos, solicitar soporte. Actualmente existen ADMIN y TECNICO
-- [ ] **Tags / etiquetas flexibles** — etiquetar equipos con tags configurables (ej: crítico, urgente, stock). Filtros en listado por tag
-- [ ] **Exportación CSV** — descargar listados de equipos, historial y préstamos como CSV/Excel
-
 ### Medio plazo
 
 - [ ] **Asignación permanente a funcionario** — más allá del préstamo temporal: registrar qué funcionario es el responsable/titular de cada equipo, historial de asignaciones, badge en ficha de equipo
-- [ ] **Documentos asociados** — adjuntar facturas, contratos, manuales a un equipo (similar al módulo de fotos pero para archivos PDF/docs)
 - [ ] **Gestión de licencias de software** — módulo nuevo: licencias disponibles vs. usadas, fechas de expiración, alertas, asignación a equipos o funcionarios
 - [ ] **Sistema de alertas** — notificaciones in-app (y opcionalmente email) para: garantías por vencer, equipos sin mantenimiento, licencias próximas a expirar, equipos obsoletos por fecha de fin de vida
 - [ ] **Gestión de costos** — precio de compra, depreciación opcional, costo total por área/ciudad/sección. Visible en dashboard analítico
