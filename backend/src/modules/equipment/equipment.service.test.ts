@@ -264,3 +264,58 @@ describe('getNextSerie', () => {
     expect(next).toBe(1);
   });
 });
+
+// ─── createEquipment — campos de ciclo de vida ──────────────────────────────
+
+describe('createEquipment — campos de ciclo de vida', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it('persiste fechaFinVida y precioCompra cuando se proveen', async () => {
+    mockPrisma.equipo.findUnique.mockResolvedValue(null);
+    mockPrisma.equipo.create.mockResolvedValue({
+      id: 1,
+      tipoEquipo: { id: 1, nombre: 'PC' },
+      oficina: { id: 1, nombre: 'Soporte', seccion: { ciudad: {} } },
+    });
+
+    await createEquipment(
+      {
+        serie: 999,
+        tipoEquipoId: 1,
+        oficinaId: 1,
+        fechaFinVida: new Date('2030-01-01'),
+        precioCompra: 25000,
+      },
+      1,
+    );
+
+    expect(mockPrisma.equipo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          fechaFinVida: new Date('2030-01-01'),
+          precioCompra: 25000,
+        }),
+      }),
+    );
+  });
+
+  it('acepta fechaFinVida y precioCompra como undefined cuando no se proveen', async () => {
+    mockPrisma.equipo.findUnique.mockResolvedValue(null);
+    mockPrisma.equipo.create.mockResolvedValue({
+      id: 2,
+      tipoEquipo: { id: 1, nombre: 'PC' },
+      oficina: { id: 1, nombre: 'Soporte', seccion: { ciudad: {} } },
+    });
+
+    await createEquipment({ serie: 1000, tipoEquipoId: 1, oficinaId: 1 }, 1);
+
+    expect(mockPrisma.equipo.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          fechaFinVida: undefined,
+          precioCompra: undefined,
+        }),
+      }),
+    );
+  });
+});

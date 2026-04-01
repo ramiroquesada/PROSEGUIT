@@ -179,6 +179,8 @@ export async function createEquipment(data: {
   fechaAdquisicion?: Date | null;
   nroInventario?: string;
   garantiaHasta?: Date | null;
+  fechaFinVida?: Date | null;
+  precioCompra?: number | null;
   observacion?: string;
   especificaciones?: Prisma.InputJsonValue;
 }, usuarioId: number) {
@@ -206,6 +208,8 @@ export async function createEquipment(data: {
       fechaAdquisicion: data.fechaAdquisicion,
       nroInventario: data.nroInventario,
       garantiaHasta: data.garantiaHasta,
+      fechaFinVida: data.fechaFinVida,
+      precioCompra: data.precioCompra,
       urlImage: data.urlImage,
       observacion: data.observacion,
       especificaciones: data.especificaciones ?? Prisma.JsonNull,
@@ -241,6 +245,8 @@ export async function updateEquipment(id: number, data: {
   fechaAdquisicion?: Date | null;
   nroInventario?: string;
   garantiaHasta?: Date | null;
+  fechaFinVida?: Date | null;
+  precioCompra?: number | null;
   observacion?: string;
   especificaciones?: Prisma.InputJsonValue;
   motivo: string;
