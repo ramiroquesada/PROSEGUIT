@@ -37,6 +37,8 @@ export default function EquipmentFormPage() {
     fechaAdquisicion: '',
     nroInventario: '',
     garantiaHasta: '',
+    fechaFinVida: '',
+    precioCompra: '',
     observacion: '',
     motivo: '',
   });
@@ -61,6 +63,8 @@ export default function EquipmentFormPage() {
         fechaAdquisicion: equipo.fechaAdquisicion ? equipo.fechaAdquisicion.slice(0, 10) : '',
         nroInventario: equipo.nroInventario || '',
         garantiaHasta: equipo.garantiaHasta ? equipo.garantiaHasta.slice(0, 10) : '',
+        fechaFinVida: equipo.fechaFinVida ? equipo.fechaFinVida.slice(0, 10) : '',
+        precioCompra: equipo.precioCompra ? String(equipo.precioCompra) : '',
         observacion: equipo.observacion || '',
         motivo: '',
       });
@@ -141,6 +145,8 @@ export default function EquipmentFormPage() {
       fechaAdquisicion: form.fechaAdquisicion || null,
       nroInventario: form.nroInventario || undefined,
       garantiaHasta: form.garantiaHasta || null,
+      fechaFinVida: form.fechaFinVida || null,
+      precioCompra: form.precioCompra ? Number(form.precioCompra) : null,
       observacion: form.observacion || undefined,
     };
 
@@ -308,6 +314,31 @@ export default function EquipmentFormPage() {
                 value={form.garantiaHasta}
                 onChange={handleChange}
                 className={styles.input}
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>Fin de vida estimado</label>
+              <input
+                type="date"
+                name="fechaFinVida"
+                value={form.fechaFinVida}
+                onChange={handleChange}
+                className={styles.input}
+              />
+            </div>
+
+            <div className={styles.field}>
+              <label className={styles.label}>Precio de compra ($)</label>
+              <input
+                type="number"
+                name="precioCompra"
+                value={form.precioCompra}
+                onChange={handleChange}
+                className={styles.input}
+                placeholder="Ej: 25000"
+                min="0"
+                step="0.01"
               />
             </div>
           </div>
