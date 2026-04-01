@@ -108,6 +108,8 @@ model Equipo {
   fechaAdquisicion DateTime?      @map("fecha_adquisicion")
   nroInventario    String?        @map("nro_inventario") @db.VarChar(100)
   garantiaHasta    DateTime?      @map("garantia_hasta")
+  fechaFinVida     DateTime?      @map("fecha_fin_vida")
+  precioCompra     Decimal?       @map("precio_compra") @db.Decimal(10, 2)
   observacion      String?        @db.Text
   especificaciones Json           @default("{}") @db.JsonB
   v1Id             Int?           @map("v1_id")
