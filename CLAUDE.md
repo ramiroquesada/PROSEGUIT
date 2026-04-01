@@ -377,6 +377,8 @@ docker compose -f docker-compose.prod.yml logs -f frontend   # logs de nginx
 
 ## Pendiente / TODO
 
+### Corto plazo
+
 - [ ] **Migración de datos** con el dump actualizado de seguit v1 (traído de la oficina)
 - [ ] **Mejoras de fotos de equipos** — las fotos múltiples ya funcionan; pendiente:
   - Lightbox (click en imagen la muestra ampliada)
@@ -384,9 +386,40 @@ docker compose -f docker-compose.prod.yml logs -f frontend   # logs de nginx
   - Soft-delete (ocultar sin borrar de DB, mantener referencia histórica)
   - Registro en historial al agregar/eliminar foto (`FOTO_AGREGADA`, `FOTO_ELIMINADA`)
   - Nota: las columnas `descripcion` y `deleted_at` en `equipo_imagen` y los enum values en la DB **ya existen** — faltan schema.prisma + prisma generate + backend + frontend
+- [x] **Ciclo de vida del activo** — `fechaFinVida` y `precioCompra` agregados al modelo `Equipo`. Badge de garantía en ficha: rojo (vencida), amarillo (vence en ≤30 días), verde (vigente). Helper `getWarrantyStatus` en `equipment-status.ts` reutilizable para alertas futuras
+- [ ] **Rol USUARIO FINAL** — tercera capa de permisos (solo lectura propia): ver qué equipos tiene asignados, ver historial de sus equipos, solicitar soporte. Actualmente existen ADMIN y TECNICO
+- [ ] **Tags / etiquetas flexibles** — etiquetar equipos con tags configurables (ej: crítico, urgente, stock). Filtros en listado por tag
+- [ ] **Exportación CSV** — descargar listados de equipos, historial y préstamos como CSV/Excel
+
+### Medio plazo
+
+- [ ] **Asignación permanente a funcionario** — más allá del préstamo temporal: registrar qué funcionario es el responsable/titular de cada equipo, historial de asignaciones, badge en ficha de equipo
+- [ ] **Documentos asociados** — adjuntar facturas, contratos, manuales a un equipo (similar al módulo de fotos pero para archivos PDF/docs)
+- [ ] **Gestión de licencias de software** — módulo nuevo: licencias disponibles vs. usadas, fechas de expiración, alertas, asignación a equipos o funcionarios
+- [ ] **Sistema de alertas** — notificaciones in-app (y opcionalmente email) para: garantías por vencer, equipos sin mantenimiento, licencias próximas a expirar, equipos obsoletos por fecha de fin de vida
+- [ ] **Gestión de costos** — precio de compra, depreciación opcional, costo total por área/ciudad/sección. Visible en dashboard analítico
+- [ ] **Dashboard analítico ampliado** — widgets configurables: equipos por tipo/área, costos acumulados, comparativas por período, gráficos de estado general
+
+### Largo plazo
+
+- [ ] **Módulo de tickets / helpdesk** — los funcionarios reportan problemas, los tickets se asocian a equipos, estados: abierto / en proceso / resuelto. Acerca el sistema a un ITSM liviano
+- [ ] **Automatizaciones** — reglas simples configurables: recordatorios automáticos, cambio de estado al cumplir condición, notificación al técnico asignado
+- [ ] **Importación CSV/Excel** — carga masiva de equipos, usuarios o licencias desde planilla
+- [ ] **Mapa lógico de ubicaciones** — visualización de árbol ciudad/sección/oficina con contadores de equipos por nodo
+
+### Completado ✅
+
 - [x] **Tests** — backend service layer: `equipment.service`, `auth.service`, `users.service` (40 tests con Vitest, sin DB)
 - [x] **Alinear `@proseguit/shared`** — serie como `number`, enums corregidos, schemas compartidos en backend
 - [x] **Configuración de producción** — `backend/Dockerfile`, `frontend/Dockerfile`, `docker-compose.prod.yml`, `.env.production.example`
 - [x] **Responsive completo** — mobile/tablet implementado
 - [x] **Fotos de equipos** — subida múltiple, galería en detalle del equipo
 - [x] **Permisos TECNICO** — técnicos pueden gestionar ubicaciones y plantillas; panel de usuario propio con cambio de contraseña
+- [x] **Auth JWT con rotación** — access 15min + refresh 7d con rotación automática en cada refresh
+- [x] **Estado NUEVO** — equipos recién ingresados, flujo completo hasta asignación
+- [x] **Dashboard en tiempo real** — invalidación via TanStack Query prefix matching
+- [x] **Historial y auditoría completo** — toda acción registra motivo, técnico, origen/destino, timestamp
+- [x] **Árbol de ubicaciones** — Ciudad › Sección › Oficina con CRUD inline y panel de equipos
+- [x] **Servicios externos** — envío a reparación con proveedor, diagnóstico, retorno
+- [x] **Préstamos** — salida/devolución con identificación de funcionario
+- [x] **Script de migración desde seguit v1** — un solo comando, auto-repara DB inconsistente
