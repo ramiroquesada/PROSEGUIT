@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useEquipmentDetail, useTransferEquipment, useSendToSupport, useSendToService, useReturnFromService, useUploadEquipmentImage, useDeleteEquipmentImage } from '../hooks/useEquipment';
-import { resolveEstado, STATUS_LABEL, STATUS_COLOR } from '../lib/equipment-status';
+import { resolveEstado, STATUS_LABEL, STATUS_COLOR, getWarrantyStatus, getWarrantyDaysLeft } from '../lib/equipment-status';
 import { useEquipmentHistory } from '../hooks/useHistory';
 import { useLocationTree } from '../hooks/useLocations';
 import { useServiceProviders } from '../hooks/useLoans';
@@ -341,13 +341,38 @@ export default function EquipmentDetailPage() {
                 <dd>{new Date(equipo.fechaAdquisicion).toLocaleDateString('es-UY')}</dd>
               </div>
             )}
-            {equipo.garantiaHasta && (
+            {equipo.garantiaHasta && (() => {
+              const wStatus = getWarrantyStatus(equipo.garantiaHasta);
+              const daysLeft = getWarrantyDaysLeft(equipo.garantiaHasta);
+              return (
+                <div className={styles.detailRow}>
+                  <dt>Garantía hasta</dt>
+                  <dd>
+                    <span className={wStatus === 'expired' ? styles.garantiaVencida : wStatus === 'expiring-soon' ? styles.garantiaProxima : styles.garantiaVigente}>
+                      {new Date(equipo.garantiaHasta).toLocaleDateString('es-UY')}
+                    </span>
+                    {wStatus === 'expired' && (
+                      <span className={`${styles.warrantyBadge} ${styles.warrantyBadgeExpired}`}>Vencida</span>
+                    )}
+                    {wStatus === 'expiring-soon' && daysLeft !== null && (
+                      <span className={`${styles.warrantyBadge} ${styles.warrantyBadgeWarn}`}>
+                        Vence en {daysLeft} día{daysLeft !== 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </dd>
+                </div>
+              );
+            })()}
+            {equipo.fechaFinVida && (
               <div className={styles.detailRow}>
-                <dt>Garantía hasta</dt>
-                <dd className={new Date(equipo.garantiaHasta) < new Date() ? styles.garantiaVencida : styles.garantiaVigente}>
-                  {new Date(equipo.garantiaHasta).toLocaleDateString('es-UY')}
-                  {new Date(equipo.garantiaHasta) < new Date() ? ' (vencida)' : ''}
-                </dd>
+                <dt>Fin de vida est.</dt>
+                <dd>{new Date(equipo.fechaFinVida).toLocaleDateString('es-UY')}</dd>
+              </div>
+            )}
+            {equipo.precioCompra && (
+              <div className={styles.detailRow}>
+                <dt>Precio de compra</dt>
+                <dd>$ {Number(equipo.precioCompra).toLocaleString('es-UY')}</dd>
               </div>
             )}
             {equipo.observacion && <div className={styles.detailRow}><dt>Observación</dt><dd>{equipo.observacion}</dd></div>}

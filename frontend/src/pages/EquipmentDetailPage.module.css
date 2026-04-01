@@ -1,6 +1,6 @@
 /* ── Base ─────────────────────────────────────────────────────────────────── */
 .page {
-  max-width: 1200px;
+  /* max-width: 1200px; */
   padding-bottom: var(--space-2xl);
   display: flex;
   flex-direction: column;
@@ -382,6 +382,31 @@
 .garantiaVigente {
   color: var(--color-success);
   font-weight: var(--font-weight-semibold);
+}
+
+.garantiaProxima {
+  color: var(--color-warning);
+  font-weight: var(--font-weight-semibold);
+}
+
+.warrantyBadge {
+  display: inline-block;
+  margin-left: var(--space-xs);
+  padding: 1px 8px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  vertical-align: middle;
+}
+
+.warrantyBadgeExpired {
+  background: var(--color-danger-subtle);
+  color: var(--color-danger);
+}
+
+.warrantyBadgeWarn {
+  background: var(--color-warning-subtle);
+  color: var(--color-warning);
 }
 
 .mono {
