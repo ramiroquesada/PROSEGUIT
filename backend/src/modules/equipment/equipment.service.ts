@@ -148,7 +148,7 @@ export async function getEquipmentById(id: number) {
         },
       },
       template: true,
-      imagenes: { orderBy: { createdAt: 'asc' } },
+      imagenes: { where: { deletedAt: null }, orderBy: { createdAt: 'asc' } },
       historial: {
         include: {
           usuario: { select: { nombre: true, ficha: true } },
@@ -480,7 +480,7 @@ export async function getNextSerie(): Promise<number> {
 }
 
 /** Agrega una nueva imagen al equipo */
-export async function saveEquipmentImage(equipoId: number, uploadedFilePath: string) {
+export async function saveEquipmentImage(equipoId: number, uploadedFilePath: string, usuarioId: number, descripcion?: string) {
   const equipo = await prisma.equipo.findUnique({ where: { id: equipoId } });
   if (!equipo) {
     await unlink(uploadedFilePath).catch(() => {});
@@ -490,18 +490,61 @@ export async function saveEquipmentImage(equipoId: number, uploadedFilePath: str
   const filename = path.basename(uploadedFilePath);
   const url = `/uploads/equipment/${filename}`;
 
-  const imagen = await prisma.equipoImagen.create({ data: { equipoId, url } });
+  const imagen = await prisma.equipoImagen.create({ data: { equipoId, url, descripcion } });
+
+  await prisma.historial.create({
+    data: {
+      equipoId,
+      accion: 'FOTO_AGREGADA',
+      usuarioId,
+      motivo: 'Foto agregada',
+      oficinaDestinoId: equipo.oficinaId,
+    },
+  });
+
   return imagen;
 }
 
-/** Elimina una imagen del equipo */
-export async function deleteEquipmentImage(equipoId: number, imageId: number) {
-  const imagen = await prisma.equipoImagen.findFirst({ where: { id: imageId, equipoId } });
+/** Soft-delete de una imagen del equipo */
+export async function deleteEquipmentImage(equipoId: number, imageId: number, usuarioId: number) {
+  const equipo = await prisma.equipo.findUnique({ where: { id: equipoId } });
+  const imagen = await prisma.equipoImagen.findFirst({ where: { id: imageId, equipoId, deletedAt: null } });
   if (!imagen) throw new AppError(404, 'Imagen no encontrada');
 
-  if (imagen.url.startsWith('/uploads/')) {
-    await unlink(path.join(process.cwd(), imagen.url.slice(1))).catch(() => {});
+  await prisma.equipoImagen.update({ where: { id: imageId }, data: { deletedAt: new Date() } });
+
+  if (equipo) {
+    await prisma.historial.create({
+      data: {
+        equipoId,
+        accion: 'FOTO_ELIMINADA',
+        usuarioId,
+        motivo: 'Foto eliminada',
+        oficinaDestinoId: equipo.oficinaId,
+      },
+    });
+  }
+}
+
+/** Actualiza la descripción de una imagen */
+export async function updateImageDescription(equipoId: number, imageId: number, descripcion: string | null, usuarioId: number) {
+  const equipo = await prisma.equipo.findUnique({ where: { id: equipoId } });
+  const imagen = await prisma.equipoImagen.findFirst({ where: { id: imageId, equipoId, deletedAt: null } });
+  if (!imagen) throw new AppError(404, 'Imagen no encontrada');
+
+  const updated = await prisma.equipoImagen.update({ where: { id: imageId }, data: { descripcion } });
+
+  if (equipo) {
+    await prisma.historial.create({
+      data: {
+        equipoId,
+        accion: 'EDICION',
+        usuarioId,
+        motivo: 'Descripción de foto actualizada',
+        oficinaDestinoId: equipo.oficinaId,
+      },
+    });
   }
 
-  await prisma.equipoImagen.delete({ where: { id: imageId } });
+  return updated;
 }

@@ -19,10 +19,18 @@ vi.mock('../../utils/prisma.js', () => ({
       findFirst: vi.fn(),
       update: vi.fn(),
     },
+    equipoImagen: {
+      create: vi.fn(),
+      findFirst: vi.fn(),
+      update: vi.fn(),
+    },
+    historial: {
+      create: vi.fn(),
+    },
   },
 }));
 
-import { transferEquipment, sendToSupport, createEquipment, getNextSerie, returnFromService } from './equipment.service.js';
+import { transferEquipment, sendToSupport, createEquipment, getNextSerie, returnFromService, saveEquipmentImage, deleteEquipmentImage, updateImageDescription } from './equipment.service.js';
 import { prisma } from '../../utils/prisma.js';
 import { AppError } from '../../middleware/error-handler.js';
 
@@ -31,6 +39,8 @@ const mockPrisma = prisma as unknown as {
   oficina: { findUnique: ReturnType<typeof vi.fn> };
   servicioExterno: { findUnique: ReturnType<typeof vi.fn> };
   envioServicio: { create: ReturnType<typeof vi.fn>; findFirst: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> };
+  equipoImagen: { create: ReturnType<typeof vi.fn>; findFirst: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> };
+  historial: { create: ReturnType<typeof vi.fn> };
 };
 
 // ─── transferEquipment ───────────────────────────────────────────────────────
@@ -317,5 +327,104 @@ describe('createEquipment — campos de ciclo de vida', () => {
         }),
       }),
     );
+  });
+});
+
+// ─── saveEquipmentImage ──────────────────────────────────────────────────────
+
+describe('saveEquipmentImage', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it('crea la imagen y registra FOTO_AGREGADA en historial', async () => {
+    mockPrisma.equipo.findUnique.mockResolvedValue({ id: 1, oficinaId: 5 });
+    mockPrisma.equipoImagen.create.mockResolvedValue({ id: 10, url: '/uploads/equipment/test.jpg', descripcion: null });
+    mockPrisma.historial.create.mockResolvedValue({});
+
+    const result = await saveEquipmentImage(1, '/tmp/uploads/equipment/test.jpg', 99);
+
+    expect(mockPrisma.equipoImagen.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ equipoId: 1, descripcion: undefined }) })
+    );
+    expect(mockPrisma.historial.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ accion: 'FOTO_AGREGADA', usuarioId: 99, equipoId: 1 }),
+      })
+    );
+    expect(result.id).toBe(10);
+  });
+
+  it('pasa la descripcion al crear la imagen', async () => {
+    mockPrisma.equipo.findUnique.mockResolvedValue({ id: 1, oficinaId: 5 });
+    mockPrisma.equipoImagen.create.mockResolvedValue({ id: 11, url: '/uploads/equipment/x.jpg', descripcion: 'Vista frontal' });
+    mockPrisma.historial.create.mockResolvedValue({});
+
+    await saveEquipmentImage(1, '/tmp/uploads/equipment/x.jpg', 99, 'Vista frontal');
+
+    expect(mockPrisma.equipoImagen.create).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ descripcion: 'Vista frontal' }) })
+    );
+  });
+});
+
+// ─── deleteEquipmentImage ────────────────────────────────────────────────────
+
+describe('deleteEquipmentImage', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it('hace soft-delete y registra FOTO_ELIMINADA en historial', async () => {
+    mockPrisma.equipo.findUnique.mockResolvedValue({ id: 1, oficinaId: 5 });
+    mockPrisma.equipoImagen.findFirst.mockResolvedValue({ id: 10, equipoId: 1, url: '/uploads/equipment/test.jpg', deletedAt: null });
+    mockPrisma.equipoImagen.update.mockResolvedValue({});
+    mockPrisma.historial.create.mockResolvedValue({});
+
+    await deleteEquipmentImage(1, 10, 99);
+
+    expect(mockPrisma.equipoImagen.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: 10 },
+        data: expect.objectContaining({ deletedAt: expect.any(Date) }),
+      })
+    );
+    expect(mockPrisma.historial.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ accion: 'FOTO_ELIMINADA', usuarioId: 99, equipoId: 1 }),
+      })
+    );
+  });
+
+  it('lanza 404 si la imagen no existe', async () => {
+    mockPrisma.equipoImagen.findFirst.mockResolvedValue(null);
+
+    await expect(deleteEquipmentImage(1, 99, 1)).rejects.toThrow('Imagen no encontrada');
+  });
+});
+
+// ─── updateImageDescription ──────────────────────────────────────────────────
+
+describe('updateImageDescription', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it('actualiza la descripcion y registra EDICION en historial', async () => {
+    mockPrisma.equipoImagen.findFirst.mockResolvedValue({ id: 10, equipoId: 1, url: '/uploads/equipment/test.jpg', deletedAt: null });
+    mockPrisma.equipoImagen.update.mockResolvedValue({ id: 10, descripcion: 'Nueva desc' });
+    mockPrisma.historial.create.mockResolvedValue({});
+    mockPrisma.equipo.findUnique.mockResolvedValue({ id: 1, oficinaId: 5 });
+
+    await updateImageDescription(1, 10, 'Nueva desc', 99);
+
+    expect(mockPrisma.equipoImagen.update).toHaveBeenCalledWith(
+      expect.objectContaining({ where: { id: 10 }, data: { descripcion: 'Nueva desc' } })
+    );
+    expect(mockPrisma.historial.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ accion: 'EDICION', usuarioId: 99, equipoId: 1 }),
+      })
+    );
+  });
+
+  it('lanza 404 si la imagen no existe o está eliminada', async () => {
+    mockPrisma.equipoImagen.findFirst.mockResolvedValue(null);
+
+    await expect(updateImageDescription(1, 99, 'desc', 1)).rejects.toThrow('Imagen no encontrada');
   });
 });
