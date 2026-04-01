@@ -10,6 +10,8 @@ export const ACCION_LABEL: Record<string, string> = {
   PRESTAMO: 'Préstamo',
   DEVOLUCION: 'Devolución',
   CAMBIO_ESTADO: 'Cambio de Estado',
+  FOTO_AGREGADA: 'Foto agregada',
+  FOTO_ELIMINADA: 'Foto eliminada',
 };
 
 export const ACCION_COLOR: Record<string, string> = {
@@ -24,6 +26,8 @@ export const ACCION_COLOR: Record<string, string> = {
   PRESTAMO: 'info',
   DEVOLUCION: 'success',
   CAMBIO_ESTADO: 'neutral',
+  FOTO_AGREGADA: 'info',
+  FOTO_ELIMINADA: 'neutral',
 };
 
 export const ACCION_OPTIONS = [

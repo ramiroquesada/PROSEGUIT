@@ -69,7 +69,7 @@ interface Equipment {
   nroInventario: string | null;
   garantiaHasta: string | null;
   observacion: string | null;
-  imagenes: { id: number; url: string; createdAt: string }[];
+  imagenes: { id: number; url: string; descripcion: string | null; createdAt: string }[];
   tipoEquipo: { id: number; nombre: string; icono: string | null };
   oficina: {
     id: number;
@@ -141,10 +141,11 @@ export function useReturnFromService() {
 export function useUploadEquipmentImage() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, file }: { id: number; file: File }) => {
+    mutationFn: ({ id, file, descripcion }: { id: number; file: File; descripcion?: string }) => {
       const formData = new FormData();
       formData.append('image', file);
-      return api.upload<{ imagen: { id: number; url: string; createdAt: string } }>(`/equipment/${id}/images`, formData);
+      if (descripcion) formData.append('descripcion', descripcion);
+      return api.upload<{ imagen: { id: number; url: string; descripcion: string | null; createdAt: string } }>(`/equipment/${id}/images`, formData);
     },
     onSuccess: (_data, { id }) => {
       qc.invalidateQueries({ queryKey: ['equipment', id] });
@@ -157,6 +158,17 @@ export function useDeleteEquipmentImage() {
   return useMutation({
     mutationFn: ({ equipoId, imageId }: { equipoId: number; imageId: number }) =>
       api.delete(`/equipment/${equipoId}/images/${imageId}`),
+    onSuccess: (_data, { equipoId }) => {
+      qc.invalidateQueries({ queryKey: ['equipment', equipoId] });
+    },
+  });
+}
+
+export function useUpdateImageDescription() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ equipoId, imageId, descripcion }: { equipoId: number; imageId: number; descripcion: string | null }) =>
+      api.patch<{ imagen: { id: number; descripcion: string | null } }>(`/equipment/${equipoId}/images/${imageId}`, { descripcion }),
     onSuccess: (_data, { equipoId }) => {
       qc.invalidateQueries({ queryKey: ['equipment', equipoId] });
     },
