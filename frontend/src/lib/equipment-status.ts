@@ -46,3 +46,32 @@ export const STATUS_COLOR: Record<string, string> = {
   PRESTADO: 'info',
   EN_SERVICIO_EXTERNO: 'info',
 };
+
+export type WarrantyStatus = 'expired' | 'expiring-soon' | 'valid' | null;
+
+/**
+ * Retorna el estado de garantía basado en la fecha de fin.
+ * - 'expired': la fecha ya pasó
+ * - 'expiring-soon': vence en 30 días o menos
+ * - 'valid': vence en más de 30 días
+ * - null: sin fecha de garantía
+ */
+export function getWarrantyStatus(fechaFinGarantia: string | null): WarrantyStatus {
+  if (!fechaFinGarantia) return null;
+  const now = new Date();
+  const end = new Date(fechaFinGarantia);
+  if (end < now) return 'expired';
+  const diffDays = Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays <= 30) return 'expiring-soon';
+  return 'valid';
+}
+
+/**
+ * Retorna los días restantes de garantía (negativo si ya venció).
+ */
+export function getWarrantyDaysLeft(fechaFinGarantia: string | null): number | null {
+  if (!fechaFinGarantia) return null;
+  const now = new Date();
+  const end = new Date(fechaFinGarantia);
+  return Math.ceil((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+}
