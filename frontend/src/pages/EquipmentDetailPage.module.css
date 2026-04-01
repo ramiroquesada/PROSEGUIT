@@ -851,11 +851,10 @@
 }
 
 .imageTile {
-  position: relative;
+  display: flex;
+  flex-direction: column;
   width: 120px;
-  height: 100px;
   border-radius: var(--radius-md);
-  border: 1px solid var(--color-border);
   overflow: hidden;
   background: var(--color-bg-secondary);
 
@@ -864,12 +863,22 @@
   }
 }
 
+.imageTileImgWrapper {
+  position: relative;
+  width: 120px;
+  height: 100px;
+  flex-shrink: 0;
+}
+
 .imageTileImg {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  cursor: pointer;
   display: block;
-  cursor: zoom-in;
+  transition: opacity 0.15s;
+
+  &:hover { opacity: 0.9; }
 }
 
 /* ── Lightbox ─────────────────────────────────────────────────── */
@@ -986,6 +995,94 @@
 .imageError {
   font-size: var(--font-size-xs);
   color: var(--color-danger);
+  margin: 0;
+}
+
+.uploadRow {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.descInput {
+  flex: 1;
+  min-width: 160px;
+  padding: var(--space-xs) var(--space-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  background: var(--color-bg);
+  color: var(--color-text);
+  outline: none;
+
+  &:focus { border-color: var(--color-primary); }
+  &:disabled { opacity: 0.6; }
+}
+
+.uploadBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-xs) var(--space-md);
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: white;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+
+  &:hover { background: var(--color-primary-hover, var(--color-primary)); }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
+.descText {
+  display: block;
+  padding: 4px 6px;
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  line-height: 1.3;
+  word-break: break-word;
+  min-height: 24px;
+
+  &:hover { background: var(--color-bg-hover, var(--color-bg-secondary)); }
+}
+
+.descPlaceholder {
+  color: var(--color-text-tertiary);
+  font-style: italic;
+}
+
+.descEdit {
+  display: block;
+  width: 100%;
+  padding: 4px 6px;
+  font-size: var(--font-size-xs);
+  border: 1px solid var(--color-primary);
+  border-radius: 0 0 var(--radius-md) var(--radius-md);
+  resize: none;
+  background: var(--color-bg);
+  color: var(--color-text);
+  outline: none;
+  box-sizing: border-box;
+
+  &:disabled { opacity: 0.6; }
+}
+
+.descError {
+  display: block;
+  padding: 2px 6px;
+  font-size: var(--font-size-xs);
+  color: var(--color-danger);
+}
+
+.noImages {
+  font-size: var(--font-size-sm);
+  color: var(--color-text-tertiary);
   margin: 0;
 }
 

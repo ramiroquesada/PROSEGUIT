@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { useEquipmentDetail, useTransferEquipment, useSendToSupport, useSendToService, useReturnFromService, useUploadEquipmentImage, useDeleteEquipmentImage } from '../hooks/useEquipment';
+import { useEquipmentDetail, useTransferEquipment, useSendToSupport, useSendToService, useReturnFromService, useUploadEquipmentImage, useDeleteEquipmentImage, useUpdateImageDescription } from '../hooks/useEquipment';
 import { resolveEstado, STATUS_LABEL, STATUS_COLOR, getWarrantyStatus, getWarrantyDaysLeft } from '../lib/equipment-status';
 import { useEquipmentHistory } from '../hooks/useHistory';
 import { useLocationTree } from '../hooks/useLocations';
 import { useServiceProviders } from '../hooks/useLoans';
 import { ACCION_LABEL, ACCION_COLOR } from '../lib/action-types';
-import { ArrowRightLeft, Building2, RotateCcw, Pencil, ChevronLeft, LogOut, LogIn, Monitor, Camera, Trash2, Plus, X } from 'lucide-react';
+import { ArrowRightLeft, Building2, RotateCcw, Pencil, ChevronLeft, LogOut, LogIn, Monitor, Camera, Trash2, X } from 'lucide-react';
 import { findSoporteOffice } from '../lib/find-soporte-office';
 import LocationCascadeSelect from '../components/LocationCascadeSelect';
 import styles from './EquipmentDetailPage.module.css';
@@ -105,6 +105,57 @@ const MODAL_CONFIG: Record<ActionType, { title: string; motiLabel: string; place
   },
 };
 
+function ImageDescription({ imageId, equipoId, descripcion }: { imageId: number; equipoId: number; descripcion: string | null }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(descripcion ?? '');
+  const [saveError, setSaveError] = useState('');
+  const updateMutation = useUpdateImageDescription();
+
+  function handleBlur() {
+    const trimmed = value.trim();
+    if (trimmed === (descripcion ?? '')) { setEditing(false); return; }
+    updateMutation.mutate(
+      { equipoId, imageId, descripcion: trimmed || null },
+      {
+        onSuccess: () => setEditing(false),
+        onError: (err: any) => {
+          setSaveError(err?.message || 'Error al guardar');
+          setTimeout(() => setSaveError(''), 3000);
+          setEditing(false);
+        },
+      },
+    );
+  }
+
+  if (editing) {
+    return (
+      <textarea
+        className={styles.descEdit}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={handleBlur}
+        onKeyDown={(e) => { if (e.key === 'Escape') { setValue(descripcion ?? ''); setEditing(false); } }}
+        disabled={updateMutation.isPending}
+        autoFocus
+        rows={2}
+      />
+    );
+  }
+
+  return (
+    <>
+      <span
+        className={`${styles.descText} ${!descripcion ? styles.descPlaceholder : ''}`}
+        onClick={() => { setValue(descripcion ?? ''); setEditing(true); }}
+        title="Click para editar descripción"
+      >
+        {descripcion || '+ descripción'}
+      </span>
+      {saveError && <span className={styles.descError}>{saveError}</span>}
+    </>
+  );
+}
+
 export default function EquipmentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -129,6 +180,7 @@ export default function EquipmentDetailPage() {
   const [action, setAction] = useState<ActionState | null>(null);
   const [actionError, setActionError] = useState('');
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [uploadDesc, setUploadDesc] = useState('');
 
   useEffect(() => {
     if (!lightboxUrl) return;
@@ -142,7 +194,8 @@ export default function EquipmentDetailPage() {
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    uploadImageMutation.mutate({ id: equipoId, file });
+    uploadImageMutation.mutate({ id: equipoId, file, descripcion: uploadDesc || undefined });
+    setUploadDesc('');
     e.target.value = '';
   }
 
@@ -389,44 +442,57 @@ export default function EquipmentDetailPage() {
               className={styles.imageInput}
               onChange={handleImageChange}
             />
-            {(equipo.imagenes.length > 0 || uploadImageMutation.isPending) && (
+            <div className={styles.uploadRow}>
+              <input
+                type="text"
+                className={styles.descInput}
+                value={uploadDesc}
+                onChange={(e) => setUploadDesc(e.target.value)}
+                placeholder="Descripción (opcional)"
+                disabled={uploadImageMutation.isPending}
+              />
+              <button
+                type="button"
+                className={styles.uploadBtn}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadImageMutation.isPending}
+              >
+                <Camera size={14} />
+                {uploadImageMutation.isPending ? 'Subiendo...' : 'Agregar foto'}
+              </button>
+            </div>
+
+            {equipo.imagenes.length > 0 && (
               <div className={styles.imageGallery}>
                 {equipo.imagenes.map((img) => (
                   <div key={img.id} className={styles.imageTile}>
-                    <img
-                      src={img.url}
-                      alt={`Equipo serie ${equipo.serie}`}
-                      className={styles.imageTileImg}
-                      onClick={() => setLightboxUrl(img.url)}
+                    <div className={styles.imageTileImgWrapper}>
+                      <img
+                        src={img.url}
+                        alt={img.descripcion || `Equipo serie ${equipo.serie}`}
+                        className={styles.imageTileImg}
+                        onClick={() => setLightboxUrl(img.url)}
+                      />
+                      <button
+                        className={styles.imageDeleteBtn}
+                        onClick={() => deleteImageMutation.mutate({ equipoId, imageId: img.id })}
+                        disabled={deleteImageMutation.isPending}
+                        title="Eliminar foto"
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    </div>
+                    <ImageDescription
+                      imageId={img.id}
+                      equipoId={equipoId}
+                      descripcion={img.descripcion}
                     />
-                    <button
-                      className={styles.imageDeleteBtn}
-                      onClick={() => deleteImageMutation.mutate({ equipoId, imageId: img.id })}
-                      disabled={deleteImageMutation.isPending}
-                      title="Eliminar foto"
-                    >
-                      <Trash2 size={13} />
-                    </button>
                   </div>
                 ))}
-                <button
-                  className={styles.imageAddTile}
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadImageMutation.isPending}
-                >
-                  {uploadImageMutation.isPending ? <Camera size={20} /> : <Plus size={20} />}
-                  <span>{uploadImageMutation.isPending ? 'Subiendo...' : 'Agregar'}</span>
-                </button>
               </div>
             )}
             {equipo.imagenes.length === 0 && !uploadImageMutation.isPending && (
-              <button
-                className={styles.imagePlaceholder}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Camera size={20} />
-                <span>Agregar foto del equipo</span>
-              </button>
+              <p className={styles.noImages}>Sin fotos. Usá el campo de arriba para agregar la primera.</p>
             )}
             {uploadImageMutation.isError && (
               <p className={styles.imageError}>{(uploadImageMutation.error as Error).message}</p>
