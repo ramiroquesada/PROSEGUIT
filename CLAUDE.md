@@ -380,12 +380,7 @@ docker compose -f docker-compose.prod.yml logs -f frontend   # logs de nginx
 ### Corto plazo
 
 - [ ] **Migración de datos** con el dump actualizado de seguit v1 (traído de la oficina)
-- [ ] **Mejoras de fotos de equipos** — las fotos múltiples ya funcionan; pendiente:
-  - Lightbox (click en imagen la muestra ampliada)
-  - Descripción por foto (texto opcional al subir, editable después)
-  - Soft-delete (ocultar sin borrar de DB, mantener referencia histórica)
-  - Registro en historial al agregar/eliminar foto (`FOTO_AGREGADA`, `FOTO_ELIMINADA`)
-  - Nota: las columnas `descripcion` y `deleted_at` en `equipo_imagen` y los enum values en la DB **ya existen** — faltan schema.prisma + prisma generate + backend + frontend
+- [x] **Mejoras de fotos de equipos** — lightbox, descripción por foto editable inline, soft-delete, registro en historial (`FOTO_AGREGADA`, `FOTO_ELIMINADA`)
 - [x] **Ciclo de vida del activo** — `fechaFinVida` y `precioCompra` agregados al modelo `Equipo`. Badge de garantía en ficha: rojo (vencida), amarillo (vence en ≤30 días), verde (vigente). Helper `getWarrantyStatus` en `equipment-status.ts` reutilizable para alertas futuras
 - [ ] **Rol USUARIO FINAL** — tercera capa de permisos (solo lectura propia): ver qué equipos tiene asignados, ver historial de sus equipos, solicitar soporte. Actualmente existen ADMIN y TECNICO
 - [ ] **Tags / etiquetas flexibles** — etiquetar equipos con tags configurables (ej: crítico, urgente, stock). Filtros en listado por tag
@@ -409,10 +404,11 @@ docker compose -f docker-compose.prod.yml logs -f frontend   # logs de nginx
 
 ### Completado ✅
 
-- [x] **Tests** — backend service layer: `equipment.service`, `auth.service`, `users.service` (40 tests con Vitest, sin DB)
+- [x] **Tests** — backend service layer: `equipment.service`, `auth.service`, `users.service` (48 tests con Vitest, sin DB)
 - [x] **Alinear `@proseguit/shared`** — serie como `number`, enums corregidos, schemas compartidos en backend
 - [x] **Configuración de producción** — `backend/Dockerfile`, `frontend/Dockerfile`, `docker-compose.prod.yml`, `.env.production.example`
 - [x] **Responsive completo** — mobile/tablet implementado
+- [x] **Mejoras de fotos de equipos** — lightbox, descripción por foto editable inline, soft-delete, registro en historial (`FOTO_AGREGADA`, `FOTO_ELIMINADA`)
 - [x] **Fotos de equipos** — subida múltiple, galería en detalle del equipo
 - [x] **Permisos TECNICO** — técnicos pueden gestionar ubicaciones y plantillas; panel de usuario propio con cambio de contraseña
 - [x] **Auth JWT con rotación** — access 15min + refresh 7d con rotación automática en cada refresh
