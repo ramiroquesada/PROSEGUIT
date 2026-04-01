@@ -2,14 +2,22 @@ import type { EquipmentStatus } from '../constants/equipment-status.js';
 
 export interface Equipment {
   id: number;
-  serie: string;
+  serie: number;
   modelo: string | null;
   templateId: number | null;
   tipoEquipoId: number;
   oficinaId: number;
   estado: EquipmentStatus;
   ip: string | null;
-  urlImage: string | null;
+  mac: string | null;
+  matricula: string | null;
+  asignadoA: string | null;
+  proveedor: string | null;
+  nroInventario: string | null;
+  fechaAdquisicion: string | null;
+  garantiaHasta: string | null;
+  fechaFinVida: string | null;
+  precioCompra: string | null;
   observacion: string | null;
   especificaciones: Record<string, unknown> | null;
   createdAt: string;
@@ -17,6 +25,7 @@ export interface Equipment {
   tipoEquipo?: EquipmentType;
   oficina?: Office;
   template?: ModelTemplate | null;
+  imagenes?: { id: number; url: string }[];
 }
 
 export interface EquipmentType {
