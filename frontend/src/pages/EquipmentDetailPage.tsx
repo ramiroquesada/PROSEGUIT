@@ -194,9 +194,12 @@ export default function EquipmentDetailPage() {
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    uploadImageMutation.mutate({ id: equipoId, file, descripcion: uploadDesc || undefined });
-    setUploadDesc('');
+    const desc = uploadDesc;
     e.target.value = '';
+    uploadImageMutation.mutate(
+      { id: equipoId, file, descripcion: desc || undefined },
+      { onSuccess: () => setUploadDesc('') },
+    );
   }
 
   function openAction(type: ActionType) {
