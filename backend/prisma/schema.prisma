@@ -128,11 +128,13 @@ model Equipo {
 }
 
 model EquipoImagen {
-  id        Int      @id @default(autoincrement())
-  equipoId  Int      @map("equipo_id")
-  equipo    Equipo   @relation(fields: [equipoId], references: [id], onDelete: Cascade)
-  url       String   @db.VarChar(500)
-  createdAt DateTime @default(now()) @map("created_at")
+  id          Int       @id @default(autoincrement())
+  equipoId    Int       @map("equipo_id")
+  equipo      Equipo    @relation(fields: [equipoId], references: [id], onDelete: Cascade)
+  url         String    @db.VarChar(500)
+  descripcion String?   @db.Text
+  deletedAt   DateTime? @map("deleted_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
 
   @@index([equipoId])
   @@map("equipo_imagen")
@@ -154,6 +156,8 @@ enum AccionTipo {
   EDICION
   ENVIO_SERVICIO_EXTERNO
   RETORNO_SERVICIO_EXTERNO
+  FOTO_AGREGADA
+  FOTO_ELIMINADA
 
   @@map("accion_tipo")
 }
