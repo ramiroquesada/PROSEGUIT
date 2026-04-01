@@ -96,9 +96,14 @@ export async function uploadImageHandler(req: Request, res: Response) {
     res.status(400).json({ error: 'No se recibió ningún archivo' });
     return;
   }
+  const descripcion = typeof req.body.descripcion === 'string' && req.body.descripcion.trim()
+    ? req.body.descripcion.trim()
+    : undefined;
   const imagen = await equipmentService.saveEquipmentImage(
     Number(req.params.id),
     req.file.path,
+    req.user!.userId,
+    descripcion,
   );
   res.status(201).json({ imagen });
 }
@@ -107,6 +112,20 @@ export async function deleteImageHandler(req: Request, res: Response) {
   await equipmentService.deleteEquipmentImage(
     Number(req.params.id),
     Number(req.params.imageId),
+    req.user!.userId,
   );
   res.json({ message: 'Imagen eliminada' });
+}
+
+export async function updateImageDescriptionHandler(req: Request, res: Response) {
+  const descripcion = typeof req.body.descripcion === 'string' && req.body.descripcion.trim()
+    ? req.body.descripcion.trim()
+    : null;
+  const imagen = await equipmentService.updateImageDescription(
+    Number(req.params.id),
+    Number(req.params.imageId),
+    descripcion,
+    req.user!.userId,
+  );
+  res.json({ imagen });
 }

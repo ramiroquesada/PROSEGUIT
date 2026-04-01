@@ -61,5 +61,6 @@ router.post('/:id/send-to-service', validate(sendToServiceSchema), controller.se
 router.post('/:id/return-from-service', validate(returnFromServiceSchema), controller.returnFromServiceHandler);
 router.post('/:id/images', upload.single('image'), controller.uploadImageHandler);
 router.delete('/:id/images/:imageId', controller.deleteImageHandler);
+router.patch('/:id/images/:imageId', controller.updateImageDescriptionHandler);
 
 export default router;
