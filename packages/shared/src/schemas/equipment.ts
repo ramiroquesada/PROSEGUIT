@@ -16,7 +16,6 @@ export const createEquipmentSchema = z.object({
   garantiaHasta: z.coerce.date().optional().nullable(),
   fechaFinVida: z.coerce.date().optional().nullable(),
   precioCompra: z.number().positive().optional().nullable(),
-  urlImage: z.string().url().optional().or(z.literal('')),
   observacion: z.string().optional(),
   especificaciones: z.record(z.string(), z.unknown()).optional(),
 });

@@ -210,7 +210,6 @@ export async function createEquipment(data: {
       garantiaHasta: data.garantiaHasta,
       fechaFinVida: data.fechaFinVida,
       precioCompra: data.precioCompra,
-      urlImage: data.urlImage,
       observacion: data.observacion,
       especificaciones: data.especificaciones ?? Prisma.JsonNull,
       historial: {
