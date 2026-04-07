@@ -131,26 +131,46 @@
 
 ## Desarrollo local
 
+### Primeros pasos (sin datos de producción)
+
 ```bash
 # 1. Clonar el repositorio
 git clone https://github.com/ramiroquesada/PROSEGUIT.git
 cd PROSEGUIT
 
-# 2. Instalar todas las dependencias (backend + frontend + shared)
+# 2. Copiar archivo de variables de entorno
+cp .env.example .env
+
+# 3. Instalar todas las dependencias (backend + frontend + shared)
 npm install
 
-# 3. Levantar la base de datos
+# 4. Levantar la base de datos
 npm run db:up
 
-# 4. Aplicar migraciones
+# 5. Aplicar migraciones
 npm run db:migrate
 
-# 5. Cargar usuarios iniciales
+# 6. Cargar usuarios iniciales
 npm run db:seed
 
-# 6. Iniciar servidores de desarrollo
+# 7. Iniciar servidores de desarrollo
 npm run dev
 ```
+
+### Con migración de datos (seguit v1)
+
+Si tienes un dump SQL de seguit v1 (`db_seguit1.sql`), reemplaza el paso **6** anterior:
+
+```bash
+# En lugar de npm run db:seed, ejecutar:
+npm run migrate:v1
+```
+
+Este comando:
+- Extrae los datos del dump SQL
+- Detecta y repara automáticamente cualquier inconsistencia en la base de datos
+- Migra todos los equipos, historial, usuarios, ubicaciones, préstamos y servicios
+- Crea automáticamente usuarios con contraseña temporal
 
 La aplicación estará disponible en:
 
@@ -159,7 +179,9 @@ La aplicación estará disponible en:
 | Frontend | http://localhost:5173 |
 | Backend API | http://localhost:3001/api/v1 |
 
-> El archivo `backend/.env` ya incluye los valores por defecto para desarrollo — no hace falta configurar nada extra.
+**Credenciales por defecto (después de `npm run db:seed`):**
+- Admin: `9999` / `admin123`
+- Técnico: `7844` / `7844`
 
 ---
 
@@ -182,10 +204,35 @@ npm run db:studio        # Abre Prisma Studio (explorador visual)
 npm run db:seed          # Crea usuarios admin (9999) y técnico (7844)
 
 # Migración desde seguit v1
-npm run migrate:v1       # Extrae datos del dump SQL, repara DB si es necesario e importa todo
+npm run migrate:v1       # Extrae, repara, valida e importa datos de db_seguit1.sql
 ```
 
-> **Migración desde seguit v1:** colocar `db_seguit1.sql` en la raíz del proyecto y correr `npm run db:up && npm run migrate:v1`. El script detecta y repara automáticamente estados inconsistentes de la base de datos antes de importar.
+### Detalles de la migración v1
+
+**Requisitos:**
+- Tener `db_seguit1.sql` en la **raíz del proyecto**
+- PostgreSQL corriendo: `npm run db:up`
+
+**Qué hace `npm run migrate:v1`:**
+1. Extrae datos del dump SQL a `export_datos_v1.json`
+2. Detecta y repara automáticamente inconsistencias de schema (ej: enums mal aplicados)
+3. Aplica migraciones pendientes
+4. Limpia datos existentes (equipos, historial, usuarios, etc.)
+5. Importa todos los datos:
+   - 1,300+ equipos con estado ACTIVO
+   - 4,200+ registros de historial completo
+   - 100+ ubicaciones (Ciudad › Sección › Oficina)
+   - 35+ tipos de equipo
+   - Usuarios (con `forcePasswordChange=true`, excepto admin 9999)
+   - Funcionarios y servicios externos
+   - Préstamos activos e históricos
+
+**Detalles técnicos:**
+- Mapea acciones de historial de v1 a PROSEGUIT v2
+- Mapea tipos de equipo automáticamente
+- Calcula estado de equipo según ubicación
+- Genera contraseñas temporales para usuarios migrados
+- Reporta datos omitidos y razones (ej: referencias a equipos eliminados)
 
 ---
 
