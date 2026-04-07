@@ -308,6 +308,35 @@ netstat -ano | findstr :3001
 El hook `.githooks/pre-push` verifica que el repo local esté actualizado antes de pushear.
 Si falla: `git pull origin main` primero.
 
+### Migraciones de Prisma con cambios de Enums
+
+**Problema técnico:** PostgreSQL no permite usar valores nuevos de enums en la misma transacción que se agregan.
+
+```sql
+-- ❌ Esto falla en PostgreSQL (no permitido en la misma transacción)
+ALTER TYPE "estado_equipo" ADD VALUE 'NUEVO';
+ALTER TABLE "equipo" ALTER COLUMN "estado" SET DEFAULT 'NUEVO';
+```
+
+**Solución implementada:** El script `npm run db:migrate` usa `prisma db push` en lugar de `prisma migrate dev`, que ejecuta las migraciones correctamente dividiendo los pasos.
+
+**Para agregar nuevos valores de enum en el futuro:**
+
+1. **Crear la migración normalmente** (Prisma lo hará)
+2. **Si usa el nuevo valor inmediatamente** (ej: SET DEFAULT, CHECK constraint), dividir en dos migraciones:
+   - Primera: solo `ALTER TYPE ... ADD VALUE`
+   - Segunda: usar el nuevo valor
+3. **Ejemplo:**
+   ```sql
+   -- Migration A (20260401120000_add_new_status/migration.sql)
+   ALTER TYPE "estado_equipo" ADD VALUE 'PENDIENTE';
+   
+   -- Migration B (20260401120001_set_pendiente_default/migration.sql)
+   ALTER TABLE "equipo" ALTER COLUMN "estado" SET DEFAULT 'PENDIENTE';
+   ```
+
+El script `backend/prisma/migrate-with-enums.ts` maneja esto automáticamente sin que tengas que hacer nada especial.
+
 ---
 
 ## Mantener sincronizados los agentes y skills
