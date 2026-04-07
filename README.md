@@ -131,7 +131,18 @@
 
 ## Desarrollo local
 
-### Primeros pasos (sin datos de producción)
+### Opción 1: Setup automático (recomendado)
+
+```bash
+# 1. Clonar el repositorio
+git clone https://github.com/ramiroquesada/PROSEGUIT.git
+cd PROSEGUIT
+
+# 2. Ejecutar setup (crea .env, instala dependencias, levanta DB)
+node setup.js
+```
+
+### Opción 2: Setup manual (paso a paso)
 
 ```bash
 # 1. Clonar el repositorio
@@ -140,6 +151,7 @@ cd PROSEGUIT
 
 # 2. Copiar archivo de variables de entorno
 cp .env.example .env
+cp .env backend/.env
 
 # 3. Instalar todas las dependencias (backend + frontend + shared)
 npm install
