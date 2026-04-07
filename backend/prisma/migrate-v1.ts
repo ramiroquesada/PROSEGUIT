@@ -214,6 +214,7 @@ async function migrateEquipment() {
 
   let migrated = 0;
   let skipped = 0;
+  let duplicateSeries = 0;
 
   for (const eq of v1.equipo) {
     const oficinaId = oficinaMap.get(eq.ubicacion) ?? fallbackOficinaId;
@@ -236,6 +237,7 @@ async function migrateEquipment() {
       migrated++;
     } catch (e: any) {
       if (e.code === 'P2002') {
+        duplicateSeries++;
         skipped++;
       } else {
         console.warn(`  ! Equipo serie=${eq.serie}: ${e.message?.slice(0, 80)}`);
@@ -245,6 +247,9 @@ async function migrateEquipment() {
   }
 
   console.log(`  -> ${migrated} equipos migrados, ${skipped} omitidos`);
+  if (duplicateSeries > 0) {
+    console.log(`     (${duplicateSeries} series duplicadas en v1)`);
+  }
 }
 
 async function migrateHistory() {
@@ -263,6 +268,7 @@ async function migrateHistory() {
 
   let migrated = 0;
   let skipped = 0;
+  const skippedReasons: { [key: string]: number } = { 'equipo no encontrado': 0, 'error al crear': 0 };
 
   // Sort by date
   const sorted = [...v1.historial].sort((a: any, b: any) =>
@@ -271,7 +277,11 @@ async function migrateHistory() {
 
   for (const h of sorted) {
     const equipoId = equipoBySerie.get(h.serie);
-    if (!equipoId) { skipped++; continue; }
+    if (!equipoId) {
+      skipped++;
+      skippedReasons['equipo no encontrado']++;
+      continue;
+    }
 
     const accion = mapAccion(h.observacion);
     const usuarioId = usuarioByFicha.get(h.usuario) ?? adminId;
@@ -295,10 +305,14 @@ async function migrateHistory() {
       migrated++;
     } catch (e: any) {
       skipped++;
+      skippedReasons['error al crear']++;
     }
   }
 
   console.log(`  -> ${migrated} historial migrados, ${skipped} omitidos`);
+  if (skipped > 0) {
+    console.log(`     Razones: ${Object.entries(skippedReasons).map(([k, v]) => v > 0 ? `${v} ${k}` : '').filter(Boolean).join(', ')}`);
+  }
 }
 
 async function migrateLoans() {
