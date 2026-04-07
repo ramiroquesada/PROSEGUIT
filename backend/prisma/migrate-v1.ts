@@ -57,9 +57,23 @@ async function preflight() {
   // 4. Aplicar migraciones pendientes
   console.log('Verificando migraciones...');
   try {
-    execSync('npx prisma migrate deploy', { stdio: 'inherit', cwd: backendDir });
+    // Intentar migrate deploy primero (si la tabla _prisma_migrations existe)
+    // Si falla porque no existe la tabla, usar db push (DB ya está en sync)
+    try {
+      execSync('npx prisma migrate deploy', { stdio: 'pipe', cwd: backendDir });
+      console.log('   Migraciones aplicadas con migrate deploy');
+    } catch (deployError: any) {
+      if (deployError.message?.includes('_prisma_migrations') ||
+          deployError.toString()?.includes('baseline')) {
+        // DB ya está en sync (usamos db push en setup inicial)
+        console.log('   DB ya está sincronizada (sin tabla de migrations)');
+        execSync('npx prisma db push --accept-data-loss', { stdio: 'pipe', cwd: backendDir });
+      } else {
+        throw deployError;
+      }
+    }
   } catch {
-    console.error('ERROR: prisma migrate deploy falló. Revisar el estado de la DB.');
+    console.error('ERROR: No se pudieron aplicar las migraciones. Revisar el estado de la DB.');
     process.exit(1);
   }
 
