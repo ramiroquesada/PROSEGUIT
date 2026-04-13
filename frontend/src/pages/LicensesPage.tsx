@@ -148,6 +148,12 @@ export default function LicensesPage() {
       return;
     }
 
+    // Validar que si ingresó serie, el equipo debe existir
+    if (form.equipoSerie.trim() && !form.equipoId) {
+      setModalError(`El equipo con serie ${form.equipoSerie.trim()} no existe. Dejá vacío el campo si no está asignada a un equipo.`);
+      return;
+    }
+
     try {
       const data: any = {
         software: form.software.trim(),
@@ -513,7 +519,9 @@ export default function LicensesPage() {
                     onBlur={handleEquipoSerieBlur}
                   />
                   <small className={styles.hint}>
-                    Dejar vacío si no está asignada a un equipo
+                    {form.equipoId
+                      ? `✓ Equipo encontrado (ID: ${form.equipoId})`
+                      : 'Ingresá la serie y pierde el foco. Dejar vacío si no está asignada.'}
                   </small>
                 </div>
 
