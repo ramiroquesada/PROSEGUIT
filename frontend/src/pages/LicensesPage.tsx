@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useLicenses, useLicensesSummary, useCreateLicense, useUpdateLicense, useDeleteLicense, type Licencia } from '../hooks/useLicenses';
-import { resolveLicenseStatus, LICENSE_STATUS_LABEL, LICENSE_STATUS_COLOR } from '../lib/license-status';
-import { Pencil, Trash2, Plus } from 'lucide-react';
+import { LICENSE_STATUS_LABEL, LICENSE_STATUS_COLOR } from '../lib/license-status';
+import { Pencil, Trash2, Plus, Eye, EyeOff } from 'lucide-react';
 import { api } from '../lib/api-client';
 import styles from './LicensesPage.module.css';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -15,12 +15,14 @@ export default function LicensesPage() {
   const [search, setSearch] = useState('');
   const [filterEstado, setFilterEstado] = useState<string>('');
   const [filterSoftware, setFilterSoftware] = useState('');
+  const [filterSinEquipo, setFilterSinEquipo] = useState(false);
 
   const { data: licensesData, isLoading } = useLicenses({
     page,
     limit: 20,
     software: filterSoftware || undefined,
     estado: (filterEstado as any) || undefined,
+    sinEquipo: filterSinEquipo || undefined,
     search: search || undefined,
   });
 
@@ -33,12 +35,20 @@ export default function LicensesPage() {
   const [modal, setModal] = useState<ModalMode>(null);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [modalError, setModalError] = useState('');
+  const [showClave, setShowClave] = useState(false);
 
   // Form
   const [form, setForm] = useState({
     software: '',
     version: '',
+    clave: '',
+    tipo: '',
+    proveedor: '',
+    precioCompra: '',
+    fechaCompra: '',
     fechaExpiracion: '',
+    sinExpiracion: false,
+    observacion: '',
     equipoSerie: '',
     equipoId: '',
   });
@@ -47,9 +57,23 @@ export default function LicensesPage() {
   const pagination = licensesData?.pagination;
 
   function openCreateModal() {
-    setForm({ software: '', version: '', fechaExpiracion: '', equipoSerie: '', equipoId: '' });
+    setForm({
+      software: '',
+      version: '',
+      clave: '',
+      tipo: '',
+      proveedor: '',
+      precioCompra: '',
+      fechaCompra: '',
+      fechaExpiracion: '',
+      sinExpiracion: false,
+      observacion: '',
+      equipoSerie: '',
+      equipoId: '',
+    });
     setEditingId(null);
     setModalError('');
+    setShowClave(false);
     setModal('crear');
   }
 
@@ -58,11 +82,19 @@ export default function LicensesPage() {
     setForm({
       software: lic.software,
       version: lic.version || '',
+      clave: lic.clave || '',
+      tipo: lic.tipo || '',
+      proveedor: lic.proveedor || '',
+      precioCompra: lic.precioCompra || '',
+      fechaCompra: lic.fechaCompra ? lic.fechaCompra.split('T')[0] : '',
       fechaExpiracion: lic.fechaExpiracion ? lic.fechaExpiracion.split('T')[0] : '',
-      equipoSerie: String(lic.equipo.serie),
-      equipoId: String(lic.equipoId),
+      sinExpiracion: lic.sinExpiracion,
+      observacion: lic.observacion || '',
+      equipoSerie: lic.equipo ? String(lic.equipo.serie) : '',
+      equipoId: String(lic.equipoId || ''),
     });
     setModalError('');
+    setShowClave(false);
     setModal('editar');
   }
 
@@ -70,11 +102,16 @@ export default function LicensesPage() {
     setModal(null);
     setEditingId(null);
     setModalError('');
+    setShowClave(false);
   }
 
-  function handleFormChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+  function handleFormChange(e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) {
+    const { name, value, type } = e.target;
+    if (type === 'checkbox') {
+      setForm((prev) => ({ ...prev, [name]: (e.target as HTMLInputElement).checked }));
+    } else {
+      setForm((prev) => ({ ...prev, [name]: value }));
+    }
     setModalError('');
   }
 
@@ -99,6 +136,10 @@ export default function LicensesPage() {
     }
   }
 
+  function handleDesasignarEquipo() {
+    setForm((prev) => ({ ...prev, equipoId: '', equipoSerie: '' }));
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
@@ -107,24 +148,25 @@ export default function LicensesPage() {
       return;
     }
 
-    if (!form.equipoId) {
-      setModalError('El equipo es requerido');
-      return;
-    }
-
     try {
       const data = {
         software: form.software.trim(),
         version: form.version.trim() || undefined,
-        fechaExpiracion: form.fechaExpiracion || undefined,
-        equipoId: Number(form.equipoId),
+        clave: form.clave.trim() || undefined,
+        tipo: form.tipo.trim() || undefined,
+        proveedor: form.proveedor.trim() || undefined,
+        precioCompra: form.precioCompra ? parseFloat(form.precioCompra) : undefined,
+        fechaCompra: form.fechaCompra || undefined,
+        fechaExpiracion: form.sinExpiracion ? undefined : (form.fechaExpiracion || undefined),
+        sinExpiracion: form.sinExpiracion,
+        observacion: form.observacion.trim() || undefined,
+        equipoId: form.equipoId ? Number(form.equipoId) : undefined,
       };
 
       if (modal === 'crear') {
         await createMutation.mutateAsync(data);
       } else if (editingId) {
-        const { equipoId, ...updateData } = data;
-        await updateMutation.mutateAsync({ id: editingId, data: updateData });
+        await updateMutation.mutateAsync({ id: editingId, data });
       }
 
       closeModal();
@@ -186,6 +228,16 @@ export default function LicensesPage() {
                   <span className={styles.badge} style={{ backgroundColor: 'var(--color-danger)' }}>
                     {item.vencidas} Vencida
                   </span>
+                  {item.perpetuas > 0 && (
+                    <span className={styles.badge} style={{ backgroundColor: 'var(--color-info)' }}>
+                      {item.perpetuas} Perpetua
+                    </span>
+                  )}
+                  {item.sinFecha > 0 && (
+                    <span className={styles.badge} style={{ backgroundColor: 'var(--color-text-secondary)' }}>
+                      {item.sinFecha} Sin fecha
+                    </span>
+                  )}
                 </div>
                 <div className={styles.summaryTotal}>Total: {item.total}</div>
               </div>
@@ -219,7 +271,17 @@ export default function LicensesPage() {
             <option value="VIGENTE">Vigente</option>
             <option value="POR_VENCER">Por vencer</option>
             <option value="VENCIDA">Vencida</option>
+            <option value="PERPETUA">Perpetua</option>
+            <option value="SIN_FECHA">Sin fecha</option>
           </select>
+          <button
+            className={styles.btnClearFilter}
+            style={{ opacity: filterSinEquipo ? 1 : 0.5 }}
+            onClick={() => setFilterSinEquipo(!filterSinEquipo)}
+            title="Filtrar licencias sin equipo asignado"
+          >
+            {filterSinEquipo ? '✓ Sin equipo' : 'Sin equipo'}
+          </button>
           {filterSoftware && (
             <button
               className={styles.btnClearFilter}
@@ -256,12 +318,16 @@ export default function LicensesPage() {
                     <td>{lic.software}</td>
                     <td>{lic.version || '—'}</td>
                     <td className={styles.equipoCell}>
-                      Serie #{lic.equipo.serie} — {lic.equipo.tipoEquipo.nombre}
+                      {lic.equipo
+                        ? `Serie #${lic.equipo.serie} — ${lic.equipo.tipoEquipo.nombre}`
+                        : '— Sin asignar —'}
                     </td>
                     <td>
-                      {lic.fechaExpiracion
-                        ? new Date(lic.fechaExpiracion).toLocaleDateString('es-ES')
-                        : 'Sin expiración'}
+                      {lic.sinExpiracion
+                        ? 'Perpetua'
+                        : lic.fechaExpiracion
+                          ? new Date(lic.fechaExpiracion).toLocaleDateString('es-ES')
+                          : 'Sin fecha'}
                     </td>
                     <td>
                       <span
@@ -352,54 +418,171 @@ export default function LicensesPage() {
             {modalError && <div className={styles.error}>{modalError}</div>}
 
             <form onSubmit={handleSubmit}>
-              <div className={styles.formGroup}>
-                <label>Software *</label>
-                <input
-                  type="text"
-                  name="software"
-                  value={form.software}
-                  onChange={handleFormChange}
-                  placeholder="Ej: Windows 11, Office 365"
-                  required
-                />
+              {/* Sección Principal */}
+              <div className={styles.formSection}>
+                <h3 className={styles.sectionTitle}>Información básica</h3>
+
+                <div className={styles.formGroup}>
+                  <label>Software *</label>
+                  <input
+                    type="text"
+                    name="software"
+                    value={form.software}
+                    onChange={handleFormChange}
+                    placeholder="Ej: Windows 11, Office 365"
+                    required
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>Versión</label>
+                  <input
+                    type="text"
+                    name="version"
+                    value={form.version}
+                    onChange={handleFormChange}
+                    placeholder="Ej: 22H2, 2024"
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>Tipo</label>
+                  <select name="tipo" value={form.tipo} onChange={handleFormChange}>
+                    <option value="">— Seleccionar —</option>
+                    <option value="OEM">OEM</option>
+                    <option value="Retail">Retail</option>
+                    <option value="Volumen">Volumen</option>
+                    <option value="Suscripción">Suscripción</option>
+                    <option value="Perpetua">Perpetua</option>
+                  </select>
+                </div>
               </div>
 
-              <div className={styles.formGroup}>
-                <label>Versión</label>
-                <input
-                  type="text"
-                  name="version"
-                  value={form.version}
-                  onChange={handleFormChange}
-                  placeholder="Ej: 22H2, 2024"
-                />
-              </div>
+              {/* Sección Ciclo de vida */}
+              <div className={styles.formSection}>
+                <h3 className={styles.sectionTitle}>Ciclo de vida</h3>
 
-              <div className={styles.formGroup}>
-                <label>Fecha de expiración</label>
-                <input
-                  type="date"
-                  name="fechaExpiracion"
-                  value={form.fechaExpiracion}
-                  onChange={handleFormChange}
-                />
-              </div>
+                <div className={styles.formGroup}>
+                  <label>Fecha de compra</label>
+                  <input type="date" name="fechaCompra" value={form.fechaCompra} onChange={handleFormChange} />
+                </div>
 
-              <div className={styles.formGroup}>
-                <label>Equipo (Serie) *</label>
-                <input
-                  type="text"
-                  name="equipoSerie"
-                  value={form.equipoSerie}
-                  placeholder="Número de serie del equipo"
-                  disabled={modal === 'editar'}
-                  readOnly={modal === 'editar'}
-                  onChange={handleFormChange}
-                  onBlur={handleEquipoSerieBlur}
-                />
-                {!form.equipoId && modal === 'crear' && (
-                  <small className={styles.hint}>Ingresa la serie y pierde el foco para buscar el equipo</small>
+                <div className={styles.formGroup} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <input
+                    type="checkbox"
+                    id="sinExpiracion"
+                    name="sinExpiracion"
+                    checked={form.sinExpiracion}
+                    onChange={handleFormChange}
+                    style={{ width: 'auto' }}
+                  />
+                  <label htmlFor="sinExpiracion" style={{ margin: 0 }}>
+                    Licencia perpetua (sin vencimiento)
+                  </label>
+                </div>
+
+                {!form.sinExpiracion && (
+                  <div className={styles.formGroup}>
+                    <label>Fecha de expiración</label>
+                    <input type="date" name="fechaExpiracion" value={form.fechaExpiracion} onChange={handleFormChange} />
+                  </div>
                 )}
+              </div>
+
+              {/* Sección Equipo */}
+              <div className={styles.formSection}>
+                <h3 className={styles.sectionTitle}>Equipo</h3>
+
+                <div className={styles.formGroup}>
+                  <label>Equipo (Serie)</label>
+                  <input
+                    type="text"
+                    name="equipoSerie"
+                    value={form.equipoSerie}
+                    placeholder="Número de serie del equipo"
+                    disabled={modal === 'editar'}
+                    readOnly={modal === 'editar'}
+                    onChange={handleFormChange}
+                    onBlur={handleEquipoSerieBlur}
+                  />
+                  <small className={styles.hint}>
+                    {modal === 'crear'
+                      ? 'Dejar vacío si no está asignada a un equipo'
+                      : 'Campo no editable. Para cambiar equipo, elimina esta licencia y crea una nueva.'}
+                  </small>
+                </div>
+
+                {form.equipoId && modal === 'editar' && (
+                  <button
+                    type="button"
+                    className={styles.btnClearFilter}
+                    onClick={handleDesasignarEquipo}
+                    style={{ marginTop: '0.5rem' }}
+                  >
+                    Desasignar equipo
+                  </button>
+                )}
+              </div>
+
+              {/* Sección Detalles (opcional) */}
+              <div className={styles.formSection}>
+                <h3 className={styles.sectionTitle}>Detalles adicionales</h3>
+
+                <div className={styles.formGroup}>
+                  <label>Proveedor</label>
+                  <input
+                    type="text"
+                    name="proveedor"
+                    value={form.proveedor}
+                    onChange={handleFormChange}
+                    placeholder="Ej: Microsoft, Adobe"
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>Precio de compra</label>
+                  <input
+                    type="number"
+                    name="precioCompra"
+                    value={form.precioCompra}
+                    onChange={handleFormChange}
+                    placeholder="0.00"
+                    step="0.01"
+                    min="0"
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>Clave / Serial</label>
+                  <div className={styles.claveInput}>
+                    <input
+                      type={showClave ? 'text' : 'password'}
+                      name="clave"
+                      value={form.clave}
+                      onChange={handleFormChange}
+                      placeholder="Clave de licencia"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowClave(!showClave)}
+                      className={styles.btnToggleClave}
+                      title={showClave ? 'Ocultar' : 'Mostrar'}
+                    >
+                      {showClave ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label>Observaciones</label>
+                  <textarea
+                    name="observacion"
+                    value={form.observacion}
+                    onChange={handleFormChange}
+                    placeholder="Notas adicionales..."
+                    rows={3}
+                  />
+                </div>
               </div>
 
               <div className={styles.formActions}>

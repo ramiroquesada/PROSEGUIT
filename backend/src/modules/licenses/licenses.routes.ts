@@ -11,14 +11,27 @@ router.use(authMiddleware);
 const createSchema = z.object({
   software: z.string().min(1, 'Software es requerido').max(100),
   version: z.string().max(50).optional(),
+  clave: z.string().max(200).optional(),
+  tipo: z.string().max(50).optional(),
+  proveedor: z.string().max(200).optional(),
+  precioCompra: z.number().positive().optional(),
+  fechaCompra: z.string().datetime().optional(),
   fechaExpiracion: z.string().datetime().optional(),
-  equipoId: z.number().int().positive('ID de equipo debe ser positivo'),
+  sinExpiracion: z.boolean().optional().default(false),
+  observacion: z.string().optional(),
+  equipoId: z.number().int().positive().optional(),
 });
 
-const updateSchema = z.object({
-  software: z.string().min(1).max(100).optional(),
-  version: z.string().max(50).optional().nullable(),
-  fechaExpiracion: z.string().datetime().optional().nullable(),
+const updateSchema = createSchema.partial().extend({
+  version: z.string().max(50).nullable().optional(),
+  clave: z.string().max(200).nullable().optional(),
+  tipo: z.string().max(50).nullable().optional(),
+  proveedor: z.string().max(200).nullable().optional(),
+  precioCompra: z.number().positive().nullable().optional(),
+  fechaCompra: z.string().datetime().nullable().optional(),
+  fechaExpiracion: z.string().datetime().nullable().optional(),
+  observacion: z.string().nullable().optional(),
+  equipoId: z.number().int().positive().nullable().optional(),
 });
 
 // IMPORTANTE: /summary ANTES de /:id para evitar conflicto de rutas

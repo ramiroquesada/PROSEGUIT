@@ -6,7 +6,7 @@ import { useEquipmentHistory } from '../hooks/useHistory';
 import { useLocationTree } from '../hooks/useLocations';
 import { useServiceProviders } from '../hooks/useLoans';
 import { useEquipmentLicenses, useCreateLicense, useDeleteLicense } from '../hooks/useLicenses';
-import { resolveLicenseStatus, LICENSE_STATUS_LABEL, LICENSE_STATUS_COLOR } from '../lib/license-status';
+import { LICENSE_STATUS_LABEL, LICENSE_STATUS_COLOR } from '../lib/license-status';
 import { ACCION_LABEL, ACCION_COLOR } from '../lib/action-types';
 import { ArrowRightLeft, Building2, RotateCcw, Pencil, ChevronLeft, LogOut, LogIn, Monitor, Camera, Trash2, X, Plus } from 'lucide-react';
 import { findSoporteOffice } from '../lib/find-soporte-office';
@@ -187,7 +187,18 @@ export default function EquipmentDetailPage() {
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [uploadDesc, setUploadDesc] = useState('');
   const [licenseModal, setLicenseModal] = useState(false);
-  const [licenseForm, setLicenseForm] = useState({ software: '', version: '', fechaExpiracion: '' });
+  const [licenseForm, setLicenseForm] = useState({
+    software: '',
+    version: '',
+    clave: '',
+    tipo: '',
+    proveedor: '',
+    precioCompra: '',
+    fechaCompra: '',
+    fechaExpiracion: '',
+    sinExpiracion: false,
+    observacion: '',
+  });
 
   useEffect(() => {
     if (!lightboxUrl) return;
@@ -220,11 +231,29 @@ export default function EquipmentDetailPage() {
       await createLicenseMutation.mutateAsync({
         software: licenseForm.software.trim(),
         version: licenseForm.version.trim() || undefined,
-        fechaExpiracion: licenseForm.fechaExpiracion || undefined,
+        clave: licenseForm.clave.trim() || undefined,
+        tipo: licenseForm.tipo.trim() || undefined,
+        proveedor: licenseForm.proveedor.trim() || undefined,
+        precioCompra: licenseForm.precioCompra ? parseFloat(licenseForm.precioCompra) : undefined,
+        fechaCompra: licenseForm.fechaCompra || undefined,
+        fechaExpiracion: licenseForm.sinExpiracion ? undefined : (licenseForm.fechaExpiracion || undefined),
+        sinExpiracion: licenseForm.sinExpiracion,
+        observacion: licenseForm.observacion.trim() || undefined,
         equipoId,
       });
       setLicenseModal(false);
-      setLicenseForm({ software: '', version: '', fechaExpiracion: '' });
+      setLicenseForm({
+        software: '',
+        version: '',
+        clave: '',
+        tipo: '',
+        proveedor: '',
+        precioCompra: '',
+        fechaCompra: '',
+        fechaExpiracion: '',
+        sinExpiracion: false,
+        observacion: '',
+      });
     } catch (err: any) {
       alert('Error: ' + (err.message || 'No se pudo crear la licencia'));
     }
@@ -618,9 +647,15 @@ export default function EquipmentDetailPage() {
                         {lic.software}
                         {lic.version && <span className={styles.version}>v{lic.version}</span>}
                       </div>
-                      {lic.fechaExpiracion && (
+                      {lic.sinExpiracion ? (
+                        <div className={styles.licenseDate}>Perpetua</div>
+                      ) : lic.fechaExpiracion ? (
                         <div className={styles.licenseDate}>
                           Vence: {new Date(lic.fechaExpiracion).toLocaleDateString('es-ES')}
+                        </div>
+                      ) : (
+                        <div className={styles.licenseDate} style={{ color: 'var(--color-text-secondary)' }}>
+                          Sin fecha
                         </div>
                       )}
                     </div>
@@ -872,7 +907,18 @@ export default function EquipmentDetailPage() {
                   type="button"
                   onClick={() => {
                     setLicenseModal(false);
-                    setLicenseForm({ software: '', version: '', fechaExpiracion: '' });
+                    setLicenseForm({
+                      software: '',
+                      version: '',
+                      clave: '',
+                      tipo: '',
+                      proveedor: '',
+                      precioCompra: '',
+                      fechaCompra: '',
+                      fechaExpiracion: '',
+                      sinExpiracion: false,
+                      observacion: '',
+                    });
                   }}
                   className={styles.btnSecondary}
                 >

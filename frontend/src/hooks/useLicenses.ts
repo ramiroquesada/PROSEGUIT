@@ -6,14 +6,21 @@ interface Licencia {
   id: number;
   software: string;
   version: string | null;
+  clave: string | null;
+  tipo: string | null;
+  proveedor: string | null;
+  precioCompra: string | null;
+  fechaCompra: string | null;
   fechaExpiracion: string | null;
-  equipoId: number;
+  sinExpiracion: boolean;
+  observacion: string | null;
+  equipoId: number | null;
   equipo: {
     id: number;
     serie: number;
     modelo: string | null;
     tipoEquipo: { nombre: string };
-  };
+  } | null;
   createdAt: string;
   updatedAt: string;
   estado?: LicenseStatus;
@@ -25,6 +32,8 @@ interface LicenseSummaryItem {
   vigentes: number;
   porVencer: number;
   vencidas: number;
+  perpetuas: number;
+  sinFecha: number;
 }
 
 interface LicenseFilters {
@@ -33,6 +42,7 @@ interface LicenseFilters {
   software?: string;
   estado?: LicenseStatus;
   equipoId?: number;
+  sinEquipo?: boolean;
   search?: string;
 }
 
@@ -43,6 +53,7 @@ export function useLicenses(filters: LicenseFilters = {}) {
   if (filters.software) params.set('software', filters.software);
   if (filters.estado) params.set('estado', filters.estado);
   if (filters.equipoId) params.set('equipoId', String(filters.equipoId));
+  if (filters.sinEquipo) params.set('sinEquipo', 'true');
   if (filters.search) params.set('search', filters.search);
 
   return useQuery({
@@ -56,7 +67,7 @@ export function useLicenses(filters: LicenseFilters = {}) {
       // Agregar estado derivado a cada licencia
       const dataWithStatus = response.data.map((lic) => ({
         ...lic,
-        estado: resolveLicenseStatus(lic.fechaExpiracion),
+        estado: resolveLicenseStatus(lic.fechaExpiracion, lic.sinExpiracion),
       }));
 
       return {
@@ -86,8 +97,15 @@ export function useCreateLicense() {
     mutationFn: (data: {
       software: string;
       version?: string;
+      clave?: string;
+      tipo?: string;
+      proveedor?: string;
+      precioCompra?: number;
+      fechaCompra?: string;
       fechaExpiracion?: string;
-      equipoId: number;
+      sinExpiracion?: boolean;
+      observacion?: string;
+      equipoId?: number;
     }) => api.post<Licencia>('/licenses', data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['licenses'] });
@@ -106,8 +124,16 @@ export function useUpdateLicense() {
       id: number;
       data: {
         software?: string;
-        version?: string;
-        fechaExpiracion?: string;
+        version?: string | null;
+        clave?: string | null;
+        tipo?: string | null;
+        proveedor?: string | null;
+        precioCompra?: number | null;
+        fechaCompra?: string | null;
+        fechaExpiracion?: string | null;
+        sinExpiracion?: boolean;
+        observacion?: string | null;
+        equipoId?: number | null;
       };
     }) => api.put<Licencia>(`/licenses/${id}`, data),
     onSuccess: () => {

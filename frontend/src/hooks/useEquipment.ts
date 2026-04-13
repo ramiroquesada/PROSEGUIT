@@ -68,6 +68,8 @@ interface Equipment {
   fechaAdquisicion: string | null;
   nroInventario: string | null;
   garantiaHasta: string | null;
+  fechaFinVida: string | null;
+  precioCompra: string | null;
   observacion: string | null;
   imagenes: { id: number; url: string; descripcion: string | null; createdAt: string }[];
   tipoEquipo: { id: number; nombre: string; icono: string | null };

@@ -320,9 +320,16 @@ model Licencia {
   id              Int       @id @default(autoincrement())
   software        String    @db.VarChar(100)
   version         String?   @db.VarChar(50)
+  clave           String?   @db.VarChar(200)
+  tipo            String?   @db.VarChar(50)
+  proveedor       String?   @db.VarChar(200)
+  precioCompra    Decimal?  @map("precio_compra") @db.Decimal(10, 2)
+  fechaCompra     DateTime? @map("fecha_compra")
   fechaExpiracion DateTime? @map("fecha_expiracion")
-  equipoId        Int       @map("equipo_id")
-  equipo          Equipo    @relation(fields: [equipoId], references: [id], onDelete: Cascade)
+  sinExpiracion   Boolean   @default(false) @map("sin_expiracion")
+  observacion     String?   @db.Text
+  equipoId        Int?      @map("equipo_id")
+  equipo          Equipo?   @relation(fields: [equipoId], references: [id], onDelete: SetNull)
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
