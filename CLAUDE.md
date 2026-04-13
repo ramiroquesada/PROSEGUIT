@@ -26,9 +26,9 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 
 ---
 
-## Estado actual del proyecto (Marzo 2026)
+## Estado actual del proyecto (Abril 2026)
 
-### ✅ Backend — 9 módulos completos
+### ✅ Backend — 10 módulos completos
 
 | Módulo | Endpoints principales |
 |--------|----------------------|
@@ -38,11 +38,12 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 | `dashboard` | GET stats, GET recent-activity |
 | `history` | GET list (paginado + filtros), GET by equipoId |
 | `loans` | GET list, POST crear, POST return |
+| `licenses` | GET list/summary/detail, POST crear, PUT editar, DELETE (con estado derivado) |
 | `model-templates` | CRUD completo (admin only) |
 | `service-providers` | CRUD completo (admin only) |
 | `users` | CRUD + reset-password + change-password |
 
-### ✅ Frontend — 11 páginas
+### ✅ Frontend — 12 páginas
 
 | Ruta | Página | Descripción |
 |------|--------|-------------|
@@ -51,9 +52,10 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 | `/` | DashboardPage | Stats cards + actividad reciente clickeable |
 | `/equipos` | EquipmentListPage | Tabla con búsqueda debounced, filtros en cascada, columnas ordenables, paginación con ventana de páginas |
 | `/equipos/nuevo` | EquipmentFormPage | Formulario con plantillas de modelos |
-| `/equipos/:id` | EquipmentDetailPage | Ficha + acciones + timeline de historial |
+| `/equipos/:id` | EquipmentDetailPage | Ficha + acciones + timeline + sección licencias |
 | `/equipos/:id/editar` | EquipmentFormPage | Edición |
 | `/prestamos` | LoansPage | Lista + nuevo préstamo por serie |
+| `/licencias` | LicensesPage | Resumen por software + tabla filtrable, estado derivado |
 | `/ubicaciones` | LocationsPage | Árbol Ciudad›Sección›Oficina + panel de equipos |
 | `/historial` | HistoryPage | Historial global con filtros y badges |
 | `/plantillas` | TemplatesPage | CRUD plantillas de modelos (admin) |
@@ -65,6 +67,7 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 - Acciones de equipos: transferir (SALIDA), enviar a soporte (ENTRADA), enviar a servicio externo, dar de baja, retornar de servicio
 - Historial completo de cada acción con motivo, ubicación origen/destino, técnico y fecha
 - Préstamos: crear por número de serie, registrar devolución
+- **Licencias de software**: gestión por equipo con estado derivado (VIGENTE, POR_VENCER, VENCIDA), búsqueda, filtros, resumen por software
 - Árbol de ubicaciones de 3 niveles con CRUD
 - Panel lateral en ubicaciones que muestra equipos de la oficina seleccionada
 - Sidebar con íconos Lucide, gradiente navy, footer fijo con usuario
@@ -76,6 +79,7 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 - **Estado NUEVO**: equipo recién ingresado. Al crear un equipo queda en NUEVO (en soporte). Al transferirlo a cualquier oficina que no sea soporte/depósito se convierte automáticamente en ACTIVO. Ver sección "Flujo estado NUEVO" más abajo.
 - **Formulario nuevo equipo**: pre-rellena el próximo número de serie (max+1), pre-selecciona tipo "PC - Torre" y la oficina de soporte como ubicación inicial
 - **Dashboard en tiempo real**: todas las mutaciones de equipo invalidan `['dashboard']` via TanStack Query prefix matching, actualizando contadores y actividad reciente sin recargar la página
+- **Sección de licencias en ficha de equipo**: lista licencias del equipo con botón para agregar nuevas licencias rápidamente
 
 ---
 
@@ -406,40 +410,13 @@ docker compose -f docker-compose.prod.yml logs -f frontend   # logs de nginx
 
 ## Pendiente / TODO
 
-### Corto plazo
 
-- [ ] **Migración de datos** con el dump actualizado de seguit v1 (traído de la oficina)
-- [x] **Mejoras de fotos de equipos** — lightbox, descripción por foto editable inline, soft-delete, registro en historial (`FOTO_AGREGADA`, `FOTO_ELIMINADA`)
-- [x] **Ciclo de vida del activo** — `fechaFinVida` y `precioCompra` agregados al modelo `Equipo`. Badge de garantía en ficha: rojo (vencida), amarillo (vence en ≤30 días), verde (vigente). Helper `getWarrantyStatus` en `equipment-status.ts` reutilizable para alertas futuras
-### Medio plazo
-
-- [ ] **Asignación permanente a funcionario** — más allá del préstamo temporal: registrar qué funcionario es el responsable/titular de cada equipo, historial de asignaciones, badge en ficha de equipo
-- [ ] **Gestión de licencias de software** — módulo nuevo: licencias disponibles vs. usadas, fechas de expiración, alertas, asignación a equipos o funcionarios
 - [ ] **Sistema de alertas** — notificaciones in-app (y opcionalmente email) para: garantías por vencer, equipos sin mantenimiento, licencias próximas a expirar, equipos obsoletos por fecha de fin de vida
 - [ ] **Gestión de costos** — precio de compra, depreciación opcional, costo total por área/ciudad/sección. Visible en dashboard analítico
 - [ ] **Dashboard analítico ampliado** — widgets configurables: equipos por tipo/área, costos acumulados, comparativas por período, gráficos de estado general
 
-### Largo plazo
 
-- [ ] **Módulo de tickets / helpdesk** — los funcionarios reportan problemas, los tickets se asocian a equipos, estados: abierto / en proceso / resuelto. Acerca el sistema a un ITSM liviano
+
 - [ ] **Automatizaciones** — reglas simples configurables: recordatorios automáticos, cambio de estado al cumplir condición, notificación al técnico asignado
-- [ ] **Importación CSV/Excel** — carga masiva de equipos, usuarios o licencias desde planilla
+- [ ] **CSV/Excel** — carga masiva de equipos, usuarios o licencias desde planilla o export de las mismas
 - [ ] **Mapa lógico de ubicaciones** — visualización de árbol ciudad/sección/oficina con contadores de equipos por nodo
-
-### Completado ✅
-
-- [x] **Tests** — backend service layer: `equipment.service`, `auth.service`, `users.service` (48 tests con Vitest, sin DB)
-- [x] **Alinear `@proseguit/shared`** — serie como `number`, enums corregidos, schemas compartidos en backend
-- [x] **Configuración de producción** — `backend/Dockerfile`, `frontend/Dockerfile`, `docker-compose.prod.yml`, `.env.production.example`
-- [x] **Responsive completo** — mobile/tablet implementado
-- [x] **Mejoras de fotos de equipos** — lightbox, descripción por foto editable inline, soft-delete, registro en historial (`FOTO_AGREGADA`, `FOTO_ELIMINADA`)
-- [x] **Fotos de equipos** — subida múltiple, galería en detalle del equipo
-- [x] **Permisos TECNICO** — técnicos pueden gestionar ubicaciones y plantillas; panel de usuario propio con cambio de contraseña
-- [x] **Auth JWT con rotación** — access 15min + refresh 7d con rotación automática en cada refresh
-- [x] **Estado NUEVO** — equipos recién ingresados, flujo completo hasta asignación
-- [x] **Dashboard en tiempo real** — invalidación via TanStack Query prefix matching
-- [x] **Historial y auditoría completo** — toda acción registra motivo, técnico, origen/destino, timestamp
-- [x] **Árbol de ubicaciones** — Ciudad › Sección › Oficina con CRUD inline y panel de equipos
-- [x] **Servicios externos** — envío a reparación con proveedor, diagnóstico, retorno
-- [x] **Préstamos** — salida/devolución con identificación de funcionario
-- [x] **Script de migración desde seguit v1** — un solo comando, auto-repara DB inconsistente

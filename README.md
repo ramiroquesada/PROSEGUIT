@@ -88,6 +88,7 @@
 | **Acciones de equipo** | Transferir (SALIDA), enviar a soporte (ENTRADA), servicio externo, baja |
 | **Lógica de acciones** | El tipo de acción en SALIDA se determina automáticamente según el estado del equipo |
 | **Préstamos** | Salida y devolución con identificación de funcionario y técnico responsable |
+| **Licencias de software** | CRUD completo, estado derivado (VIGENTE/POR_VENCER/VENCIDA), resumen por software, sección en ficha de equipo |
 | **Ubicaciones** | Árbol 3 niveles (Ciudad › Sección › Oficina) con CRUD y panel de equipos |
 | **Dashboard en tiempo real** | Contadores e historial se actualizan sin recargar la página tras cada acción |
 | **Plantillas de modelo** | Especificaciones técnicas reutilizables en JSON |
