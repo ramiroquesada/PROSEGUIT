@@ -149,7 +149,7 @@ export default function LicensesPage() {
     }
 
     try {
-      const data = {
+      const data: any = {
         software: form.software.trim(),
         version: form.version.trim() || undefined,
         clave: form.clave.trim() || undefined,
@@ -160,8 +160,17 @@ export default function LicensesPage() {
         fechaExpiracion: form.sinExpiracion ? undefined : (form.fechaExpiracion || undefined),
         sinExpiracion: form.sinExpiracion,
         observacion: form.observacion.trim() || undefined,
-        equipoId: form.equipoId ? Number(form.equipoId) : undefined,
       };
+
+      // En modo edit, SIEMPRE enviar equipoId (puede ser number o null)
+      if (modal === 'editar') {
+        data.equipoId = form.equipoId ? Number(form.equipoId) : null;
+      } else {
+        // En modo crear, enviar solo si hay valor
+        if (form.equipoId) {
+          data.equipoId = Number(form.equipoId);
+        }
+      }
 
       if (modal === 'crear') {
         await createMutation.mutateAsync(data);
