@@ -116,7 +116,7 @@ export default function LicensesPage() {
   }
 
   async function handleEquipoSerieBlur() {
-    if (!form.equipoSerie.trim() || modal === 'editar') return;
+    if (!form.equipoSerie.trim()) return;
 
     try {
       const response = await api.get<any>(
