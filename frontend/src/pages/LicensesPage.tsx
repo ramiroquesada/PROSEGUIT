@@ -500,19 +500,15 @@ export default function LicensesPage() {
                     name="equipoSerie"
                     value={form.equipoSerie}
                     placeholder="Número de serie del equipo"
-                    disabled={modal === 'editar'}
-                    readOnly={modal === 'editar'}
                     onChange={handleFormChange}
                     onBlur={handleEquipoSerieBlur}
                   />
                   <small className={styles.hint}>
-                    {modal === 'crear'
-                      ? 'Dejar vacío si no está asignada a un equipo'
-                      : 'Campo no editable. Para cambiar equipo, elimina esta licencia y crea una nueva.'}
+                    Dejar vacío si no está asignada a un equipo
                   </small>
                 </div>
 
-                {form.equipoId && modal === 'editar' && (
+                {form.equipoId && (
                   <button
                     type="button"
                     className={styles.btnClearFilter}
