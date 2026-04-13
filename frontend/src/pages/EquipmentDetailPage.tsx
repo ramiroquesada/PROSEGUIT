@@ -5,8 +5,10 @@ import { resolveEstado, STATUS_LABEL, STATUS_COLOR, getWarrantyStatus, getWarran
 import { useEquipmentHistory } from '../hooks/useHistory';
 import { useLocationTree } from '../hooks/useLocations';
 import { useServiceProviders } from '../hooks/useLoans';
+import { useEquipmentLicenses, useCreateLicense, useDeleteLicense } from '../hooks/useLicenses';
+import { resolveLicenseStatus, LICENSE_STATUS_LABEL, LICENSE_STATUS_COLOR } from '../lib/license-status';
 import { ACCION_LABEL, ACCION_COLOR } from '../lib/action-types';
-import { ArrowRightLeft, Building2, RotateCcw, Pencil, ChevronLeft, LogOut, LogIn, Monitor, Camera, Trash2, X } from 'lucide-react';
+import { ArrowRightLeft, Building2, RotateCcw, Pencil, ChevronLeft, LogOut, LogIn, Monitor, Camera, Trash2, X, Plus } from 'lucide-react';
 import { findSoporteOffice } from '../lib/find-soporte-office';
 import LocationCascadeSelect from '../components/LocationCascadeSelect';
 import styles from './EquipmentDetailPage.module.css';
@@ -176,11 +178,16 @@ export default function EquipmentDetailPage() {
   const uploadImageMutation = useUploadEquipmentImage();
   const deleteImageMutation = useDeleteEquipmentImage();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { data: licensesData } = useEquipmentLicenses(equipoId);
+  const createLicenseMutation = useCreateLicense();
+  const deleteLicenseMutation = useDeleteLicense();
 
   const [action, setAction] = useState<ActionState | null>(null);
   const [actionError, setActionError] = useState('');
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const [uploadDesc, setUploadDesc] = useState('');
+  const [licenseModal, setLicenseModal] = useState(false);
+  const [licenseForm, setLicenseForm] = useState({ software: '', version: '', fechaExpiracion: '' });
 
   useEffect(() => {
     if (!lightboxUrl) return;
@@ -200,6 +207,37 @@ export default function EquipmentDetailPage() {
       { id: equipoId, file, descripcion: desc || undefined },
       { onSuccess: () => setUploadDesc('') },
     );
+  }
+
+  // ── Licencias ──────────────────────────────────────────────────────
+  async function handleCreateLicense(e: React.FormEvent) {
+    e.preventDefault();
+    if (!licenseForm.software.trim()) {
+      alert('El software es requerido');
+      return;
+    }
+    try {
+      await createLicenseMutation.mutateAsync({
+        software: licenseForm.software.trim(),
+        version: licenseForm.version.trim() || undefined,
+        fechaExpiracion: licenseForm.fechaExpiracion || undefined,
+        equipoId,
+      });
+      setLicenseModal(false);
+      setLicenseForm({ software: '', version: '', fechaExpiracion: '' });
+    } catch (err: any) {
+      alert('Error: ' + (err.message || 'No se pudo crear la licencia'));
+    }
+  }
+
+  async function handleDeleteLicense(licenseId: number) {
+    if (confirm('¿Eliminar esta licencia?')) {
+      try {
+        await deleteLicenseMutation.mutateAsync(licenseId);
+      } catch (err: any) {
+        alert('Error: ' + (err.message || 'No se pudo eliminar la licencia'));
+      }
+    }
   }
 
   function openAction(type: ActionType) {
@@ -553,6 +591,61 @@ export default function EquipmentDetailPage() {
           </div>
         )}
 
+        {/* Card: Licencias */}
+        <div className={styles.card}>
+          <div className={styles.cardHeader}>
+            <div className={styles.cardHeaderBar} style={{ background: 'var(--color-primary)' }} />
+            <h3 className={styles.cardTitle}>Licencias</h3>
+            <button
+              className={styles.cardAction}
+              onClick={() => setLicenseModal(true)}
+              title="Agregar licencia"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
+          <div className={styles.cardBody}>
+            {!licensesData ? (
+              <p className={styles.loadingText}>Cargando licencias...</p>
+            ) : licensesData.data.length === 0 ? (
+              <p className={styles.emptyText}>Sin licencias registradas</p>
+            ) : (
+              <ul className={styles.licenseList}>
+                {licensesData.data.map((lic) => (
+                  <li key={lic.id} className={styles.licenseItem}>
+                    <div className={styles.licenseInfo}>
+                      <div className={styles.licenseName}>
+                        {lic.software}
+                        {lic.version && <span className={styles.version}>v{lic.version}</span>}
+                      </div>
+                      {lic.fechaExpiracion && (
+                        <div className={styles.licenseDate}>
+                          Vence: {new Date(lic.fechaExpiracion).toLocaleDateString('es-ES')}
+                        </div>
+                      )}
+                    </div>
+                    <div className={styles.licenseStatus}>
+                      <span
+                        className={styles.badge}
+                        style={{ backgroundColor: LICENSE_STATUS_COLOR[lic.estado!] }}
+                      >
+                        {LICENSE_STATUS_LABEL[lic.estado!]}
+                      </span>
+                      <button
+                        className={styles.btnIcon}
+                        onClick={() => handleDeleteLicense(lic.id)}
+                        title="Eliminar"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+
         {/* Card: Historial */}
         <div className={styles.card}>
           <div className={styles.cardHeader}>
@@ -724,6 +817,73 @@ export default function EquipmentDetailPage() {
             className={styles.lightboxImg}
             onClick={(e) => e.stopPropagation()}
           />
+        </div>
+      )}
+
+      {/* ── Modal de licencia ──────────────────────────────────────────── */}
+      {licenseModal && (
+        <div className={styles.overlay} onClick={() => setLicenseModal(false)}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h3 className={styles.modalTitle}>Agregar licencia</h3>
+            <p className={styles.modalEquipo}>
+              Equipo: <strong>Serie {equipo.serie}</strong>
+              {equipo.modelo && ` — ${equipo.modelo}`}
+            </p>
+
+            <form onSubmit={handleCreateLicense} className={styles.modalForm}>
+              <div className={styles.field}>
+                <label className={styles.label}>Software *</label>
+                <input
+                  type="text"
+                  name="software"
+                  value={licenseForm.software}
+                  onChange={(e) => setLicenseForm((p) => ({ ...p, software: e.target.value }))}
+                  placeholder="Ej: Windows 11, Office 365"
+                  className={styles.input}
+                  required
+                />
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label}>Versión</label>
+                <input
+                  type="text"
+                  name="version"
+                  value={licenseForm.version}
+                  onChange={(e) => setLicenseForm((p) => ({ ...p, version: e.target.value }))}
+                  placeholder="Ej: 22H2, 2024"
+                  className={styles.input}
+                />
+              </div>
+
+              <div className={styles.field}>
+                <label className={styles.label}>Fecha de expiración</label>
+                <input
+                  type="date"
+                  name="fechaExpiracion"
+                  value={licenseForm.fechaExpiracion}
+                  onChange={(e) => setLicenseForm((p) => ({ ...p, fechaExpiracion: e.target.value }))}
+                  className={styles.input}
+                />
+              </div>
+
+              <div className={styles.modalActions}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLicenseModal(false);
+                    setLicenseForm({ software: '', version: '', fechaExpiracion: '' });
+                  }}
+                  className={styles.btnSecondary}
+                >
+                  Cancelar
+                </button>
+                <button type="submit" className={styles.btnPrimary} disabled={createLicenseMutation.isPending}>
+                  Guardar licencia
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       )}
     </div>

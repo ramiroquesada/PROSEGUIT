@@ -118,6 +118,7 @@ model Equipo {
   prestamos      Prestamo[]
   enviosServicio EnvioServicio[]
   imagenes       EquipoImagen[]
+  licencias      Licencia[]
   createdAt      DateTime        @default(now()) @map("created_at")
   updatedAt      DateTime        @updatedAt @map("updated_at")
 
@@ -309,4 +310,23 @@ model RefreshToken {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("refresh_token")
+}
+
+// ==========================================
+// LICENCIAS
+// ==========================================
+
+model Licencia {
+  id              Int       @id @default(autoincrement())
+  software        String    @db.VarChar(100)
+  version         String?   @db.VarChar(50)
+  fechaExpiracion DateTime? @map("fecha_expiracion")
+  equipoId        Int       @map("equipo_id")
+  equipo          Equipo    @relation(fields: [equipoId], references: [id], onDelete: Cascade)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@index([equipoId])
+  @@index([fechaExpiracion])
+  @@map("licencia")
 }

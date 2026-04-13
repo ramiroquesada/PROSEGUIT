@@ -10,6 +10,7 @@ const EquipmentListPage = lazy(() => import('./pages/EquipmentListPage'));
 const EquipmentDetailPage = lazy(() => import('./pages/EquipmentDetailPage'));
 const EquipmentFormPage = lazy(() => import('./pages/EquipmentFormPage'));
 const LoansPage = lazy(() => import('./pages/LoansPage'));
+const LicensesPage = lazy(() => import('./pages/LicensesPage'));
 const UsersPage = lazy(() => import('./pages/UsersPage'));
 const LocationsPage = lazy(() => import('./pages/LocationsPage'));
 const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));
@@ -59,6 +60,7 @@ export default function App() {
           <Route path="equipos/:id" element={<EquipmentDetailPage />} />
           <Route path="equipos/:id/editar" element={<EquipmentFormPage />} />
           <Route path="prestamos" element={<LoansPage />} />
+          <Route path="licencias" element={<LicensesPage />} />
           <Route path="ubicaciones" element={<LocationsPage />} />
           <Route path="historial" element={<HistoryPage />} />
           <Route path="plantillas" element={<TemplatesPage />} />
