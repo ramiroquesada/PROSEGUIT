@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEquipmentDetail, useEquipmentTypes, useNextSerie } from '../hooks/useEquipment';
+import { useEquipmentDetail, useEquipmentTypes, useNextSerie, useTemplates } from '../hooks/useEquipment';
 import { useLocationTree } from '../hooks/useLocations';
 import { api } from '../lib/api-client';
 import { findSoporteOffice } from '../lib/find-soporte-office';
@@ -26,6 +26,7 @@ export default function EquipmentFormPage() {
     serie: '',
     modelo: '',
     tipoEquipoId: '',
+    templateId: '',
     ciudadId: '',
     seccionId: '',
     oficinaId: '',
@@ -43,6 +44,8 @@ export default function EquipmentFormPage() {
     motivo: '',
   });
 
+  const { data: templates } = useTemplates(form.tipoEquipoId ? Number(form.tipoEquipoId) : undefined);
+
   const [error, setError] = useState('');
 
   // Prellenar al editar
@@ -52,6 +55,7 @@ export default function EquipmentFormPage() {
         serie: String(equipo.serie),
         modelo: equipo.modelo || '',
         tipoEquipoId: String(equipo.tipoEquipo.id),
+        templateId: equipo.template?.id ? String(equipo.template.id) : '',
         ciudadId: String(equipo.oficina.seccion.ciudad.id),
         seccionId: String(equipo.oficina.seccion.id),
         oficinaId: String(equipo.oficina.id),
@@ -148,6 +152,7 @@ export default function EquipmentFormPage() {
       fechaFinVida: form.fechaFinVida || null,
       precioCompra: form.precioCompra ? Number(form.precioCompra) : null,
       observacion: form.observacion || undefined,
+      ...(form.templateId ? { templateId: Number(form.templateId) } : {}),
     };
 
     if (!isEditing) {
@@ -226,6 +231,52 @@ export default function EquipmentFormPage() {
                 className={styles.input}
                 placeholder="Ej: NPN123456"
               />
+            </div>
+          </div>
+
+          <div className={styles.field}>
+            <label className={styles.label}>Plantilla (opcional)</label>
+            <div className={styles.templateSelector}>
+              <select
+                name="templateId"
+                value={form.templateId}
+                onChange={handleChange}
+                className={styles.templateSelect}
+              >
+                <option value="">Sin plantilla</option>
+                {templates?.map((t) => (
+                  <option key={t.id} value={t.id}>{t.nombre}</option>
+                ))}
+              </select>
+
+              {form.templateId && templates && (
+                (() => {
+                  const selectedTemplate = templates.find(t => t.id === Number(form.templateId));
+                  return selectedTemplate ? (
+                    <div className={styles.templateCard}>
+                      <div className={styles.templateCardTitle}>
+                        {selectedTemplate.nombre}
+                      </div>
+                      {selectedTemplate.marca && (
+                        <div className={styles.templateCardMarca}>
+                          <strong>Marca:</strong>
+                          <span>{selectedTemplate.marca}</span>
+                        </div>
+                      )}
+                      {selectedTemplate.especificaciones && Object.keys(selectedTemplate.especificaciones).length > 0 && (
+                        <div className={styles.templateCardSpecs}>
+                          {Object.entries(selectedTemplate.especificaciones).map(([key, value]) => (
+                            <div key={key} className={styles.templateCardSpecRow}>
+                              <strong>{key}:</strong>
+                              <span>{String(value)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : null;
+                })()
+              )}
             </div>
           </div>
         </div>
