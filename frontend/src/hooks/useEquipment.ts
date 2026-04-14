@@ -14,6 +14,14 @@ interface EquipmentFilters {
   sortDir?: 'asc' | 'desc';
 }
 
+export interface Template {
+  id: number;
+  nombre: string;
+  marca: string | null;
+  tipoEquipo: { id: number; nombre: string };
+  especificaciones: Record<string, unknown> | null;
+}
+
 export function useEquipmentList(filters: EquipmentFilters = {}) {
   const params = new URLSearchParams();
   params.set('page', String(filters.page || 1));
@@ -182,6 +190,15 @@ export function useNextSerie() {
     queryKey: ['equipment', 'next-serie'],
     queryFn: () => api.get<{ nextSerie: number }>('/equipment/next-serie'),
     staleTime: 0, // siempre refetch al abrir el formulario
+  });
+}
+
+export function useTemplates(tipoEquipoId?: number) {
+  const params = tipoEquipoId ? `?tipoEquipoId=${tipoEquipoId}` : '';
+  return useQuery({
+    queryKey: ['templates', tipoEquipoId],
+    queryFn: () => api.get<Template[]>(`/model-templates${params}`),
+    staleTime: 30 * 1000, // 30 seconds, consistent with other hooks
   });
 }
 
