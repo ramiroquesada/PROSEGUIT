@@ -27,10 +27,13 @@ vi.mock('../../utils/prisma.js', () => ({
     historial: {
       create: vi.fn(),
     },
+    modeloTemplate: {
+      findUnique: vi.fn(),
+    },
   },
 }));
 
-import { transferEquipment, sendToSupport, createEquipment, getNextSerie, returnFromService, saveEquipmentImage, deleteEquipmentImage, updateImageDescription } from './equipment.service.js';
+import { transferEquipment, sendToSupport, createEquipment, updateEquipment, getNextSerie, returnFromService, saveEquipmentImage, deleteEquipmentImage, updateImageDescription } from './equipment.service.js';
 import { prisma } from '../../utils/prisma.js';
 import { AppError } from '../../middleware/error-handler.js';
 
@@ -41,6 +44,7 @@ const mockPrisma = prisma as unknown as {
   envioServicio: { create: ReturnType<typeof vi.fn>; findFirst: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> };
   equipoImagen: { create: ReturnType<typeof vi.fn>; findFirst: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> };
   historial: { create: ReturnType<typeof vi.fn> };
+  modeloTemplate: { findUnique: ReturnType<typeof vi.fn> };
 };
 
 // ─── transferEquipment ───────────────────────────────────────────────────────
@@ -224,8 +228,84 @@ describe('createEquipment', () => {
   it('lanza 409 si la serie ya existe', async () => {
     mockPrisma.equipo.findUnique.mockResolvedValue({ id: 5, serie: 42 });
 
-    await expect(createEquipment({ serie: 42, tipoEquipoId: 1, oficinaId: 10 }, 99))
+    await expect(createEquipment({ serie: 42, tipoEquipoId: 1, officinaId: 10 }, 99))
       .rejects.toMatchObject({ statusCode: 409 });
+  });
+
+  it('should create equipment with valid templateId', async () => {
+    const tipoId = 1;
+    const templateId = 1;
+
+    mockPrisma.equipo.findUnique.mockResolvedValueOnce(null); // no existing serie
+    mockPrisma.modeloTemplate.findUnique.mockResolvedValueOnce({
+      id: templateId,
+      nombre: 'HP EliteDesk 800',
+      tipoEquipoId: tipoId,
+      marca: 'HP',
+      especificaciones: {},
+      createdAt: new Date(),
+    } as any);
+
+    mockPrisma.equipo.create.mockResolvedValueOnce({
+      id: 1,
+      serie: 9999,
+      templateId: templateId,
+      tipoEquipoId: tipoId,
+      modelo: 'Test Model',
+      tipoEquipo: { id: tipoId, nombre: 'PC' },
+      oficina: { id: 1, nombre: 'Informatica - Soporte' },
+    } as any);
+
+    const result = await createEquipment({
+      serie: 9999,
+      templateId: templateId,
+      tipoEquipoId: tipoId,
+      oficinaId: 1,
+    }, 1);
+
+    expect(result.templateId).toBe(templateId);
+    expect(mockPrisma.modeloTemplate.findUnique).toHaveBeenCalledWith({
+      where: { id: templateId },
+    });
+  });
+
+  it('should reject templateId that does not match tipoEquipoId', async () => {
+    const tipoId = 1;
+    const templateId = 2;
+    const wrongTipoId = 3;
+
+    mockPrisma.equipo.findUnique.mockResolvedValueOnce(null);
+    mockPrisma.modeloTemplate.findUnique.mockResolvedValueOnce({
+      id: templateId,
+      nombre: 'Dell OptiPlex',
+      tipoEquipoId: wrongTipoId,
+      marca: 'Dell',
+      especificaciones: {},
+      createdAt: new Date(),
+    } as any);
+
+    await expect(
+      createEquipment({
+        serie: 9999,
+        templateId: templateId,
+        tipoEquipoId: tipoId,
+        officinaId: 1,
+      }, 1)
+    ).rejects.toThrow('La plantilla no corresponde al tipo de equipo seleccionado');
+  });
+
+  it('should throw 404 if templateId does not exist', async () => {
+    mockPrisma.equipo.findUnique.mockResolvedValueOnce(null);
+    mockPrisma.modeloTemplate.findUnique.mockResolvedValueOnce(null);
+
+    await expect(
+      createEquipment({
+        serie: 9999,
+        templateId: 999,
+        tipoEquipoId: 1,
+        officinaId: 1,
+      }, 1)
+    ).rejects.toThrow('Plantilla no encontrada');
   });
 });
 
@@ -426,5 +506,252 @@ describe('updateImageDescription', () => {
     mockPrisma.equipoImagen.findFirst.mockResolvedValue(null);
 
     await expect(updateImageDescription(1, 99, 'desc', 1)).rejects.toThrow('Imagen no encontrada');
+  });
+});
+
+// ─── updateEquipment — templateId validation ─────────────────────────────────
+
+describe('updateEquipment — templateId validation', () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it('should update equipment with valid templateId', async () => {
+    const equipoId = 1;
+    const tipoId = 1;
+    const templateId = 1;
+
+    mockPrisma.equipo.findUnique.mockResolvedValueOnce({
+      id: equipoId,
+      tipoEquipoId: tipoId,
+      templateId: null,
+      serie: 100,
+      modelo: 'Old Model',
+      ip: null,
+      mac: null,
+      matricula: null,
+      asignadoA: null,
+      proveedor: null,
+      fechaAdquisicion: null,
+      nroInventario: null,
+      garantiaHasta: null,
+      fechaFinVida: null,
+      precioCompra: null,
+      observacion: null,
+      especificaciones: null,
+      oficina: { id: 1, nombre: 'Soporte', seccion: { ciudad: {} } },
+    } as any);
+
+    mockPrisma.modeloTemplate.findUnique.mockResolvedValueOnce({
+      id: templateId,
+      nombre: 'HP EliteDesk 800',
+      tipoEquipoId: tipoId,
+      marca: 'HP',
+      especificaciones: {},
+      createdAt: new Date(),
+    } as any);
+
+    mockPrisma.equipo.update.mockResolvedValueOnce({
+      id: equipoId,
+      tipoEquipoId: tipoId,
+      templateId: templateId,
+      tipoEquipo: { id: tipoId, nombre: 'PC' },
+      oficina: { id: 1, nombre: 'Soporte' },
+    } as any);
+
+    const result = await updateEquipment(
+      equipoId,
+      { templateId: templateId, motivo: 'Update template' },
+      1
+    );
+
+    expect(result.templateId).toBe(templateId);
+    expect(mockPrisma.modeloTemplate.findUnique).toHaveBeenCalledWith({
+      where: { id: templateId },
+    });
+  });
+
+  it('should update equipment with templateId when tipoEquipoId is also updated', async () => {
+    const equipoId = 1;
+    const oldTipoId = 1;
+    const newTipoId = 2;
+    const templateId = 5;
+
+    mockPrisma.equipo.findUnique.mockResolvedValueOnce({
+      id: equipoId,
+      tipoEquipoId: oldTipoId,
+      templateId: null,
+      serie: 100,
+      modelo: 'Old Model',
+      ip: null,
+      mac: null,
+      matricula: null,
+      asignadoA: null,
+      proveedor: null,
+      fechaAdquisicion: null,
+      nroInventario: null,
+      garantiaHasta: null,
+      fechaFinVida: null,
+      precioCompra: null,
+      observacion: null,
+      especificaciones: null,
+      oficina: { id: 1, nombre: 'Soporte' },
+    } as any);
+
+    mockPrisma.modeloTemplate.findUnique.mockResolvedValueOnce({
+      id: templateId,
+      nombre: 'Dell OptiPlex',
+      tipoEquipoId: newTipoId,
+      marca: 'Dell',
+      especificaciones: {},
+      createdAt: new Date(),
+    } as any);
+
+    mockPrisma.equipo.update.mockResolvedValueOnce({
+      id: equipoId,
+      tipoEquipoId: newTipoId,
+      templateId: templateId,
+      tipoEquipo: { id: newTipoId, nombre: 'Laptop' },
+      oficina: { id: 1, nombre: 'Soporte' },
+    } as any);
+
+    const result = await updateEquipment(
+      equipoId,
+      { tipoEquipoId: newTipoId, templateId: templateId, motivo: 'Update both' },
+      1
+    );
+
+    expect(result.templateId).toBe(templateId);
+    expect(result.tipoEquipoId).toBe(newTipoId);
+  });
+
+  it('should reject templateId that does not match current tipoEquipoId', async () => {
+    const equipoId = 1;
+    const tipoId = 1;
+    const templateId = 2;
+    const wrongTipoId = 3;
+
+    mockPrisma.equipo.findUnique.mockResolvedValueOnce({
+      id: equipoId,
+      tipoEquipoId: tipoId,
+      templateId: null,
+      serie: 100,
+      modelo: 'Model',
+      oficina: { id: 1, nombre: 'Soporte' },
+    } as any);
+
+    mockPrisma.modeloTemplate.findUnique.mockResolvedValueOnce({
+      id: templateId,
+      nombre: 'Dell OptiPlex',
+      tipoEquipoId: wrongTipoId,
+      marca: 'Dell',
+      especificaciones: {},
+      createdAt: new Date(),
+    } as any);
+
+    await expect(
+      updateEquipment(
+        equipoId,
+        { templateId: templateId, motivo: 'Update template' },
+        1
+      )
+    ).rejects.toThrow('La plantilla no corresponde al tipo de equipo seleccionado');
+  });
+
+  it('should reject templateId that does not match new tipoEquipoId', async () => {
+    const equipoId = 1;
+    const oldTipoId = 1;
+    const newTipoId = 2;
+    const templateId = 5;
+    const wrongTipoId = 3;
+
+    mockPrisma.equipo.findUnique.mockResolvedValueOnce({
+      id: equipoId,
+      tipoEquipoId: oldTipoId,
+      templateId: null,
+      serie: 100,
+      modelo: 'Old Model',
+      oficina: { id: 1, nombre: 'Soporte' },
+    } as any);
+
+    mockPrisma.modeloTemplate.findUnique.mockResolvedValueOnce({
+      id: templateId,
+      nombre: 'Some Template',
+      tipoEquipoId: wrongTipoId,
+      marca: 'Brand',
+      especificaciones: {},
+      createdAt: new Date(),
+    } as any);
+
+    await expect(
+      updateEquipment(
+        equipoId,
+        { tipoEquipoId: newTipoId, templateId: templateId, motivo: 'Update both' },
+        1
+      )
+    ).rejects.toThrow('La plantilla no corresponde al tipo de equipo seleccionado');
+  });
+
+  it('should allow clearing templateId by setting it to null', async () => {
+    const equipoId = 1;
+
+    mockPrisma.equipo.findUnique.mockResolvedValueOnce({
+      id: equipoId,
+      tipoEquipoId: 1,
+      templateId: 2,
+      serie: 100,
+      modelo: 'Model',
+      ip: null,
+      mac: null,
+      matricula: null,
+      asignadoA: null,
+      proveedor: null,
+      fechaAdquisicion: null,
+      nroInventario: null,
+      garantiaHasta: null,
+      fechaFinVida: null,
+      precioCompra: null,
+      observacion: null,
+      especificaciones: null,
+      oficina: { id: 1, nombre: 'Soporte' },
+    } as any);
+
+    mockPrisma.equipo.update.mockResolvedValueOnce({
+      id: equipoId,
+      templateId: null,
+      tipoEquipo: { id: 1, nombre: 'PC' },
+      oficina: { id: 1, nombre: 'Soporte' },
+    } as any);
+
+    const result = await updateEquipment(
+      equipoId,
+      { templateId: null, motivo: 'Clear template' },
+      1
+    );
+
+    expect(result.templateId).toBeNull();
+    // modeloTemplate.findUnique should not be called when templateId is null
+    expect(mockPrisma.modeloTemplate.findUnique).not.toHaveBeenCalled();
+  });
+
+  it('should throw 404 if templateId does not exist', async () => {
+    const equipoId = 1;
+
+    mockPrisma.equipo.findUnique.mockResolvedValueOnce({
+      id: equipoId,
+      tipoEquipoId: 1,
+      templateId: null,
+      serie: 100,
+      modelo: 'Model',
+      oficina: { id: 1, nombre: 'Soporte' },
+    } as any);
+
+    mockPrisma.modeloTemplate.findUnique.mockResolvedValueOnce(null);
+
+    await expect(
+      updateEquipment(
+        equipoId,
+        { templateId: 999, motivo: 'Update template' },
+        1
+      )
+    ).rejects.toThrow('Plantilla no encontrada');
   });
 });
