@@ -91,7 +91,8 @@
 | **Licencias de software** | CRUD completo, estado derivado (VIGENTE/POR_VENCER/VENCIDA), resumen por software, sección en ficha de equipo |
 | **Ubicaciones** | Árbol 3 niveles (Ciudad › Sección › Oficina) con CRUD y panel de equipos |
 | **Dashboard en tiempo real** | Contadores e historial se actualizan sin recargar la página tras cada acción |
-| **Plantillas de modelo** | Especificaciones técnicas reutilizables en JSON |
+| **Plantillas de modelo** | Especificaciones técnicas reutilizables, editor dinámico de pares clave-valor, asignación opcional a equipos |
+| **Selector de plantillas** | Dropdown en formulario de equipos que filtra por tipo, muestra datos de referencia sin auto-fill |
 | **Servicios externos** | Envío a reparación con proveedor, diagnóstico y fecha de retorno |
 | **Usuarios y roles** | ADMIN gestiona todos los usuarios; TECNICO gestiona ubicaciones, plantillas y su propio usuario |
 | **Fotos de equipos** | Galería de imágenes múltiples por equipo, subida directa desde móvil o escritorio |
@@ -415,9 +416,11 @@ Al crear nuevos usuarios en la app, el sistema genera una contraseña temporal a
 
 El sistema está diseñado para evolucionar hacia una plataforma ITSM liviana. Las próximas mejoras planificadas:
 
-
-- [ ] **Gestión de licencias de software** — disponibles vs. usadas, expiración, asignación
+- [ ] **Alertas inteligentes** — notificaciones para garantías próximas a expirar, licencias vencidas, equipos obsoletos
+- [ ] **Dashboard analítico** — widgets de costos, comparativas por período, análisis de depreciación
 - [ ] **Automatizaciones** — recordatorios, reglas de cambio de estado, notificaciones al técnico
+- [ ] **Importación masiva** — carga de equipos, usuarios o licencias desde CSV/Excel
+- [ ] **Visualización de red** — mapa lógico de ubicaciones con contadores de equipos
 
 ---
 

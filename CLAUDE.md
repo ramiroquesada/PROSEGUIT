@@ -28,6 +28,11 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 
 ## Estado actual del proyecto (Abril 2026)
 
+### ✅ Completado recientemente (abril 14)
+
+- **Equipment Templates Integration** — Validación de templateId, selector dropdown en formulario de equipos, reference card con datos de plantilla, invalidación de caché `['equipment']`
+- **TemplatesPage Mejorada** — Edit functionality con ícono Pencil, editor dinámico de pares clave-valor para specs, ModalMode pattern (create/editar), validación de claves duplicadas
+
 ### ✅ Backend — 10 módulos completos
 
 | Módulo | Endpoints principales |
