@@ -1,25 +1,26 @@
 import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useEquipmentTypes } from '../hooks/useEquipment';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { Pencil } from 'lucide-react';
+import { useEquipmentTypes, useTemplates, type Template } from '../hooks/useEquipment';
 import { api } from '../lib/api-client';
 import styles from './TemplatesPage.module.css';
 import { usePageTitle } from '../hooks/usePageTitle';
 
+type ModalMode = 'crear' | 'editar' | null;
 
-interface Template {
-  id: number;
-  nombre: string;
-  marca: string | null;
-  tipoEquipo: { id: number; nombre: string };
-  especificaciones: Record<string, string> | null;
+function specsToRecord(specs: { key: string; value: string }[]): Record<string, string> | undefined {
+  const filtered = specs.filter((s) => s.key.trim() !== '');
+  if (filtered.length === 0) return undefined;
+  const record: Record<string, string> = {};
+  for (const { key, value } of filtered) {
+    record[key.trim()] = value.trim();
+  }
+  return record;
 }
 
-function useTemplates(tipoEquipoId?: number) {
-  const params = tipoEquipoId ? `?tipoEquipoId=${tipoEquipoId}` : '';
-  return useQuery({
-    queryKey: ['templates', tipoEquipoId],
-    queryFn: () => api.get<Template[]>(`/model-templates${params}`),
-  });
+function recordToSpecs(record: Record<string, unknown> | null | undefined): { key: string; value: string }[] {
+  if (!record) return [];
+  return Object.entries(record).map(([key, value]) => ({ key, value: String(value) }));
 }
 
 export default function TemplatesPage() {
@@ -29,53 +30,116 @@ export default function TemplatesPage() {
   const [filterTipo, setFilterTipo] = useState<number | undefined>();
   const { data: templates, isLoading } = useTemplates(filterTipo);
 
-  const [modal, setModal] = useState<{ editing?: Template } | null>(null);
-  const [form, setForm] = useState({ nombre: '', marca: '', tipoEquipoId: '', specs: '' });
+  const [modal, setModal] = useState<ModalMode>(null);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [form, setForm] = useState({ nombre: '', marca: '', tipoEquipoId: '' });
+  const [specs, setSpecs] = useState<{ key: string; value: string }[]>([]);
   const [formError, setFormError] = useState('');
 
   const createMutation = useMutation({
     mutationFn: (data: any) => api.post<Template>('/model-templates', data),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['templates'] }); setModal(null); },
-    onError: (e: any) => setFormError(e?.message || 'Error'),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['templates'] });
+      qc.invalidateQueries({ queryKey: ['equipment'] });
+      closeModal();
+    },
+    onError: (e: any) => setFormError(e?.message || 'Error al crear la plantilla'),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) =>
+      api.put<Template>(`/model-templates/${id}`, data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['templates'] });
+      qc.invalidateQueries({ queryKey: ['equipment'] });
+      closeModal();
+    },
+    onError: (e: any) => setFormError(e?.message || 'Error al guardar los cambios'),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => api.delete(`/model-templates/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['templates'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['templates'] });
+      qc.invalidateQueries({ queryKey: ['equipment'] });
+    },
     onError: (e: any) => alert(e?.message || 'No se puede eliminar'),
   });
 
   function openCreate() {
-    setForm({ nombre: '', marca: '', tipoEquipoId: '', specs: '' });
+    setForm({ nombre: '', marca: '', tipoEquipoId: '' });
+    setSpecs([]);
+    setEditingId(null);
     setFormError('');
-    setModal({});
+    setModal('crear');
   }
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
+  function openEdit(t: Template) {
+    setForm({
+      nombre: t.nombre,
+      marca: t.marca ?? '',
+      tipoEquipoId: String(t.tipoEquipo.id),
+    });
+    setSpecs(recordToSpecs(t.especificaciones));
+    setEditingId(t.id);
+    setFormError('');
+    setModal('editar');
+  }
+
+  function closeModal() {
+    setModal(null);
+    setEditingId(null);
+    setFormError('');
+  }
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
     setFormError('');
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!form.nombre || !form.tipoEquipoId) { setFormError('Nombre y tipo son obligatorios'); return; }
+  function handleSpecAdd() {
+    setSpecs((prev) => [...prev, { key: '', value: '' }]);
+  }
 
-    let especificaciones: Record<string, string> | undefined;
-    if (form.specs.trim()) {
-      try {
-        especificaciones = JSON.parse(form.specs);
-      } catch {
-        setFormError('Las especificaciones deben ser JSON válido');
-        return;
-      }
+  function handleSpecRemove(index: number) {
+    setSpecs((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function handleSpecChange(index: number, field: 'key' | 'value', newValue: string) {
+    setSpecs((prev) =>
+      prev.map((row, i) => (i === index ? { ...row, [field]: newValue } : row))
+    );
+  }
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setFormError('');
+
+    if (!form.nombre.trim() || !form.tipoEquipoId) {
+      setFormError('Nombre y tipo son obligatorios');
+      return;
     }
 
-    createMutation.mutate({
-      nombre: form.nombre,
-      marca: form.marca || undefined,
+    // Validar claves duplicadas
+    const keys = specs.map((s) => s.key.trim()).filter(Boolean);
+    const hasDuplicates = keys.length !== new Set(keys).size;
+    if (hasDuplicates) {
+      setFormError('Hay claves duplicadas en las especificaciones. Renombralas antes de guardar.');
+      return;
+    }
+
+    const payload = {
+      nombre: form.nombre.trim(),
+      marca: form.marca.trim() || undefined,
       tipoEquipoId: Number(form.tipoEquipoId),
-      especificaciones,
-    });
+      especificaciones: specsToRecord(specs),
+    };
+
+    if (modal === 'crear') {
+      createMutation.mutate(payload);
+    } else if (modal === 'editar' && editingId !== null) {
+      updateMutation.mutate({ id: editingId, data: payload });
+    }
   }
 
   return (
@@ -108,13 +172,24 @@ export default function TemplatesPage() {
             <div key={t.id} className={styles.card}>
               <div className={styles.cardHeader}>
                 <span className={styles.tipoBadge}>{t.tipoEquipo.nombre}</span>
-                <button
-                  className={styles.deleteBtn}
-                  onClick={() => { if (confirm(`¿Eliminar "${t.nombre}"?`)) deleteMutation.mutate(t.id); }}
-                  title="Eliminar plantilla"
-                >
-                  ×
-                </button>
+                <div className={styles.cardActions}>
+                  <button
+                    className={styles.editBtn}
+                    onClick={() => openEdit(t)}
+                    title="Editar plantilla"
+                    aria-label="Editar"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    className={styles.deleteBtn}
+                    onClick={() => { if (confirm(`¿Eliminar "${t.nombre}"?`)) deleteMutation.mutate(t.id); }}
+                    title="Eliminar plantilla"
+                    aria-label="Eliminar"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
               <h3 className={styles.templateNombre}>{t.nombre}</h3>
               {t.marca && <p className={styles.templateMarca}>{t.marca}</p>}
@@ -133,37 +208,106 @@ export default function TemplatesPage() {
         </div>
       )}
 
-      {/* Modal crear */}
-      {modal !== null && (
-        <div className={styles.overlay} onClick={() => setModal(null)}>
+      {/* Modal crear/editar */}
+      {modal && (
+        <div className={styles.overlay} onClick={closeModal}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h3 className={styles.modalTitle}>Nueva Plantilla</h3>
+            <h3 className={styles.modalTitle}>
+              {modal === 'crear' ? 'Nueva Plantilla' : 'Editar Plantilla'}
+            </h3>
             {formError && <p className={styles.modalError}>{formError}</p>}
             <form onSubmit={handleSubmit} className={styles.modalForm}>
-              <div className={styles.field}>
-                <label className={styles.label}>Nombre *</label>
-                <input name="nombre" value={form.nombre} onChange={handleChange} className={styles.input} placeholder="Ej: HP EliteDesk 800 G5" />
+              <div className={styles.formSection}>
+                <h4 className={styles.sectionTitle}>Información básica</h4>
+                <div className={styles.field}>
+                  <label className={styles.label}>Nombre *</label>
+                  <input
+                    name="nombre"
+                    value={form.nombre}
+                    onChange={handleChange}
+                    className={styles.input}
+                    placeholder="Ej: HP EliteDesk 800 G5"
+                  />
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label}>Tipo de equipo *</label>
+                  <select
+                    name="tipoEquipoId"
+                    value={form.tipoEquipoId}
+                    onChange={handleChange}
+                    className={styles.input}
+                  >
+                    <option value="">Seleccioná...</option>
+                    {tipos?.map((t) => <option key={t.id} value={t.id}>{t.nombre}</option>)}
+                  </select>
+                </div>
+                <div className={styles.field}>
+                  <label className={styles.label}>Marca</label>
+                  <input
+                    name="marca"
+                    value={form.marca}
+                    onChange={handleChange}
+                    className={styles.input}
+                    placeholder="Ej: HP"
+                  />
+                </div>
               </div>
-              <div className={styles.field}>
-                <label className={styles.label}>Tipo *</label>
-                <select name="tipoEquipoId" value={form.tipoEquipoId} onChange={handleChange} className={styles.input}>
-                  <option value="">Seleccioná...</option>
-                  {tipos?.map((t) => <option key={t.id} value={t.id}>{t.nombre}</option>)}
-                </select>
+
+              <div className={styles.formSection}>
+                <h4 className={styles.sectionTitle}>Especificaciones</h4>
+                <div className={styles.specsEditor}>
+                  {specs.length === 0 && (
+                    <p className={styles.specsEmpty}>Sin especificaciones. Usá el botón para agregar.</p>
+                  )}
+                  {specs.map((row, i) => (
+                    <div key={i} className={styles.specEditorRow}>
+                      <input
+                        className={styles.specInput}
+                        value={row.key}
+                        onChange={(e) => handleSpecChange(i, 'key', e.target.value)}
+                        placeholder="Clave (ej: RAM)"
+                        aria-label={`Clave de especificación ${i + 1}`}
+                      />
+                      <input
+                        className={styles.specInput}
+                        value={row.value}
+                        onChange={(e) => handleSpecChange(i, 'value', e.target.value)}
+                        placeholder="Valor (ej: 8 GB)"
+                        aria-label={`Valor de especificación ${i + 1}`}
+                      />
+                      <button
+                        type="button"
+                        className={styles.specRemoveBtn}
+                        onClick={() => handleSpecRemove(i)}
+                        title="Quitar este campo"
+                        aria-label="Quitar especificación"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    type="button"
+                    className={styles.specAddBtn}
+                    onClick={handleSpecAdd}
+                  >
+                    + Agregar campo
+                  </button>
+                </div>
               </div>
-              <div className={styles.field}>
-                <label className={styles.label}>Marca</label>
-                <input name="marca" value={form.marca} onChange={handleChange} className={styles.input} placeholder="Ej: HP" />
-              </div>
-              <div className={styles.field}>
-                <label className={styles.label}>Especificaciones (JSON opcional)</label>
-                <textarea name="specs" value={form.specs} onChange={handleChange} className={styles.textarea} rows={4}
-                  placeholder={'{\n  "RAM": "8GB",\n  "Disco": "256GB SSD"\n}'} />
-              </div>
+
               <div className={styles.modalActions}>
-                <button type="button" className={styles.cancelBtn} onClick={() => setModal(null)}>Cancelar</button>
-                <button type="submit" className={styles.confirmBtn} disabled={createMutation.isPending}>
-                  {createMutation.isPending ? 'Creando...' : 'Crear'}
+                <button type="button" className={styles.cancelBtn} onClick={closeModal}>
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className={styles.confirmBtn}
+                  disabled={createMutation.isPending || updateMutation.isPending}
+                >
+                  {(createMutation.isPending || updateMutation.isPending)
+                    ? 'Guardando...'
+                    : modal === 'crear' ? 'Crear' : 'Guardar cambios'}
                 </button>
               </div>
             </form>
