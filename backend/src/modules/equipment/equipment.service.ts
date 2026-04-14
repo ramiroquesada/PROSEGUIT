@@ -192,6 +192,17 @@ export async function createEquipment(data: {
     if (dup) throw new AppError(409, 'Ya existe un equipo con esa matrícula');
   }
 
+  // Validate templateId if provided
+  if (data.templateId) {
+    const template = await prisma.modeloTemplate.findUnique({
+      where: { id: data.templateId },
+    });
+    if (!template) throw new AppError(404, 'Plantilla no encontrada');
+    if (template.tipoEquipoId !== data.tipoEquipoId) {
+      throw new AppError(400, 'La plantilla no corresponde al tipo de equipo seleccionado');
+    }
+  }
+
   const equipo = await prisma.equipo.create({
     data: {
       serie: data.serie,
@@ -261,6 +272,22 @@ export async function updateEquipment(id: number, data: {
   if (data.matricula && data.matricula !== equipo.matricula) {
     const dup = await prisma.equipo.findUnique({ where: { matricula: data.matricula } });
     if (dup) throw new AppError(409, 'Ya existe un equipo con esa matrícula');
+  }
+
+  // Determine the final tipoEquipoId to validate against
+  const finalTipoEquipoId = data.tipoEquipoId ?? equipo.tipoEquipoId;
+
+  // Validate templateId if provided
+  if (data.templateId !== undefined) {
+    if (data.templateId !== null) {
+      const template = await prisma.modeloTemplate.findUnique({
+        where: { id: data.templateId },
+      });
+      if (!template) throw new AppError(404, 'Plantilla no encontrada');
+      if (template.tipoEquipoId !== finalTipoEquipoId) {
+        throw new AppError(400, 'La plantilla no corresponde al tipo de equipo seleccionado');
+      }
+    }
   }
 
   const { especificaciones, motivo, ...rest } = data;
