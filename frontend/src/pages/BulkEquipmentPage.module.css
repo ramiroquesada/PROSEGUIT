@@ -17,13 +17,13 @@
   border: none;
   color: var(--color-primary);
   cursor: pointer;
-  font-size: var(--font-sm);
+  font-size: var(--font-size-sm);
   padding: 0;
 }
 
 .title {
-  font-size: var(--font-xl);
-  font-weight: 600;
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-text);
   margin: 0;
 }
@@ -40,8 +40,8 @@
 }
 
 .sectionTitle {
-  font-size: var(--font-md);
-  font-weight: 600;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
   color: var(--color-secondary);
   margin: 0 0 var(--space-sm);
   padding-bottom: var(--space-sm);
@@ -67,8 +67,8 @@
 }
 
 .label {
-  font-size: var(--font-sm);
-  font-weight: 500;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
 }
 
@@ -78,10 +78,10 @@
   padding: var(--space-sm) var(--space-md);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  font-size: var(--font-sm);
+  font-size: var(--font-size-sm);
   color: var(--color-text);
-  background: var(--color-background);
-  transition: border-color 0.15s;
+  background: var(--color-surface);
+  transition: border-color var(--transition-fast);
 }
 
 .input:focus,
@@ -98,11 +98,11 @@
 
 /* ─── Template card ─── */
 .templateCard {
-  background: var(--color-background);
+  background: var(--color-surface-raised);
   border: 1px solid var(--color-primary);
   border-radius: var(--radius-md);
   padding: var(--space-sm) var(--space-md);
-  font-size: var(--font-sm);
+  font-size: var(--font-size-sm);
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -110,7 +110,7 @@
 }
 
 .templateCardTitle {
-  font-weight: 600;
+  font-weight: var(--font-weight-semibold);
   color: var(--color-primary);
 }
 
@@ -129,8 +129,8 @@
 }
 
 .generatorLabel {
-  font-size: var(--font-sm);
-  font-weight: 500;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   color: var(--color-text-secondary);
 }
 
@@ -140,7 +140,9 @@
   padding: var(--space-sm);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  font-size: var(--font-sm);
+  font-size: var(--font-size-sm);
+  color: var(--color-text);
+  background: var(--color-surface);
 }
 
 .generateBtn {
@@ -149,10 +151,10 @@
   color: white;
   border: none;
   border-radius: var(--radius-md);
-  font-size: var(--font-sm);
-  font-weight: 500;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: opacity var(--transition-fast);
 }
 
 .generateBtn:hover {
@@ -160,7 +162,7 @@
 }
 
 .serieHint {
-  font-size: var(--font-sm);
+  font-size: var(--font-size-sm);
   color: var(--color-text-secondary);
 }
 
@@ -179,8 +181,8 @@
 .table th {
   background: var(--color-secondary);
   color: white;
-  font-size: var(--font-xs);
-  font-weight: 600;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: var(--space-sm) var(--space-md);
@@ -199,7 +201,7 @@
 }
 
 .rowNum {
-  font-size: var(--font-xs);
+  font-size: var(--font-size-xs);
   color: var(--color-text-secondary);
   text-align: center;
   width: 36px;
@@ -210,9 +212,9 @@
   padding: 5px 8px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
-  font-size: var(--font-sm);
+  font-size: var(--font-size-sm);
   color: var(--color-text);
-  background: var(--color-background);
+  background: var(--color-surface);
 }
 
 .rowInput:focus {
@@ -221,13 +223,13 @@
 }
 
 .rowInput.hasError {
-  border-color: #dc3545;
+  border-color: var(--color-danger);
   background: #fff5f5;
 }
 
 .rowError {
-  font-size: var(--font-xs);
-  color: #dc3545;
+  font-size: var(--font-size-xs);
+  color: var(--color-danger);
   padding: 0 var(--space-sm) var(--space-xs);
 }
 
@@ -241,11 +243,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: color 0.15s;
+  transition: color var(--transition-fast);
 }
 
 .removeBtn:hover {
-  color: #dc3545;
+  color: var(--color-danger);
 }
 
 /* ─── Footer actions ─── */
@@ -261,8 +263,8 @@
   border: 1px solid #fcc;
   border-radius: var(--radius-md);
   padding: var(--space-sm) var(--space-md);
-  color: #dc3545;
-  font-size: var(--font-sm);
+  color: var(--color-danger);
+  font-size: var(--font-size-sm);
 }
 
 .cancelBtn {
@@ -270,10 +272,10 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  font-size: var(--font-sm);
+  font-size: var(--font-size-sm);
   cursor: pointer;
   color: var(--color-text);
-  transition: background 0.15s;
+  transition: background var(--transition-fast);
 }
 
 .cancelBtn:hover {
@@ -286,10 +288,10 @@
   color: white;
   border: none;
   border-radius: var(--radius-md);
-  font-size: var(--font-sm);
-  font-weight: 500;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: opacity var(--transition-fast);
 }
 
 .submitBtn:hover:not(:disabled) {
