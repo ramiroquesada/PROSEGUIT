@@ -40,9 +40,9 @@ export default function UsersPage() {
   }
 
   async function handleResetPassword(id: number, nombre: string) {
-    if (!confirm(`¿Resetear contraseña de ${nombre}? La nueva contraseña será su número de ficha.`)) return;
-    await resetMutation.mutateAsync(id);
-    alert(`Contraseña reseteada. La nueva contraseña es el número de ficha del usuario.`);
+    if (!confirm(`¿Resetear contraseña de ${nombre}?`)) return;
+    const result = await resetMutation.mutateAsync(id);
+    alert(`Contraseña reseteada.\nContraseña temporal: ${result.tempPassword}\nGuárdala, no se mostrará de nuevo.`);
   }
 
   const { data: me } = useCurrentUser();
