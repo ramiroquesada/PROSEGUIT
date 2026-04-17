@@ -28,8 +28,10 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 
 ## Estado actual del proyecto (Abril 2026)
 
-### ✅ Completado recientemente (abril 14)
+### ✅ Completado recientemente (abril 17)
 
+- **Carga masiva de equipos** — Nueva página `/equipos/lote` accesible desde botón en EquipmentListPage. Campos compartidos (tipo, plantilla, ubicación, fechas, etc.) + tabla por fila con serie editable, matrícula, MAC e IP. Genera N filas desde max(serie)+1, validación de duplicados client-side, envío secuencial con abort en primer error
+- **Fix reset password** — `UsersPage` ahora muestra la contraseña temporal real devuelta por el backend al hacer reset, en lugar del mensaje desactualizado "la nueva contraseña es la ficha"
 - **Equipment Templates Integration** — Validación de templateId, selector dropdown en formulario de equipos, reference card con datos de plantilla, invalidación de caché `['equipment']`
 - **TemplatesPage Mejorada** — Edit functionality con ícono Pencil, editor dinámico de pares clave-valor para specs, ModalMode pattern (create/editar), validación de claves duplicadas
 
@@ -59,6 +61,7 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 | `/equipos/nuevo` | EquipmentFormPage | Formulario con plantillas de modelos |
 | `/equipos/:id` | EquipmentDetailPage | Ficha + acciones + timeline + sección licencias |
 | `/equipos/:id/editar` | EquipmentFormPage | Edición |
+| `/equipos/lote` | BulkEquipmentPage | Carga masiva: campos compartidos + tabla por equipo con series correlativas |
 | `/prestamos` | LoansPage | Lista + nuevo préstamo por serie |
 | `/licencias` | LicensesPage | Resumen por software + tabla filtrable, estado derivado |
 | `/ubicaciones` | LocationsPage | Árbol Ciudad›Sección›Oficina + panel de equipos |
@@ -85,6 +88,7 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 - **Formulario nuevo equipo**: pre-rellena el próximo número de serie (max+1), pre-selecciona tipo "PC - Torre" y la oficina de soporte como ubicación inicial
 - **Dashboard en tiempo real**: todas las mutaciones de equipo invalidan `['dashboard']` via TanStack Query prefix matching, actualizando contadores y actividad reciente sin recargar la página
 - **Sección de licencias en ficha de equipo**: lista licencias del equipo con botón para agregar nuevas licencias rápidamente
+- **Carga masiva de equipos** (`/equipos/lote`): botón desde EquipmentListPage, campos compartidos para todos los equipos del lote, tabla editable con serie/matrícula/MAC/IP por fila, generación automática desde max(serie)+1, validación client-side de duplicados, envío secuencial con abort en primer error, invalidación de `['equipment']` y `['dashboard']`
 
 ---
 
@@ -423,5 +427,6 @@ docker compose -f docker-compose.prod.yml logs -f frontend   # logs de nginx
 
 
 - [ ] **Automatizaciones** — reglas simples configurables: recordatorios automáticos, cambio de estado al cumplir condición, notificación al técnico asignado
-- [ ] **CSV/Excel** — carga masiva de equipos, usuarios o licencias desde planilla o export de las mismas
+- [x] **Carga masiva de equipos** — `/equipos/lote` con campos compartidos y series correlativas editables por fila
+- [ ] **CSV/Excel** — carga masiva de usuarios o licencias desde planilla o export de las mismas
 - [ ] **Mapa lógico de ubicaciones** — visualización de árbol ciudad/sección/oficina con contadores de equipos por nodo

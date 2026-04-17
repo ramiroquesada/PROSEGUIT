@@ -95,6 +95,7 @@
 | **Selector de plantillas** | Dropdown en formulario de equipos que filtra por tipo, muestra datos de referencia sin auto-fill |
 | **Servicios externos** | Envío a reparación con proveedor, diagnóstico y fecha de retorno |
 | **Usuarios y roles** | ADMIN gestiona todos los usuarios; TECNICO gestiona ubicaciones, plantillas y su propio usuario |
+| **Carga masiva** | Creación de N equipos en un solo formulario: campos compartidos + series correlativas editables por fila, validación de duplicados y abort en primer error |
 | **Fotos de equipos** | Galería de imágenes múltiples por equipo, subida directa desde móvil o escritorio |
 | **Auth JWT** | Access token (15 min) + refresh token (7 días) con **rotación automática** |
 | **Seguridad** | Security headers (X-Frame-Options, CSP, etc.), rutas admin protegidas |
@@ -312,7 +313,7 @@ PROSEGUIT/
 │       ├── components/
 │       │   ├── layout/                    # Sidebar, Header, MainLayout
 │       │   └── LocationCascadeSelect.tsx  # Selector Ciudad›Sección›Oficina reutilizable
-│       ├── pages/                         # 12 páginas
+│       ├── pages/                         # 13 páginas
 │       └── styles/                        # variables.css, reset.css, globals.css
 │
 ├── packages/shared/                       # Tipos, schemas Zod y constantes compartidas
@@ -419,7 +420,8 @@ El sistema está diseñado para evolucionar hacia una plataforma ITSM liviana. L
 - [ ] **Alertas inteligentes** — notificaciones para garantías próximas a expirar, licencias vencidas, equipos obsoletos
 - [ ] **Dashboard analítico** — widgets de costos, comparativas por período, análisis de depreciación
 - [ ] **Automatizaciones** — recordatorios, reglas de cambio de estado, notificaciones al técnico
-- [ ] **Importación masiva** — carga de equipos, usuarios o licencias desde CSV/Excel
+- [x] **Carga masiva de equipos** — formulario batch con campos compartidos y series correlativas editables
+- [ ] **Importación desde CSV/Excel** — carga de usuarios o licencias desde planilla
 - [ ] **Visualización de red** — mapa lógico de ubicaciones con contadores de equipos
 
 ---
