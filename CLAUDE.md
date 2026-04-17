@@ -30,6 +30,7 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 
 ### ✅ Completado recientemente (abril 17)
 
+- **Auto-fill modelo desde plantilla** — Al seleccionar una plantilla en el formulario de equipo (individual o masivo), el campo Modelo se rellena automáticamente con el nombre de la plantilla; el usuario puede editarlo libremente después
 - **Carga masiva de equipos** — Nueva página `/equipos/lote` accesible desde botón en EquipmentListPage. Campos compartidos (tipo, plantilla, ubicación, fechas, etc.) + tabla por fila con serie editable, matrícula, MAC e IP. Genera N filas desde max(serie)+1, validación de duplicados client-side, envío secuencial con abort en primer error
 - **Fix reset password** — `UsersPage` ahora muestra la contraseña temporal real devuelta por el backend al hacer reset, en lugar del mensaje desactualizado "la nueva contraseña es la ficha"
 - **Equipment Templates Integration** — Validación de templateId, selector dropdown en formulario de equipos, reference card con datos de plantilla, invalidación de caché `['equipment']`

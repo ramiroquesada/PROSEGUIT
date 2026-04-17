@@ -92,7 +92,7 @@
 | **Ubicaciones** | Árbol 3 niveles (Ciudad › Sección › Oficina) con CRUD y panel de equipos |
 | **Dashboard en tiempo real** | Contadores e historial se actualizan sin recargar la página tras cada acción |
 | **Plantillas de modelo** | Especificaciones técnicas reutilizables, editor dinámico de pares clave-valor, asignación opcional a equipos |
-| **Selector de plantillas** | Dropdown en formulario de equipos que filtra por tipo, muestra datos de referencia sin auto-fill |
+| **Selector de plantillas** | Dropdown en formulario de equipos que filtra por tipo, muestra datos de referencia y auto-rellena el campo Modelo con el nombre de la plantilla |
 | **Servicios externos** | Envío a reparación con proveedor, diagnóstico y fecha de retorno |
 | **Usuarios y roles** | ADMIN gestiona todos los usuarios; TECNICO gestiona ubicaciones, plantillas y su propio usuario |
 | **Carga masiva** | Creación de N equipos en un solo formulario: campos compartidos + series correlativas editables por fila, validación de duplicados y abort en primer error |
