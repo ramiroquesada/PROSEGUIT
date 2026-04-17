@@ -1,488 +1,519 @@
-import React, { use, useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ChevronDown, Trash2 } from 'lucide-react';
-import { AuthContext } from '../lib/auth-context';
-import { apiClient } from '../lib/api-client';
-import { useEquipmentTypes } from '../hooks/useEquipmentTypes';
-import { useNextSerie } from '../hooks/useNextSerie';
-import { useTemplates } from '../hooks/useTemplates';
-import { useLocationTree } from '../hooks/useLocationTree';
-import { LocationCascadeSelect } from '../components/LocationCascadeSelect';
-import { CascadeValue } from '@proseguit/shared/types';
-import styles from './BulkEquipmentPage.module.css';
+import { useState, useEffect, useId } from 'react';
+import { useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
+import { X } from 'lucide-react';
+import { useEquipmentTypes, useNextSerie, useTemplates } from '../hooks/useEquipment';
+import { useLocationTree } from '../hooks/useLocations';
+import { api } from '../lib/api-client';
+import { findSoporteOffice } from '../lib/find-soporte-office';
+import LocationCascadeSelect from '../components/LocationCascadeSelect';
+import { usePageTitle } from '../hooks/usePageTitle';
+import styles from './BulkEquipmentPage.module.css';
 
-interface Row {
+interface SharedFields {
+  tipoEquipoId: string;
+  templateId: string;
+  modelo: string;
+  ciudadId: string;
+  seccionId: string;
+  oficinaId: string;
+  proveedor: string;
+  fechaAdquisicion: string;
+  garantiaHasta: string;
+  fechaFinVida: string;
+  precioCompra: string;
+  observacion: string;
+}
+
+interface EquipmentRow {
   id: string;
-  serie: number;
+  serie: string;
   matricula: string;
   mac: string;
   ip: string;
-  error?: string;
-  success?: boolean;
+  error: string;
 }
 
-export const BulkEquipmentPage: React.FC = () => {
-  const auth = use(AuthContext)!;
+export default function BulkEquipmentPage() {
+  usePageTitle('Carga masiva de equipos');
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
+  const uid = useId();
 
-  // Shared fields state
-  const [tipoId, setTipoId] = useState<string>('');
-  const [templateId, setTemplateId] = useState<string>('');
-  const [location, setLocation] = useState<CascadeValue | null>(null);
-  const [locationError, setLocationError] = useState<string>('');
-  const [rowCount, setRowCount] = useState<number>(5);
+  const { data: tipos } = useEquipmentTypes();
+  const { data: nextSerieData } = useNextSerie();
+  const { data: locations } = useLocationTree();
 
-  // Rows state
-  const [rows, setRows] = useState<Row[]>([]);
+  const [shared, setShared] = useState<SharedFields>({
+    tipoEquipoId: '',
+    templateId: '',
+    modelo: '',
+    ciudadId: '',
+    seccionId: '',
+    oficinaId: '',
+    proveedor: '',
+    fechaAdquisicion: '',
+    garantiaHasta: '',
+    fechaFinVida: '',
+    precioCompra: '',
+    observacion: '',
+  });
 
-  // Loading state
+  const [qty, setQty] = useState(1);
+  const [rows, setRows] = useState<EquipmentRow[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitProgress, setSubmitProgress] = useState(0);
+  const [submitError, setSubmitError] = useState('');
 
-  // Data hooks
-  const { data: tipos = [] } = useEquipmentTypes();
-  const { data: nextSerie = 1000 } = useNextSerie();
-  const { data: templates = [] } = useTemplates();
-  const { data: locationTree } = useLocationTree();
+  const { data: templates } = useTemplates(
+    shared.tipoEquipoId ? Number(shared.tipoEquipoId) : undefined
+  );
 
-  // Validation states
-  const [tipoError, setTipoError] = useState<string>('');
-  const [templateError, setTemplateError] = useState<string>('');
+  // Pre-seleccionar oficina soporte al cargar ubicaciones
+  useEffect(() => {
+    if (!locations) return;
+    const soporte = findSoporteOffice(locations);
+    if (soporte) {
+      setShared((p) => ({
+        ...p,
+        ciudadId: String(soporte.ciudadId),
+        seccionId: String(soporte.seccionId),
+        oficinaId: String(soporte.oficinaId),
+      }));
+    }
+  }, [locations]);
 
-  // Generate rows
-  const handleGenerateRows = () => {
-    if (!tipoId) {
-      setTipoError('Tipo de equipo requerido');
-      return;
-    }
-    if (!templateId) {
-      setTemplateError('Plantilla requerida');
-      return;
-    }
-    if (!location?.oficina) {
-      setLocationError('Ubicación requerida');
-      return;
-    }
-    if (rowCount < 1 || rowCount > 100) {
-      return;
-    }
+  // Limpiar templateId si cambia el tipo
+  useEffect(() => {
+    setShared((p) => ({ ...p, templateId: '' }));
+  }, [shared.tipoEquipoId]);
 
-    setTipoError('');
-    setTemplateError('');
-    setLocationError('');
+  const nextSerie = nextSerieData?.nextSerie ?? 1;
 
-    const newRows: Row[] = [];
-    for (let i = 0; i < rowCount; i++) {
-      newRows.push({
-        id: `${Date.now()}-${i}`,
-        serie: nextSerie + i,
-        matricula: '',
-        mac: '',
-        ip: '',
-      });
-    }
+  function handleSharedChange(
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) {
+    const { name, value } = e.target;
+    setShared((p) => ({ ...p, [name]: value }));
+    setSubmitError('');
+  }
+
+  function generateRows() {
+    const n = Math.max(1, Math.min(qty, 200));
+    const newRows: EquipmentRow[] = Array.from({ length: n }, (_, i) => ({
+      id: `${uid}-${i}-${Date.now()}`,
+      serie: String(nextSerie + i),
+      matricula: '',
+      mac: '',
+      ip: '',
+      error: '',
+    }));
     setRows(newRows);
-  };
+    setSubmitError('');
+  }
 
-  // Update row field
-  const handleRowChange = (id: string, field: 'serie' | 'matricula' | 'mac' | 'ip', value: string | number) => {
+  function updateRow(id: string, field: keyof Omit<EquipmentRow, 'id' | 'error'>, value: string) {
     setRows((prev) =>
-      prev.map((row) =>
-        row.id === id
-          ? {
-              ...row,
-              [field]: field === 'serie' ? Number(value) : value,
-              error: undefined, // Clear error when user edits
-              success: undefined,
-            }
-          : row
-      )
+      prev.map((r) => (r.id === id ? { ...r, [field]: value, error: '' } : r))
     );
-  };
+    setSubmitError('');
+  }
 
-  // Delete row
-  const handleDeleteRow = (id: string) => {
-    setRows((prev) => prev.filter((row) => row.id !== id));
-  };
+  function removeRow(id: string) {
+    setRows((prev) => prev.filter((r) => r.id !== id));
+  }
 
-  // Submit
-  const handleSubmit = async () => {
-    if (rows.length === 0) return;
-    if (!tipoId || !templateId || !location?.oficina) return;
+  // Detectar series duplicadas dentro del lote
+  function getDuplicateSeries(): Set<string> {
+    const seen = new Set<string>();
+    const dupes = new Set<string>();
+    for (const row of rows) {
+      const s = row.serie.trim();
+      if (s && seen.has(s)) dupes.add(s);
+      seen.add(s);
+    }
+    return dupes;
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!shared.tipoEquipoId || !shared.oficinaId) {
+      setSubmitError('Tipo de equipo y ubicación son obligatorios');
+      return;
+    }
+    if (rows.length === 0) {
+      setSubmitError('Generá al menos una fila de equipos');
+      return;
+    }
+
+    // Validación client-side: series vacías o duplicadas dentro del lote
+    const dupes = getDuplicateSeries();
+    let hasClientError = false;
+    const checkedRows = rows.map((r) => {
+      if (!r.serie.trim() || isNaN(Number(r.serie))) {
+        hasClientError = true;
+        return { ...r, error: 'Serie requerida y debe ser un número' };
+      }
+      if (dupes.has(r.serie.trim())) {
+        hasClientError = true;
+        return { ...r, error: 'Serie duplicada en el lote' };
+      }
+      return r;
+    });
+
+    if (hasClientError) {
+      setRows(checkedRows);
+      setSubmitError('Corregí los errores en las filas antes de continuar');
+      return;
+    }
 
     setIsSubmitting(true);
-    setSubmitProgress(0);
+    setSubmitError('');
 
-    try {
-      // Check for duplicate series within the batch
-      const seriesSet = new Set<number>();
-      for (const row of rows) {
-        if (seriesSet.has(row.serie)) {
-          // Mark rows with duplicate series with error
-          setRows((prev) =>
-            prev.map((r) =>
-              r.serie === row.serie
-                ? { ...r, error: 'Serie duplicada en el lote' }
-                : r
-            )
-          );
-          setIsSubmitting(false);
-          return;
-        }
-        seriesSet.add(row.serie);
+    const sharedPayload: Record<string, unknown> = {
+      tipoEquipoId: Number(shared.tipoEquipoId),
+      oficinaId: Number(shared.oficinaId),
+      modelo: shared.modelo || undefined,
+      proveedor: shared.proveedor || undefined,
+      fechaAdquisicion: shared.fechaAdquisicion || null,
+      garantiaHasta: shared.garantiaHasta || null,
+      fechaFinVida: shared.fechaFinVida || null,
+      precioCompra: shared.precioCompra ? Number(shared.precioCompra) : null,
+      observacion: shared.observacion || undefined,
+      ...(shared.templateId ? { templateId: Number(shared.templateId) } : {}),
+    };
+
+    for (const row of rows) {
+      const payload = {
+        ...sharedPayload,
+        serie: Number(row.serie),
+        matricula: row.matricula || undefined,
+        mac: row.mac || undefined,
+        ip: row.ip || undefined,
+      };
+
+      try {
+        await api.post('/equipment', payload);
+      } catch (err: any) {
+        const msg = err?.message || 'Error al crear el equipo';
+        setRows((prev) =>
+          prev.map((r) => (r.id === row.id ? { ...r, error: msg } : r))
+        );
+        setSubmitError(`Error en serie ${row.serie}: ${msg}. No se creó ningún equipo.`);
+        setIsSubmitting(false);
+        return;
       }
-
-      for (let i = 0; i < rows.length; i++) {
-        const row = rows[i];
-
-        try {
-          // Validate row
-          if (!row.serie) {
-            throw new Error('Serie requerida');
-          }
-          if (row.serie < 1000 || row.serie > 9999) {
-            throw new Error('Serie debe estar entre 1000 y 9999');
-          }
-
-          // POST /equipment
-          const payload: any = {
-            tipoEquipoId: parseInt(tipoId),
-            templateId: parseInt(templateId),
-            serie: row.serie,
-            oficinaId: location.oficina,
-          };
-
-          // Only include optional fields if they have values
-          if (row.matricula) payload.matricula = row.matricula;
-          if (row.mac) payload.mac = row.mac;
-          if (row.ip) payload.ip = row.ip;
-
-          const response = await apiClient.post('/equipment', payload);
-
-          // Mark row as success
-          setRows((prev) =>
-            prev.map((r) =>
-              r.id === row.id
-                ? {
-                    ...r,
-                    success: true,
-                    error: undefined,
-                  }
-                : r
-            )
-          );
-        } catch (error) {
-          // Mark row with error
-          const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
-          setRows((prev) =>
-            prev.map((r) =>
-              r.id === row.id
-                ? {
-                    ...r,
-                    error: errorMsg,
-                    success: false,
-                  }
-                : r
-            )
-          );
-
-          // Stop on first error
-          setIsSubmitting(false);
-          setSubmitProgress((i / rows.length) * 100);
-          return;
-        }
-
-        // Update progress
-        setSubmitProgress(((i + 1) / rows.length) * 100);
-      }
-
-      // All success
-      await queryClient.invalidateQueries({ queryKey: ['equipment'] });
-      await queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-
-      // Navigate to list
-      navigate('/equipos');
-    } finally {
-      setIsSubmitting(false);
     }
-  };
 
-  // Cancel
-  const handleCancel = () => {
-    navigate(-1);
-  };
+    qc.invalidateQueries({ queryKey: ['equipment'] });
+    qc.invalidateQueries({ queryKey: ['dashboard'] });
+    navigate('/equipos');
+  }
 
-  const selectedType = tipos.find((t) => t.id === tipoId);
-  const selectedTemplate = templates.find((t) => t.id === templateId);
-
-  const canGenerateRows = tipoId && templateId && location?.oficina && rowCount >= 1 && rowCount <= 100;
-  const canSubmit = rows.length > 0 && !isSubmitting;
+  const selectedTemplate = templates?.find((t) => t.id === Number(shared.templateId));
+  const duplicateSeries = getDuplicateSeries();
 
   return (
-    <div className={styles.container}>
-      {/* Shared Fields Section */}
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Campos compartidos</h2>
+    <div className={styles.page}>
+      <div className={styles.header}>
+        <button className={styles.backBtn} onClick={() => navigate('/equipos')}>
+          ← Volver
+        </button>
+        <h2 className={styles.title}>Carga masiva de equipos</h2>
+      </div>
 
-        <div className={styles.formGrid}>
-          {/* Tipo */}
-          <div className={styles.formGroup}>
-            <label htmlFor="tipo-select" className={`${styles.label} ${styles.required}`}>
-              Tipo de equipo
-            </label>
-            <select
-              id="tipo-select"
-              className={styles.select}
-              value={tipoId}
-              onChange={(e) => {
-                setTipoId(e.target.value);
-                setTipoError('');
-              }}
-              disabled={isSubmitting}
-            >
-              <option value="">Seleccionar...</option>
-              {tipos.map((tipo) => (
-                <option key={tipo.id} value={tipo.id}>
-                  {tipo.nombre}
-                </option>
-              ))}
-            </select>
-            {tipoError && <div className={styles.error}>{tipoError}</div>}
-          </div>
+      <form onSubmit={handleSubmit}>
+        {/* ── Datos compartidos ── */}
+        <div className={styles.section}>
+          <h3 className={styles.sectionTitle}>Datos compartidos (todos los equipos)</h3>
 
-          {/* Plantilla */}
-          <div className={styles.formGroup}>
-            <label htmlFor="template-select" className={`${styles.label} ${styles.required}`}>
-              Plantilla de modelo
-            </label>
-            <select
-              id="template-select"
-              className={styles.select}
-              value={templateId}
-              onChange={(e) => {
-                setTemplateId(e.target.value);
-                setTemplateError('');
-              }}
-              disabled={isSubmitting}
-            >
-              <option value="">Seleccionar...</option>
-              {templates.map((tpl) => (
-                <option key={tpl.id} value={tpl.id}>
-                  {tpl.nombre}
-                </option>
-              ))}
-            </select>
-            {templateError && <div className={styles.error}>{templateError}</div>}
-          </div>
-
-          {/* Ubicación */}
-          <div className={styles.locationCascadeWrapper}>
-            <label className={`${styles.label} ${styles.required}`}>Ubicación</label>
-            <LocationCascadeSelect
-              value={location}
-              onChange={setLocation}
-              onError={setLocationError}
-              disabled={isSubmitting}
-              required
-            />
-            {locationError && <div className={styles.cascadeError}>{locationError}</div>}
-          </div>
-        </div>
-
-        {/* Template Reference Card */}
-        {selectedTemplate && (
-          <div className={styles.templateRefCard}>
-            <div className={styles.templateRefCardTitle}>Datos de plantilla ({selectedTemplate.nombre})</div>
-            <div className={styles.templateRefCardContent}>
-              {selectedTemplate.specs && Object.entries(selectedTemplate.specs).map(([key, value]) => (
-                <div key={key} className={styles.templateRefCardItem}>
-                  <div className={styles.templateRefCardLabel}>{key}</div>
-                  <div className={styles.templateRefCardValue}>{String(value)}</div>
-                </div>
-              ))}
+          <div className={styles.grid3}>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="tipoEquipoId">Tipo *</label>
+              <select
+                id="tipoEquipoId"
+                name="tipoEquipoId"
+                value={shared.tipoEquipoId}
+                onChange={handleSharedChange}
+                className={styles.select}
+                required
+              >
+                <option value="">Seleccioná un tipo...</option>
+                {tipos?.map((t) => (
+                  <option key={t.id} value={t.id}>{t.nombre}</option>
+                ))}
+              </select>
             </div>
-          </div>
-        )}
-      </section>
 
-      {/* Rows Section */}
-      <section className={styles.section}>
-        <div className={styles.rowsSectionHeader}>
-          <h2 className={styles.sectionTitle}>Equipos a ingresar</h2>
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-            <div className={styles.rowCountInfo}>
-              {rows.length === 0 ? (
-                <span>Ingresá cuántos equipos querés agregar y hacé click en "Generar filas"</span>
-              ) : (
-                <span>
-                  {rows.length} fila{rows.length !== 1 ? 's' : ''} generada{rows.length !== 1 ? 's' : ''}
-                </span>
-              )}
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="templateId">Plantilla (opcional)</label>
+              <select
+                id="templateId"
+                name="templateId"
+                value={shared.templateId}
+                onChange={handleSharedChange}
+                className={styles.select}
+              >
+                <option value="">Sin plantilla</option>
+                {templates?.map((t) => (
+                  <option key={t.id} value={t.id}>{t.nombre}</option>
+                ))}
+              </select>
             </div>
-          </div>
-        </div>
 
-        {/* Generate Row Controls */}
-        {rows.length === 0 && (
-          <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-end', flexWrap: 'wrap' }}>
-            <div className={styles.formGroup}>
-              <label htmlFor="row-count-input" className={styles.label}>
-                Cantidad de equipos
-              </label>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="modelo">Modelo</label>
               <input
-                id="row-count-input"
-                type="number"
+                id="modelo"
+                type="text"
+                name="modelo"
+                value={shared.modelo}
+                onChange={handleSharedChange}
                 className={styles.input}
-                value={rowCount}
-                onChange={(e) => setRowCount(Math.max(1, Math.min(100, parseInt(e.target.value) || 1)))}
-                disabled={isSubmitting}
-                min="1"
-                max="100"
+                placeholder="Ej: TP-Link TL-ER7206"
               />
             </div>
-            <button
-              className={styles.generateButton}
-              onClick={handleGenerateRows}
-              disabled={!canGenerateRows || isSubmitting}
-            >
+          </div>
+
+          {selectedTemplate && (
+            <div className={styles.templateCard}>
+              <div className={styles.templateCardTitle}>{selectedTemplate.nombre}</div>
+              {selectedTemplate.marca && (
+                <div className={styles.templateCardRow}>
+                  <strong>Marca:</strong> <span>{selectedTemplate.marca}</span>
+                </div>
+              )}
+              {selectedTemplate.especificaciones &&
+                Object.entries(selectedTemplate.especificaciones).map(([k, v]) => (
+                  <div key={k} className={styles.templateCardRow}>
+                    <strong>{k}:</strong> <span>{String(v)}</span>
+                  </div>
+                ))}
+            </div>
+          )}
+
+          <div>
+            <label className={styles.label}>Ubicación *</label>
+            <LocationCascadeSelect
+              required
+              value={{
+                ciudadId: shared.ciudadId,
+                seccionId: shared.seccionId,
+                oficinaId: shared.oficinaId,
+              }}
+              onChange={(v) => setShared((p) => ({ ...p, ...v }))}
+              onError={(msg) => setSubmitError(msg)}
+            />
+          </div>
+
+          <div className={styles.grid4}>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="proveedor">Proveedor</label>
+              <input
+                id="proveedor"
+                type="text"
+                name="proveedor"
+                value={shared.proveedor}
+                onChange={handleSharedChange}
+                className={styles.input}
+                placeholder="Ej: TechShop SRL"
+              />
+            </div>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="fechaAdquisicion">Fecha adquisición</label>
+              <input
+                id="fechaAdquisicion"
+                type="date"
+                name="fechaAdquisicion"
+                value={shared.fechaAdquisicion}
+                onChange={handleSharedChange}
+                className={styles.input}
+              />
+            </div>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="garantiaHasta">Garantía hasta</label>
+              <input
+                id="garantiaHasta"
+                type="date"
+                name="garantiaHasta"
+                value={shared.garantiaHasta}
+                onChange={handleSharedChange}
+                className={styles.input}
+              />
+            </div>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="fechaFinVida">Fin de vida</label>
+              <input
+                id="fechaFinVida"
+                type="date"
+                name="fechaFinVida"
+                value={shared.fechaFinVida}
+                onChange={handleSharedChange}
+                className={styles.input}
+              />
+            </div>
+          </div>
+
+          <div className={styles.grid3}>
+            <div className={styles.field}>
+              <label className={styles.label} htmlFor="precioCompra">Precio de compra</label>
+              <input
+                id="precioCompra"
+                type="number"
+                name="precioCompra"
+                value={shared.precioCompra}
+                onChange={handleSharedChange}
+                className={styles.input}
+                placeholder="Ej: 25000"
+                step="0.01"
+                min="0"
+              />
+            </div>
+            <div className={`${styles.field}`} style={{ gridColumn: 'span 2' }}>
+              <label className={styles.label} htmlFor="observacion">Observaciones</label>
+              <textarea
+                id="observacion"
+                name="observacion"
+                value={shared.observacion}
+                onChange={handleSharedChange}
+                className={styles.textarea}
+                placeholder="Observaciones comunes a todos los equipos..."
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* ── Generador + tabla de equipos ── */}
+        <div className={styles.section}>
+          <h3 className={styles.sectionTitle}>Equipos a crear</h3>
+
+          <div className={styles.generatorRow}>
+            <span className={styles.generatorLabel}>Cantidad:</span>
+            <input
+              type="number"
+              value={qty}
+              onChange={(e) => setQty(Math.max(1, Math.min(200, Number(e.target.value))))}
+              className={styles.qtyInput}
+              min={1}
+              max={200}
+            />
+            <button type="button" className={styles.generateBtn} onClick={generateRows}>
               Generar filas
             </button>
+            {rows.length === 0 && nextSerieData && (
+              <span className={styles.serieHint}>
+                → Series desde <strong>{nextSerie}</strong>
+              </span>
+            )}
+            {rows.length > 0 && (
+              <span className={styles.serieHint}>
+                {rows.length} fila{rows.length !== 1 ? 's' : ''}
+              </span>
+            )}
           </div>
-        )}
 
-        {/* Table */}
-        {rows.length > 0 && (
-          <>
+          {rows.length > 0 && (
             <div className={styles.tableWrapper}>
               <table className={styles.table}>
                 <thead>
                   <tr>
-                    <th className={styles.rowIndexCell}>#</th>
-                    <th>Serie</th>
+                    <th style={{ width: 36 }}>#</th>
+                    <th style={{ width: 110 }}>Serie *</th>
                     <th>Matrícula</th>
                     <th>MAC</th>
                     <th>IP</th>
-                    <th>Estado</th>
-                    <th style={{ width: '100px', textAlign: 'center' }}>Acción</th>
+                    <th style={{ width: 36 }}></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((row, index) => (
-                    <tr key={row.id}>
-                      <td className={styles.rowIndexCell}>{index + 1}</td>
-                      <td>
-                        <input
-                          type="number"
-                          className={styles.tableInput}
-                          value={row.serie}
-                          onChange={(e) => handleRowChange(row.id, 'serie', e.target.value)}
-                          disabled={isSubmitting || row.success}
-                          min="1000"
-                          max="9999"
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          className={styles.tableInput}
-                          value={row.matricula}
-                          onChange={(e) => handleRowChange(row.id, 'matricula', e.target.value)}
-                          placeholder="Ej: MAT123"
-                          disabled={isSubmitting || row.success}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          className={styles.tableInput}
-                          value={row.mac}
-                          onChange={(e) => handleRowChange(row.id, 'mac', e.target.value)}
-                          placeholder="Ej: AA:BB:CC:DD:EE:FF"
-                          disabled={isSubmitting || row.success}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          type="text"
-                          className={styles.tableInput}
-                          value={row.ip}
-                          onChange={(e) => handleRowChange(row.id, 'ip', e.target.value)}
-                          placeholder="Ej: 192.168.1.1"
-                          disabled={isSubmitting || row.success}
-                        />
-                      </td>
-                      <td className={row.error ? styles.rowErrorCell : row.success ? styles.rowSuccessCell : ''}>
-                        {row.error && <span title={row.error}>❌ {row.error}</span>}
-                        {row.success && <span>✓ Creado</span>}
-                        {!row.error && !row.success && <span>—</span>}
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <button
-                          className={styles.deleteButton}
-                          onClick={() => handleDeleteRow(row.id)}
-                          disabled={isSubmitting || row.success}
-                          title="Eliminar fila"
-                        >
-                          <Trash2 size={14} style={{ display: 'inline' }} />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {rows.map((row, idx) => {
+                    const isDupe = duplicateSeries.has(row.serie.trim()) && row.serie.trim() !== '';
+                    const hasErr = Boolean(row.error) || isDupe;
+                    return (
+                      <>
+                        <tr key={row.id}>
+                          <td className={styles.rowNum}>{idx + 1}</td>
+                          <td>
+                            <input
+                              type="number"
+                              value={row.serie}
+                              onChange={(e) => updateRow(row.id, 'serie', e.target.value)}
+                              className={`${styles.rowInput} ${hasErr ? styles.hasError : ''}`}
+                              min={1}
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              value={row.matricula}
+                              onChange={(e) => updateRow(row.id, 'matricula', e.target.value)}
+                              className={styles.rowInput}
+                              placeholder="opcional"
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              value={row.mac}
+                              onChange={(e) => updateRow(row.id, 'mac', e.target.value)}
+                              className={styles.rowInput}
+                              placeholder="opcional"
+                            />
+                          </td>
+                          <td>
+                            <input
+                              type="text"
+                              value={row.ip}
+                              onChange={(e) => updateRow(row.id, 'ip', e.target.value)}
+                              className={styles.rowInput}
+                              placeholder="opcional"
+                            />
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className={styles.removeBtn}
+                              onClick={() => removeRow(row.id)}
+                              title="Eliminar fila"
+                            >
+                              <X size={14} />
+                            </button>
+                          </td>
+                        </tr>
+                        {(row.error || isDupe) && (
+                          <tr key={`${row.id}-err`}>
+                            <td />
+                            <td colSpan={5} className={styles.rowError}>
+                              {row.error || 'Serie duplicada en el lote'}
+                            </td>
+                          </tr>
+                        )}
+                      </>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
-
-            {/* Progress Bar */}
-            {isSubmitting && (
-              <div className={styles.progressBar}>
-                <div className={styles.progressFill} style={{ width: `${submitProgress}%` }} />
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Empty State */}
-        {rows.length === 0 && (
-          <div className={styles.emptyState}>
-            <div className={styles.emptyStateIcon}>📋</div>
-            <div className={styles.emptyStateText}>
-              Completá los campos compartidos y hacé click en "Generar filas" para comenzar
-            </div>
-          </div>
-        )}
-      </section>
-
-      {/* Action Buttons */}
-      <div className={styles.actionButtons}>
-        <button
-          className={styles.cancelButton}
-          onClick={handleCancel}
-          disabled={isSubmitting}
-        >
-          Cancelar
-        </button>
-        <button
-          className={styles.submitButton}
-          onClick={handleSubmit}
-          disabled={!canSubmit}
-        >
-          {isSubmitting ? 'Creando equipos...' : 'Crear equipos'}
-        </button>
-      </div>
-
-      {/* Loading Overlay */}
-      {isSubmitting && (
-        <div className={styles.loadingOverlay}>
-          <div className={styles.loadingSpinner}>
-            <div className={styles.spinner} />
-            <div className={styles.spinnerText}>
-              Creando equipos ({Math.round(submitProgress)} de {rows.length})
-            </div>
-          </div>
+          )}
         </div>
-      )}
+
+        {submitError && <div className={styles.error}>{submitError}</div>}
+
+        <div className={styles.actions}>
+          <button type="button" className={styles.cancelBtn} onClick={() => navigate('/equipos')}>
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            className={styles.submitBtn}
+            disabled={isSubmitting || rows.length === 0}
+          >
+            {isSubmitting
+              ? 'Creando equipos...'
+              : `Crear ${rows.length} equipo${rows.length !== 1 ? 's' : ''}`}
+          </button>
+        </div>
+      </form>
     </div>
   );
-};
+}
