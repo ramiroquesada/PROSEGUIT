@@ -225,10 +225,16 @@ export default function EquipmentListPage() {
               </button>
             )}
           </div>
-          <button className={styles.addBtn} onClick={() => navigate('/equipos/nuevo')}>
-            <Plus size={16} />
-            Nuevo Equipo
-          </button>
+          <div className={styles.addButtons}>
+            <button className={styles.addBtn} onClick={() => navigate('/equipos/nuevo')}>
+              <Plus size={16} />
+              Nuevo Equipo
+            </button>
+            <button className={styles.bulkBtn} onClick={() => navigate('/equipos/lote')}>
+              <Package size={16} />
+              Carga masiva
+            </button>
+          </div>
         </div>
 
         {/* Fila 2: filtros en cascada */}

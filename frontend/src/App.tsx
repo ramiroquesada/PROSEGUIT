@@ -15,6 +15,7 @@ const UsersPage = lazy(() => import('./pages/UsersPage'));
 const LocationsPage = lazy(() => import('./pages/LocationsPage'));
 const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
+const BulkEquipmentPage = lazy(() => import('./pages/BulkEquipmentPage'));
 
 const PageLoader = () => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '200px', color: 'var(--color-text-secondary)' }}>
@@ -57,6 +58,7 @@ export default function App() {
           <Route index element={<DashboardPage />} />
           <Route path="equipos" element={<EquipmentListPage />} />
           <Route path="equipos/nuevo" element={<EquipmentFormPage />} />
+          <Route path="equipos/lote" element={<BulkEquipmentPage />} />
           <Route path="equipos/:id" element={<EquipmentDetailPage />} />
           <Route path="equipos/:id/editar" element={<EquipmentFormPage />} />
           <Route path="prestamos" element={<LoansPage />} />

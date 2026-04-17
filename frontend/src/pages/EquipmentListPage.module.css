@@ -179,6 +179,32 @@
   }
 }
 
+.addButtons {
+  display: flex;
+  gap: var(--space-sm);
+  flex-shrink: 0;
+}
+
+.bulkBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-md);
+  background: var(--color-secondary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+
+.bulkBtn:hover {
+  opacity: 0.88;
+}
+
 /* ─── Tabla ─── */
 .tableWrapper {
   background: var(--color-surface);
@@ -512,6 +538,8 @@
 /* ─── Responsive ─── */
 @media (width < 768px) {
   .searchForm { min-width: 100%; }
+  .addButtons { width: 100%; flex-direction: column; }
   .addBtn { width: 100%; justify-content: center; }
+  .bulkBtn { justify-content: center; }
   .select { flex: 1; min-width: 120px; }
 }
