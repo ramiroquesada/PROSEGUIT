@@ -116,6 +116,24 @@ export const BulkEquipmentPage: React.FC = () => {
     setSubmitProgress(0);
 
     try {
+      // Check for duplicate series within the batch
+      const seriesSet = new Set<number>();
+      for (const row of rows) {
+        if (seriesSet.has(row.serie)) {
+          // Mark rows with duplicate series with error
+          setRows((prev) =>
+            prev.map((r) =>
+              r.serie === row.serie
+                ? { ...r, error: 'Serie duplicada en el lote' }
+                : r
+            )
+          );
+          setIsSubmitting(false);
+          return;
+        }
+        seriesSet.add(row.serie);
+      }
+
       for (let i = 0; i < rows.length; i++) {
         const row = rows[i];
 
@@ -129,17 +147,19 @@ export const BulkEquipmentPage: React.FC = () => {
           }
 
           // POST /equipment
-          const response = await apiClient.post('/equipment', {
-            tipoId,
-            templateId,
+          const payload: any = {
+            tipoEquipoId: parseInt(tipoId),
+            templateId: parseInt(templateId),
             serie: row.serie,
-            matricula: row.matricula || null,
-            mac: row.mac || null,
-            ip: row.ip || null,
-            ciudadId: location.ciudad,
-            seccionId: location.seccion,
             oficinaId: location.oficina,
-          });
+          };
+
+          // Only include optional fields if they have values
+          if (row.matricula) payload.matricula = row.matricula;
+          if (row.mac) payload.mac = row.mac;
+          if (row.ip) payload.ip = row.ip;
+
+          const response = await apiClient.post('/equipment', payload);
 
           // Mark row as success
           setRows((prev) =>
