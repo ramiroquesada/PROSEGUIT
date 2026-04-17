@@ -93,7 +93,12 @@ export default function BulkEquipmentPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) {
     const { name, value } = e.target;
-    setShared((p) => ({ ...p, [name]: value }));
+    if (name === 'templateId') {
+      const selected = templates?.find((t) => String(t.id) === value);
+      setShared((p) => ({ ...p, templateId: value, modelo: selected?.nombre ?? p.modelo }));
+    } else {
+      setShared((p) => ({ ...p, [name]: value }));
+    }
     setSubmitError('');
   }
 

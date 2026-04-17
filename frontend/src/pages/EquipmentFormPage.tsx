@@ -122,7 +122,12 @@ export default function EquipmentFormPage() {
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    if (name === 'templateId') {
+      const selected = templates?.find((t) => String(t.id) === value);
+      setForm((prev) => ({ ...prev, templateId: value, modelo: selected?.nombre ?? prev.modelo }));
+    } else {
+      setForm((prev) => ({ ...prev, [name]: value }));
+    }
     setError('');
   }
 
