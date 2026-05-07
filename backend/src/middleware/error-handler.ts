@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import { env } from '../config/env.js';
+import { logger } from '../utils/logger.js';
 
 export class AppError extends Error {
   constructor(
@@ -13,7 +14,7 @@ export class AppError extends Error {
 
 export function errorHandler(
   err: Error,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction,
 ): void {
@@ -22,11 +23,12 @@ export function errorHandler(
     return;
   }
 
-  console.error('[ERROR]', err.stack);
+  logger.error({ err, requestId: req.requestId }, err.message);
 
   res.status(500).json({
     error: env.nodeEnv === 'production'
       ? 'Error interno del servidor'
       : err.message,
+    ...(env.nodeEnv !== 'production' && { requestId: req.requestId }),
   });
 }
