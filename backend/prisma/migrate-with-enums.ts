@@ -35,6 +35,12 @@ async function migrateWithEnums() {
       stdio: 'inherit',
     });
 
+    console.log('\n📦 Regenerando Prisma Client...');
+    execSync('npx prisma generate', {
+      cwd: path.join(__dirname, '..'),
+      stdio: 'inherit',
+    });
+
     console.log('\n✅ Migraciones completadas exitosamente');
   } catch (error) {
     console.error('❌ Error durante la migración:', error);
