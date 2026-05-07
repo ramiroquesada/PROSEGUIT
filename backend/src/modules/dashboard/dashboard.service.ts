@@ -19,18 +19,13 @@ export async function getStats() {
     prisma.equipo.count({
       where: {
         estado: { notIn: ESTADOS_ESPECIALES },
-        oficina: {
-          OR: [
-            { nombre: { contains: 'deposito', mode: 'insensitive' } },
-            { nombre: { contains: 'depósito', mode: 'insensitive' } },
-          ],
-        },
+        oficina: { tipo: 'DEPOSITO' },
       },
     }),
     prisma.equipo.count({
       where: {
         estado: { notIn: ESTADOS_ESPECIALES },
-        oficina: { nombre: { contains: 'soporte', mode: 'insensitive' } },
+        oficina: { tipo: 'SOPORTE' },
       },
     }),
     prisma.equipo.count({ where: { estado: 'EN_SERVICIO_EXTERNO' } }),

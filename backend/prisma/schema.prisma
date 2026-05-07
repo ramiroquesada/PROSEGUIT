@@ -10,6 +10,14 @@ datasource db {
 // UBICACIONES JERÁRQUICAS (3 niveles)
 // ==========================================
 
+enum TipoOficina {
+  OFICINA
+  SOPORTE
+  DEPOSITO
+
+  @@map("tipo_oficina")
+}
+
 model Ciudad {
   id        Int       @id @default(autoincrement())
   nombre    String    @unique @db.VarChar(100)
@@ -32,11 +40,12 @@ model Seccion {
 }
 
 model Oficina {
-  id        Int     @id @default(autoincrement())
-  nombre    String  @db.VarChar(100)
-  seccionId Int     @map("seccion_id")
-  seccion   Seccion @relation(fields: [seccionId], references: [id])
-  v1Id      Int?    @map("v1_id")
+  id        Int         @id @default(autoincrement())
+  nombre    String      @db.VarChar(100)
+  seccionId Int         @map("seccion_id")
+  seccion   Seccion     @relation(fields: [seccionId], references: [id])
+  tipo      TipoOficina @default(OFICINA)
+  v1Id      Int?        @map("v1_id")
 
   equipos          Equipo[]
   usuarios         Usuario[]

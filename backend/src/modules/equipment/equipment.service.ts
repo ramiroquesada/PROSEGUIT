@@ -18,13 +18,7 @@ interface EquipmentFilters {
   sortDir?: 'asc' | 'desc';
 }
 
-// Patrones de nombre de oficina que determinan el estado
-const SOPORTE_PATTERN  = { contains: 'soporte',  mode: 'insensitive' as const };
-const DEPOSITO_PATTERNS = [
-  { contains: 'deposito',  mode: 'insensitive' as const },
-  { contains: 'dep\u00f3sito', mode: 'insensitive' as const },
-];
-// NUEVO, PRESTADO y EN_SERVICIO_EXTERNO son estados "reales" en DB (no se derivan del nombre de oficina)
+// NUEVO, PRESTADO y EN_SERVICIO_EXTERNO son estados "reales" en DB (no se derivan de la oficina)
 const ESPECIALES: EstadoEquipo[] = ['NUEVO', 'PRESTADO', 'EN_SERVICIO_EXTERNO'];
 
 export async function listEquipment(pagination: PaginationParams, filters: EquipmentFilters) {
@@ -44,28 +38,23 @@ export async function listEquipment(pagination: PaginationParams, filters: Equip
 
   // Filtro de estado
   // NUEVO, PRESTADO, EN_SERVICIO_EXTERNO → filtrar por campo DB directamente
-  // EN_REPARACION, EN_DEPOSITO, ACTIVO → derivar del nombre de oficina
+  // EN_REPARACION, EN_DEPOSITO, ACTIVO → derivar del tipo de oficina
   if (filters.estado === 'NUEVO') {
     andConditions.push({ estado: 'NUEVO' });
   } else if (filters.estado === 'EN_REPARACION') {
     andConditions.push({
       estado: { notIn: ESPECIALES },
-      oficina: { nombre: SOPORTE_PATTERN },
+      oficina: { tipo: 'SOPORTE' },
     });
   } else if (filters.estado === 'EN_DEPOSITO') {
     andConditions.push({
       estado: { notIn: ESPECIALES },
-      OR: DEPOSITO_PATTERNS.map((p) => ({ oficina: { nombre: p } })),
+      oficina: { tipo: 'DEPOSITO' },
     });
   } else if (filters.estado === 'ACTIVO') {
     andConditions.push({
       estado: { notIn: ESPECIALES },
-      NOT: {
-        OR: [
-          { oficina: { nombre: SOPORTE_PATTERN } },
-          ...DEPOSITO_PATTERNS.map((p) => ({ oficina: { nombre: p } })),
-        ],
-      },
+      oficina: { tipo: 'OFICINA' },
     });
   } else if (filters.estado) {
     // PRESTADO, EN_SERVICIO_EXTERNO — filtrar por campo DB directamente
@@ -324,7 +313,7 @@ export async function transferEquipment(id: number, data: {
   const oficinaDest = await prisma.oficina.findUnique({ where: { id: data.oficinaDestinoId } });
   if (!oficinaDest) throw new AppError(404, 'Oficina destino no encontrada');
 
-  const nuevoEstado = estadoPorOficina(oficinaDest.nombre);
+  const nuevoEstado = estadoPorOficina(oficinaDest.tipo);
   let accionHistorial: 'ASIGNACION' | 'RETORNO_SOPORTE' | 'TRANSFERENCIA';
   if (equipo.estado === 'EN_REPARACION') {
     accionHistorial = 'RETORNO_SOPORTE';
@@ -465,7 +454,7 @@ export async function returnFromService(id: number, data: {
 
   // Derivar estado de la oficina actual, no hardcodear ACTIVO
   const oficinaActual = await prisma.oficina.findUnique({ where: { id: equipo.oficinaId } });
-  const estadoDerivado = oficinaActual ? estadoPorOficina(oficinaActual.nombre) : 'ACTIVO';
+  const estadoDerivado = oficinaActual ? estadoPorOficina(oficinaActual.tipo) : 'ACTIVO';
 
   const updated = await prisma.equipo.update({
     where: { id },

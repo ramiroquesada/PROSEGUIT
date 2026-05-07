@@ -53,7 +53,7 @@ describe('returnLoan', () => {
     mockPrisma.prestamo.findUnique.mockResolvedValue({
       id: 1, activo: true, equipoId: 5, equipo: { id: 5, oficinaId: 3 },
     });
-    mockPrisma.oficina.findUnique.mockResolvedValue({ id: 3, nombre: 'Oficina General' });
+    mockPrisma.oficina.findUnique.mockResolvedValue({ id: 3, nombre: 'Oficina General', tipo: 'OFICINA' });
     mockPrisma.prestamo.update.mockResolvedValue({ id: 1 });
     mockPrisma.equipo.update.mockResolvedValue({ id: 5 });
 
@@ -74,7 +74,7 @@ describe('returnLoan', () => {
     mockPrisma.prestamo.findUnique.mockResolvedValue({
       id: 2, activo: true, equipoId: 8, equipo: { id: 8, oficinaId: 7 },
     });
-    mockPrisma.oficina.findUnique.mockResolvedValue({ id: 7, nombre: 'Depósito' });
+    mockPrisma.oficina.findUnique.mockResolvedValue({ id: 7, nombre: 'Depósito', tipo: 'DEPOSITO' });
     mockPrisma.prestamo.update.mockResolvedValue({ id: 2 });
     mockPrisma.equipo.update.mockResolvedValue({ id: 8 });
 
@@ -93,7 +93,7 @@ describe('returnLoan', () => {
     mockPrisma.prestamo.findUnique.mockResolvedValue({
       id: 3, activo: true, equipoId: 10, equipo: { id: 10, oficinaId: 1 },
     });
-    mockPrisma.oficina.findUnique.mockResolvedValue({ id: 1, nombre: 'Informatica - Soporte' });
+    mockPrisma.oficina.findUnique.mockResolvedValue({ id: 1, nombre: 'Informatica - Soporte', tipo: 'SOPORTE' });
     mockPrisma.prestamo.update.mockResolvedValue({ id: 3 });
     mockPrisma.equipo.update.mockResolvedValue({ id: 10 });
 

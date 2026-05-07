@@ -138,7 +138,7 @@ export async function returnLoan(prestamoId: number, data: {
 
   // Derivar estado de la oficina del equipo, no hardcodear ACTIVO
   const oficinaEquipo = await prisma.oficina.findUnique({ where: { id: prestamo.equipo.oficinaId } });
-  const estadoDerivado = oficinaEquipo ? estadoPorOficina(oficinaEquipo.nombre) : 'ACTIVO';
+  const estadoDerivado = oficinaEquipo ? estadoPorOficina(oficinaEquipo.tipo) : 'ACTIVO';
 
   // Restore equipment status
   await prisma.equipo.update({

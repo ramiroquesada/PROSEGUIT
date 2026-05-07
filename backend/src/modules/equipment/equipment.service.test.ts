@@ -135,12 +135,12 @@ describe('transferEquipment — accion según estado', () => {
 
 // ─── estadoPorOficina (via transferEquipment) ────────────────────────────────
 
-describe('transferEquipment — estado según nombre de oficina destino', () => {
+describe('transferEquipment — estado según tipo de oficina destino', () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
-  it('deriva EN_REPARACION para oficina con "soporte" en el nombre', async () => {
+  it('deriva EN_REPARACION para oficina tipo SOPORTE', async () => {
     mockPrisma.equipo.findUnique.mockResolvedValue({ id: 1, serie: 100, oficinaId: 2, estado: 'ACTIVO' });
-    mockPrisma.oficina.findUnique.mockResolvedValue({ id: 1, nombre: 'Informatica - Soporte' });
+    mockPrisma.oficina.findUnique.mockResolvedValue({ id: 1, nombre: 'Informatica - Soporte', tipo: 'SOPORTE' });
     mockPrisma.equipo.update.mockResolvedValue({});
 
     await transferEquipment(1, { oficinaDestinoId: 1, motivo: 'A soporte' }, 99);
@@ -150,9 +150,9 @@ describe('transferEquipment — estado según nombre de oficina destino', () => 
     );
   });
 
-  it('deriva EN_DEPOSITO para oficina con "deposito" (con tilde) en el nombre', async () => {
+  it('deriva EN_DEPOSITO para oficina tipo DEPOSITO', async () => {
     mockPrisma.equipo.findUnique.mockResolvedValue({ id: 1, serie: 100, oficinaId: 2, estado: 'ACTIVO' });
-    mockPrisma.oficina.findUnique.mockResolvedValue({ id: 3, nombre: 'Depósito General' });
+    mockPrisma.oficina.findUnique.mockResolvedValue({ id: 3, nombre: 'Depósito General', tipo: 'DEPOSITO' });
     mockPrisma.equipo.update.mockResolvedValue({});
 
     await transferEquipment(1, { oficinaDestinoId: 3, motivo: 'A depósito' }, 99);
@@ -162,9 +162,9 @@ describe('transferEquipment — estado según nombre de oficina destino', () => 
     );
   });
 
-  it('deriva ACTIVO para cualquier otra oficina', async () => {
+  it('deriva ACTIVO para oficina tipo OFICINA', async () => {
     mockPrisma.equipo.findUnique.mockResolvedValue({ id: 1, serie: 100, oficinaId: 2, estado: 'ACTIVO' });
-    mockPrisma.oficina.findUnique.mockResolvedValue({ id: 4, nombre: 'Contaduría' });
+    mockPrisma.oficina.findUnique.mockResolvedValue({ id: 4, nombre: 'Contaduría', tipo: 'OFICINA' });
     mockPrisma.equipo.update.mockResolvedValue({});
 
     await transferEquipment(1, { oficinaDestinoId: 4, motivo: 'Traslado' }, 99);
@@ -324,7 +324,7 @@ describe('returnFromService', () => {
   it('deriva estado de la oficina actual (oficina estándar → ACTIVO)', async () => {
     mockPrisma.equipo.findUnique.mockResolvedValue({ id: 1, serie: 100, estado: 'EN_SERVICIO_EXTERNO', oficinaId: 3 });
     mockPrisma.envioServicio.findFirst.mockResolvedValue(null);
-    mockPrisma.oficina.findUnique.mockResolvedValue({ id: 3, nombre: 'Oficina General' });
+    mockPrisma.oficina.findUnique.mockResolvedValue({ id: 3, nombre: 'Oficina General', tipo: 'OFICINA' });
     mockPrisma.equipo.update.mockResolvedValue({ id: 1, estado: 'ACTIVO' });
 
     await returnFromService(1, { motivo: 'Reparado' }, 99);
@@ -343,7 +343,7 @@ describe('returnFromService', () => {
   it('deriva EN_DEPOSITO si el equipo está en oficina tipo depósito', async () => {
     mockPrisma.equipo.findUnique.mockResolvedValue({ id: 2, serie: 200, estado: 'EN_SERVICIO_EXTERNO', oficinaId: 7 });
     mockPrisma.envioServicio.findFirst.mockResolvedValue(null);
-    mockPrisma.oficina.findUnique.mockResolvedValue({ id: 7, nombre: 'Depósito' });
+    mockPrisma.oficina.findUnique.mockResolvedValue({ id: 7, nombre: 'Depósito', tipo: 'DEPOSITO' });
     mockPrisma.equipo.update.mockResolvedValue({ id: 2, estado: 'EN_DEPOSITO' });
 
     await returnFromService(2, { motivo: 'Vuelve de service' }, 99);
