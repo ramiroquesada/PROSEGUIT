@@ -12,9 +12,11 @@
     "generate": "prisma generate",
     "studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
-    "migrate:v1": "tsx prisma/migrate-v1.ts",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "test": "vitest run --exclude 'src/__tests__/**'",
+    "test:watch": "vitest --exclude 'src/__tests__/**'",
+    "test:integration": "vitest run src/__tests__/",
+    "test:coverage": "vitest run --coverage",
+    "test:all": "npm test && npm run test:integration"
   },
   "dependencies": {
     "@prisma/client": "^7.5.0",
@@ -36,7 +38,10 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^1.4.12",
     "@types/pino": "^7.0.4",
+    "@types/supertest": "^7.2.0",
+    "@vitest/coverage-v8": "^4.1.5",
     "prisma": "^7.5.0",
+    "supertest": "^7.2.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.1.2"

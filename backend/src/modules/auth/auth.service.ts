@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt, { type SignOptions } from 'jsonwebtoken';
+import { randomUUID } from 'crypto';
 import { env } from '../../config/env.js';
 import { prisma } from '../../utils/prisma.js';
 import { AppError } from '../../middleware/error-handler.js';
@@ -34,6 +35,7 @@ export async function login(ficha: number, password: string) {
     userId: usuario.id,
     ficha: usuario.ficha,
     rol: usuario.rol.toLowerCase(),
+    jti: randomUUID(),
   };
 
   const accessToken = jwt.sign(payload, env.jwt.secret, {
@@ -92,6 +94,7 @@ export async function refreshAccessToken(refreshToken: string) {
     userId: stored.usuario.id,
     ficha: stored.usuario.ficha,
     rol: stored.usuario.rol.toLowerCase(),
+    jti: randomUUID(),
   };
 
   const accessToken = jwt.sign(payload, env.jwt.secret, {

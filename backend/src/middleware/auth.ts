@@ -7,6 +7,7 @@ export interface JwtPayload {
   userId: number;
   ficha: number;
   rol: string;
+  jti: string;
 }
 
 declare module 'express' {
