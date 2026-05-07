@@ -15,6 +15,7 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 | Base de datos | PostgreSQL (Docker) | 17 |
 | Auth | JWT (access 15m + refresh 7d) + bcryptjs | — |
 | Validación | Zod (compartido front/back via `@proseguit/shared`) | 4.3 |
+| Logging | Pino (pretty-print en dev, JSON en prod) | 10.x |
 | Frontend | React + TypeScript + Vite | 19.2 / 5.9 / 8.0 |
 | Routing | React Router | 7.13 |
 | Estado servidor | TanStack Query | 5.94 |
@@ -170,7 +171,7 @@ npm run migrate:v1 # Hace todo: extrae JSON + repara DB + aplica migraciones + i
 
 - **CSS**: Módulos CSS con nesting nativo y custom properties. NO Tailwind, NO styled-components
 - **Ancho de páginas**: páginas de listado (tabla) = sin `max-width`, ocupan todo el ancho del `.content`. Páginas de formulario/detalle = `max-width` centrado (ej: 800px form, 1200px detail). Nunca poner `max-width` en páginas de listado.
-- **Estado de equipo**: nunca leer el campo `estado` de DB para mostrar en UI (puede estar desactualizado). Siempre usar `resolveEstado(eq.estado, eq.oficina.nombre)` de `frontend/src/lib/equipment-status.ts`. El backend también filtra por nombre de oficina en `listEquipment`.
+- **Estado de equipo**: nunca leer el campo `estado` de DB para mostrar en UI (puede estar desactualizado). Siempre usar `resolveEstado(eq.estado, eq.oficina.nombre)` de `frontend/src/lib/equipment-status.ts`. El backend deriva el estado del campo `tipo` de la oficina (no del nombre).
 - **Ordenamiento en listado**: el backend acepta `sortBy` (`serie`|`modelo`|`tipo`) y `sortDir` (`asc`|`desc`) como query params. Al cambiar filtros se resetea el orden.
 - **Íconos**: Lucide React (`import { Monitor, MapPin, ... } from 'lucide-react'`)
 - **React 19**: usar `use(AuthContext)` en vez de `useContext()`, `<Context value={}>` sin `.Provider`
@@ -207,7 +208,15 @@ npm run migrate:v1 # Hace todo: extrae JSON + repara DB + aplica migraciones + i
 ### Regla técnica (`resolveEstado`)
 
 - `NUEVO`, `PRESTADO`, `EN_SERVICIO_EXTERNO` → se leen **directo de DB**, no se derivan del nombre de oficina
-- `EN_REPARACION`, `EN_DEPOSITO`, `ACTIVO` → se derivan del nombre de oficina
+- `EN_REPARACION`, `EN_DEPOSITO`, `ACTIVO` → se derivan del campo `tipo` de la oficina (`SOPORTE` → `EN_REPARACION`, `DEPOSITO` → `EN_DEPOSITO`, `OFICINA` → `ACTIVO`)
+
+### Observabilidad
+
+- **Logger**: Pino con pretty-print en dev, JSON en prod. Cada request loguea método, ruta, status y duración.
+- **Request ID**: cada request recibe un UUID (`X-Request-Id` header). Los errores 500 incluyen el `requestId` en la respuesta (no en prod).
+- **Connection pooling**: pg Pool con `max: 10`, `idleTimeout: 30s`, `connectionTimeout: 5s`.
+- **Health check**: `GET /api/v1/health` devuelve `{ status, timestamp, uptime, memory, db }`.
+- **Performance**: índice compuesto `(equipo_id, fecha DESC)` en Historial para consultas de timeline.
 
 ### Migración DB
 
@@ -241,8 +250,8 @@ PROSEGIT/
 │   └── src/
 │       ├── index.ts                   # Punto de entrada Express
 │       ├── config/                    # env.ts (JWT_SECRET, DB URL, PORT)
-│       ├── middleware/                # auth.ts, validate.ts, error-handler.ts
-│       ├── utils/                     # prisma.ts, pagination.ts, equipment-status.ts
+│       ├── middleware/                # auth.ts, validate.ts, error-handler.ts, request-id.ts
+│       ├── utils/                     # prisma.ts (pooling), pagination.ts, equipment-status.ts, logger.ts
 │       └── modules/                   # Un directorio por dominio (ver tabla arriba)
 │           └── {dominio}/
 │               ├── {dominio}.routes.ts
@@ -265,6 +274,7 @@ PROSEGIT/
 │       ├── hooks/                     # useEquipment, useLocations, useHistory, useLoans, useUsers, useDashboard, usePageTitle, useLicenses
 │       ├── components/layout/         # Sidebar.tsx, Header.tsx, MainLayout.tsx
 │       ├── components/                # LocationCascadeSelect.tsx, dashboard/
+│       ├── components/ui/             # DataTable.tsx (tabla + paginación reutilizable), StatusBadge.tsx
 │       ├── pages/                     # 13 páginas (ver tabla arriba)
 │       └── styles/                    # variables.css, reset.css, globals.css
 │
@@ -276,13 +286,13 @@ PROSEGIT/
 
 ## Modelos de datos (Prisma)
 
-**Ubicaciones (3 niveles):** `Ciudad` → `Seccion` → `Oficina`
+**Ubicaciones (3 niveles):** `Ciudad` → `Seccion` → `Oficina` (tipo: OFICINA | SOPORTE | DEPOSITO)
 
 **Equipos:** `TipoEquipo` → `ModeloTemplate` → `Equipo` (estado: NUEVO | ACTIVO | EN_REPARACION | EN_DEPOSITO | PRESTADO | EN_SERVICIO_EXTERNO)
 
-**Acciones:** `Historial` (accion: CREACION | ASIGNACION | EDICION | TRANSFERENCIA | ENVIO_SOPORTE | RETORNO_SOPORTE | PRESTAMO | DEVOLUCION | CAMBIO_ESTADO | ENVIO_SERVICIO_EXTERNO | RETORNO_SERVICIO_EXTERNO)
+**Acciones:** `Historial` (accion: CREACION | ASIGNACION | EDICION | TRANSFERENCIA | ENVIO_SOPORTE | RETORNO_SOPORTE | PRESTAMO | DEVOLUCION | CAMBIO_ESTADO | ENVIO_SERVICIO_EXTERNO | RETORNO_SERVICIO_EXTERNO | FOTO_AGREGADA | FOTO_ELIMINADA)
 
-**Otros:** `Prestamo`, `EnvioServicio`, `ServicioExterno`, `Usuario` (rol: ADMIN | TECNICO), `Funcionario`, `RefreshToken`
+**Otros:** `Prestamo`, `EnvioServicio`, `ServicioExterno`, `Usuario` (rol: ADMIN | TECNICO), `Funcionario`, `RefreshToken`, `Licencia`
 
 ---
 

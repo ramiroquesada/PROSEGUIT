@@ -117,6 +117,7 @@
 | **Estado servidor** | TanStack Query | 5.94 |
 | **UI** | CSS Modules + nesting nativo + custom properties | — |
 | **Íconos** | Lucide React | — |
+| **Logging** | Pino (structured JSON) + request-id middleware | 10.x |
 | **Tests** | Vitest (67 tests, sin DB) | 4.x |
 | **Dev** | Docker Compose | — |
 
@@ -313,6 +314,8 @@ PROSEGUIT/
 │       ├── hooks/                         # useEquipment, useLocations, useHistory...
 │       ├── components/
 │       │   ├── layout/                    # Sidebar, Header, MainLayout
+│       │   ├── ui/                        # DataTable (tabla reutilizable), StatusBadge
+│       │   ├── dashboard/                 # Widgets configurables con drag & drop
 │       │   └── LocationCascadeSelect.tsx  # Selector Ciudad›Sección›Oficina reutilizable
 │       ├── pages/                         # 13 páginas
 │       └── styles/                        # variables.css, reset.css, globals.css
@@ -340,7 +343,9 @@ Ciudad ──< Seccion ──< Oficina ──< Equipo
 
 **Estados de equipo:** `NUEVO` · `ACTIVO` · `EN_REPARACION` · `EN_DEPOSITO` · `PRESTADO` · `EN_SERVICIO_EXTERNO`
 
-**Tipos de acción:** `CREACION` · `ASIGNACION` · `EDICION` · `TRANSFERENCIA` · `ENVIO_SOPORTE` · `RETORNO_SOPORTE` · `PRESTAMO` · `DEVOLUCION` · `CAMBIO_ESTADO` · `ENVIO_SERVICIO_EXTERNO` · `RETORNO_SERVICIO_EXTERNO`
+**Tipos de oficina:** `OFICINA` · `SOPORTE` · `DEPOSITO` — determinan el estado derivado del equipo
+
+**Tipos de acción:** `CREACION` · `ASIGNACION` · `EDICION` · `TRANSFERENCIA` · `ENVIO_SOPORTE` · `RETORNO_SOPORTE` · `PRESTAMO` · `DEVOLUCION` · `ENVIO_SERVICIO_EXTERNO` · `RETORNO_SERVICIO_EXTERNO` · `FOTO_AGREGADA` · `FOTO_ELIMINADA`
 
 > El campo `estado` en la base de datos puede quedar desactualizado. Siempre se usa `resolveEstado(estado, oficina.nombre)` para mostrar el estado real en la UI.
 
