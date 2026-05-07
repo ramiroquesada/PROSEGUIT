@@ -1,0 +1,2 @@
+ALTER TABLE "equipo" ADD COLUMN IF NOT EXISTS "fecha_fin_vida" TIMESTAMP(3);
+ALTER TABLE "equipo" ADD COLUMN IF NOT EXISTS "precio_compra" DECIMAL(10,2);

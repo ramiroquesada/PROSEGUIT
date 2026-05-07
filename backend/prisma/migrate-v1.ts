@@ -120,10 +120,18 @@ async function migrateLocations() {
     const nombre = (ub.nombre || '').trim();
     if (!nombre) continue;
 
+    const nombreLower = nombre.toLowerCase();
+    let tipo: string | undefined;
+    if (nombreLower.includes('soporte')) {
+      tipo = 'SOPORTE';
+    } else if (nombreLower === 'deposito') {
+      tipo = 'DEPOSITO';
+    }
+
     const oficina = await prisma.oficina.upsert({
       where: { nombre_seccionId: { nombre, seccionId: general.id } },
-      update: { v1Id: ub.id },
-      create: { nombre, seccionId: general.id, v1Id: ub.id },
+      update: { v1Id: ub.id, tipo: tipo ?? 'OFICINA' },
+      create: { nombre, seccionId: general.id, v1Id: ub.id, tipo: tipo ?? 'OFICINA' },
     });
     oficinaMap.set(ub.id, oficina.id);
   }
