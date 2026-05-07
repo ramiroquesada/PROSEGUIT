@@ -189,6 +189,7 @@ model Historial {
   metadata        Json       @default("{}") @db.JsonB
 
   @@index([equipoId])
+  @@index([equipoId, fecha(sort: Desc)])
   @@index([usuarioId])
   @@index([accion])
   @@index([fecha(sort: Desc)])
