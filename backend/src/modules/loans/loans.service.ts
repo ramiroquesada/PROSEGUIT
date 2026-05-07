@@ -1,6 +1,7 @@
 import { prisma } from '../../utils/prisma.js';
 import { AppError } from '../../middleware/error-handler.js';
-import type { PaginationParams } from '../../utils/pagination.js';
+import { paginatedResult, type PaginationParams } from '../../utils/pagination.js';
+import { estadoPorOficina } from '../../utils/equipment-status.js';
 
 interface LoanFilters {
   activo?: boolean;
@@ -46,15 +47,7 @@ export async function listLoans(pagination: PaginationParams, filters: LoanFilte
     prisma.prestamo.count({ where }),
   ]);
 
-  return {
-    data,
-    pagination: {
-      page: pagination.page,
-      limit: pagination.limit,
-      total,
-      totalPages: Math.ceil(total / pagination.limit),
-    },
-  };
+  return paginatedResult(data, total, pagination);
 }
 
 export async function createLoan(data: {
@@ -143,11 +136,15 @@ export async function returnLoan(prestamoId: number, data: {
     },
   });
 
+  // Derivar estado de la oficina del equipo, no hardcodear ACTIVO
+  const oficinaEquipo = await prisma.oficina.findUnique({ where: { id: prestamo.equipo.oficinaId } });
+  const estadoDerivado = oficinaEquipo ? estadoPorOficina(oficinaEquipo.nombre) : 'ACTIVO';
+
   // Restore equipment status
   await prisma.equipo.update({
     where: { id: prestamo.equipoId },
     data: {
-      estado: 'ACTIVO',
+      estado: estadoDerivado,
       historial: {
         create: {
           accion: 'DEVOLUCION',

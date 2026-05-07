@@ -228,7 +228,7 @@ describe('createEquipment', () => {
   it('lanza 409 si la serie ya existe', async () => {
     mockPrisma.equipo.findUnique.mockResolvedValue({ id: 5, serie: 42 });
 
-    await expect(createEquipment({ serie: 42, tipoEquipoId: 1, officinaId: 10 }, 99))
+    await expect(createEquipment({ serie: 42, tipoEquipoId: 1, oficinaId: 10 }, 99))
       .rejects.toMatchObject({ statusCode: 409 });
   });
 
@@ -289,7 +289,7 @@ describe('createEquipment', () => {
         serie: 9999,
         templateId: templateId,
         tipoEquipoId: tipoId,
-        officinaId: 1,
+        oficinaId: 1,
       }, 1)
     ).rejects.toThrow('La plantilla no corresponde al tipo de equipo seleccionado');
   });
@@ -303,7 +303,7 @@ describe('createEquipment', () => {
         serie: 9999,
         templateId: 999,
         tipoEquipoId: 1,
-        officinaId: 1,
+        oficinaId: 1,
       }, 1)
     ).rejects.toThrow('Plantilla no encontrada');
   });
@@ -321,18 +321,37 @@ describe('returnFromService', () => {
       .rejects.toMatchObject({ statusCode: 400 });
   });
 
-  it('pone estado ACTIVO y registra RETORNO_SERVICIO_EXTERNO', async () => {
+  it('deriva estado de la oficina actual (oficina estándar → ACTIVO)', async () => {
     mockPrisma.equipo.findUnique.mockResolvedValue({ id: 1, serie: 100, estado: 'EN_SERVICIO_EXTERNO', oficinaId: 3 });
-    mockPrisma.envioServicio.findFirst.mockResolvedValue(null); // sin envío abierto
+    mockPrisma.envioServicio.findFirst.mockResolvedValue(null);
+    mockPrisma.oficina.findUnique.mockResolvedValue({ id: 3, nombre: 'Oficina General' });
     mockPrisma.equipo.update.mockResolvedValue({ id: 1, estado: 'ACTIVO' });
 
     await returnFromService(1, { motivo: 'Reparado' }, 99);
 
+    expect(mockPrisma.oficina.findUnique).toHaveBeenCalledWith({ where: { id: 3 } });
     expect(mockPrisma.equipo.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           estado: 'ACTIVO',
           historial: { create: expect.objectContaining({ accion: 'RETORNO_SERVICIO_EXTERNO' }) },
+        }),
+      }),
+    );
+  });
+
+  it('deriva EN_DEPOSITO si el equipo está en oficina tipo depósito', async () => {
+    mockPrisma.equipo.findUnique.mockResolvedValue({ id: 2, serie: 200, estado: 'EN_SERVICIO_EXTERNO', oficinaId: 7 });
+    mockPrisma.envioServicio.findFirst.mockResolvedValue(null);
+    mockPrisma.oficina.findUnique.mockResolvedValue({ id: 7, nombre: 'Depósito' });
+    mockPrisma.equipo.update.mockResolvedValue({ id: 2, estado: 'EN_DEPOSITO' });
+
+    await returnFromService(2, { motivo: 'Vuelve de service' }, 99);
+
+    expect(mockPrisma.equipo.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          estado: 'EN_DEPOSITO',
         }),
       }),
     );

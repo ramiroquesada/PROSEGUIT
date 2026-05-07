@@ -1,5 +1,5 @@
 import { prisma } from '../../utils/prisma.js';
-import type { PaginationParams } from '../../utils/pagination.js';
+import { paginatedResult, type PaginationParams } from '../../utils/pagination.js';
 
 interface HistoryFilters {
   equipoId?: number;
@@ -46,15 +46,7 @@ export async function listHistory(pagination: PaginationParams, filters: History
     prisma.historial.count({ where }),
   ]);
 
-  return {
-    data,
-    pagination: {
-      page: pagination.page,
-      limit: pagination.limit,
-      total,
-      totalPages: Math.ceil(total / pagination.limit),
-    },
-  };
+  return paginatedResult(data, total, pagination);
 }
 
 export async function getEquipmentHistory(equipoId: number) {

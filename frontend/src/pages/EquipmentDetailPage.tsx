@@ -920,11 +920,11 @@ export default function EquipmentDetailPage() {
                       observacion: '',
                     });
                   }}
-                  className={styles.btnSecondary}
+                  className={styles.cancelBtn}
                 >
                   Cancelar
                 </button>
-                <button type="submit" className={styles.btnPrimary} disabled={createLicenseMutation.isPending}>
+                <button type="submit" className={styles.confirmBtn} data-variant="primary" disabled={createLicenseMutation.isPending}>
                   Guardar licencia
                 </button>
               </div>

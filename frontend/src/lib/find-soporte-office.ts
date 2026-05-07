@@ -1,19 +1,4 @@
-/**
- * Busca la primera oficina cuyo nombre contiene "soporte" en el árbol de ubicaciones.
- * Usada para:
- *   - Pre-seleccionar ubicación al crear equipo (EquipmentFormPage)
- *   - Destino automático de ENTRADA en ficha de equipo (EquipmentDetailPage)
- */
-
-interface LocationTree {
-  id: number;
-  nombre: string;
-  secciones: {
-    id: number;
-    nombre: string;
-    oficinas: { id: number; nombre: string }[];
-  }[];
-}
+import type { LocationTree } from '../hooks/useLocations';
 
 export interface SoporteOffice {
   ciudadId: number;

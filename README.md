@@ -117,7 +117,7 @@
 | **Estado servidor** | TanStack Query | 5.94 |
 | **UI** | CSS Modules + nesting nativo + custom properties | — |
 | **Íconos** | Lucide React | — |
-| **Tests** | Vitest (40 tests, sin DB) | 4.x |
+| **Tests** | Vitest (67 tests, sin DB) | 4.x |
 | **Dev** | Docker Compose | — |
 
 **Colores institucionales:** Teal `#00A79D` · Navy `#003366`
@@ -209,7 +209,7 @@ npm run dev:backend      # Solo backend
 npm run dev:frontend     # Solo frontend
 
 # Tests (no requiere base de datos)
-npm test                 # Corre los 40 tests del backend (Vitest)
+npm test                 # Corre los 67 tests del backend (Vitest)
 
 # Base de datos
 npm run db:up            # Levanta PostgreSQL en Docker (puerto 5433)
@@ -308,6 +308,7 @@ PROSEGUIT/
 │       │   ├── auth-context.tsx           # AuthContext (React 19)
 │       │   ├── equipment-status.ts        # resolveEstado() — estado por nombre de oficina
 │       │   ├── action-types.ts            # Labels y colores de acciones centralizados
+│       │   ├── dashboard-helpers.ts       # Utilidades compartidas de widgets
 │       │   └── find-soporte-office.ts
 │       ├── hooks/                         # useEquipment, useLocations, useHistory...
 │       ├── components/
@@ -316,7 +317,7 @@ PROSEGUIT/
 │       ├── pages/                         # 13 páginas
 │       └── styles/                        # variables.css, reset.css, globals.css
 │
-├── packages/shared/                       # Tipos, schemas Zod y constantes compartidas
+├── packages/shared/                       # Schemas Zod compartidos (equipment, user)
 ├── docker-compose.yml                     # PostgreSQL para desarrollo
 ├── docker-compose.prod.yml                # Producción: postgres + backend + nginx
 └── .env.production.example                # Template de variables de entorno para prod

@@ -238,11 +238,6 @@
   max-width: 160px;
 }
 
-.arrow {
-  font-size: var(--font-size-xs);
-  color: var(--color-text-secondary);
-}
-
 .tecnicoCell {
   display: flex;
   flex-direction: column;

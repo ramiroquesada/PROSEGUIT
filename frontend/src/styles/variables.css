@@ -129,6 +129,13 @@
   --z-overlay:  300;
   --z-modal:    400;
   --z-toast:    500;
+
+  /* ─── Aliases semánticos (retrocompatibilidad) ─── */
+  --color-bg-card:          var(--color-surface);
+  --color-bg-input:         var(--color-surface);
+  --color-bg-hover:         var(--color-bg-subtle);
+  --color-text-primary:     var(--color-text);
+  --color-bg-secondary:     var(--color-bg-subtle);
 }
 
 /* ─── Dark mode ──────────────────────────────────────────────── */
@@ -167,4 +174,11 @@
   --color-violet-light:    rgb(124 58 237 / 0.2);
 
   --color-table-head:      #1A2E4A;
+
+  /* ─── Aliases semánticos (retrocompatibilidad dark) ─── */
+  --color-bg-card:          var(--color-surface);
+  --color-bg-input:         var(--color-surface);
+  --color-bg-hover:         var(--color-bg-subtle);
+  --color-text-primary:     var(--color-text);
+  --color-bg-secondary:     var(--color-bg-subtle);
 }

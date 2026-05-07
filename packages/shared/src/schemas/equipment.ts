@@ -20,8 +20,6 @@ export const createEquipmentSchema = z.object({
   especificaciones: z.record(z.string(), z.unknown()).optional(),
 });
 
-export const updateEquipmentSchema = createEquipmentSchema.partial();
-
 export const transferEquipmentSchema = z.object({
   oficinaDestinoId: z.number().int().positive('La oficina destino es obligatoria'),
   motivo: z.string().min(1, 'El motivo es obligatorio'),
@@ -38,15 +36,3 @@ export const sendToServiceSchema = z.object({
   motivo: z.string().min(1, 'El motivo es obligatorio'),
   comentario: z.string().optional(),
 });
-
-export const decommissionSchema = z.object({
-  motivo: z.string().min(1, 'El motivo es obligatorio'),
-  comentario: z.string().optional(),
-});
-
-export type CreateEquipmentInput = z.infer<typeof createEquipmentSchema>;
-export type UpdateEquipmentInput = z.infer<typeof updateEquipmentSchema>;
-export type TransferEquipmentInput = z.infer<typeof transferEquipmentSchema>;
-export type SendToSupportInput = z.infer<typeof sendToSupportSchema>;
-export type SendToServiceInput = z.infer<typeof sendToServiceSchema>;
-export type DecommissionInput = z.infer<typeof decommissionSchema>;

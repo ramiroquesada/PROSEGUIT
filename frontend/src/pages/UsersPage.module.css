@@ -1,5 +1,4 @@
 .page { padding-bottom: var(--space-2xl); }
-.denied { padding: var(--space-2xl); text-align: center; color: var(--color-text-secondary); }
 
 .toolbar {
   display: flex;
@@ -102,16 +101,6 @@
   &[data-active="true"]  { background: var(--color-success-light); color: var(--color-success); border-color: var(--color-success-light); }
   &[data-active="false"] { background: var(--color-bg-subtle);    color: var(--color-text-secondary); border-color: var(--color-border); }
   &:disabled { cursor: not-allowed; opacity: 0.5; }
-}
-
-.pendingBadge {
-  display: inline-flex;
-  padding: 2px var(--space-sm);
-  border-radius: var(--radius-full);
-  font-size: var(--font-size-xs);
-  background: var(--color-warning-light);
-  color: var(--color-warning);
-  font-weight: 600;
 }
 
 .actions { text-align: right; }

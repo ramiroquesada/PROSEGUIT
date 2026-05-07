@@ -1,12 +1,7 @@
 import { useNavigate } from 'react-router';
 import { useRepairAlerts } from '../../../hooks/useDashboard';
+import { urgencyColor } from '../../../lib/dashboard-helpers';
 import widgetStyles from './Widget.module.css';
-
-function urgencyColor(dias: number): string {
-  if (dias > 30) return 'var(--color-danger)';
-  if (dias >= 14) return 'var(--color-warning)';
-  return 'var(--color-success)';
-}
 
 export default function RepairAlertWidget() {
   const navigate = useNavigate();

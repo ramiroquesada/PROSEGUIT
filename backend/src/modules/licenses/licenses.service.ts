@@ -1,6 +1,6 @@
 import { prisma } from '../../utils/prisma.js';
 import { AppError } from '../../middleware/error-handler.js';
-import type { PaginationParams } from '../../utils/pagination.js';
+import { paginatedResult, type PaginationParams } from '../../utils/pagination.js';
 
 type LicenseStatus = 'VIGENTE' | 'POR_VENCER' | 'VENCIDA' | 'PERPETUA' | 'SIN_FECHA';
 
@@ -23,7 +23,6 @@ interface LicenseFilters {
   software?: string;
   estado?: LicenseStatus;
   equipoId?: number;
-  sinEquipo?: boolean;
   search?: string;
 }
 
@@ -31,7 +30,6 @@ export async function listLicenses(pagination: PaginationParams, filters: Licens
   const where: any = {};
 
   if (filters.equipoId) where.equipoId = filters.equipoId;
-  if (filters.sinEquipo) where.equipoId = null;
 
   if (filters.software) {
     where.software = { contains: filters.software, mode: 'insensitive' };
@@ -78,23 +76,11 @@ export async function listLicenses(pagination: PaginationParams, filters: Licens
     filteredData = dataWithStatus.filter((lic) => lic.estado === filters.estado);
   }
 
-  return {
-    data: filteredData,
-    pagination: {
-      page: pagination.page,
-      limit: pagination.limit,
-      total,
-      totalPages: Math.ceil(total / pagination.limit),
-    },
-  };
+  return paginatedResult(filteredData, total, pagination);
 }
 
 export async function getLicensesSummary() {
-  const licencias = await prisma.licencia.findMany({
-    include: {
-      equipo: true,
-    },
-  });
+  const licencias = await prisma.licencia.findMany();
 
   const summary: Record<
     string,

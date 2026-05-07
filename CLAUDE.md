@@ -105,7 +105,7 @@ npm run db:studio        # Abre Prisma Studio (explorador visual de BD)
 npm run db:seed          # Seed: crea usuarios admin (9999) y técnico (7844)
 
 # Tests
-npm test                 # Corre los 40 tests del backend (no requiere DB)
+npm test                 # Corre los 67 tests del backend (no requiere DB)
 cd backend && npm run test:watch  # Modo watch durante desarrollo
 
 # Migración de datos desde seguit v1 (ver sección completa abajo)
@@ -234,19 +234,21 @@ PROSEGIT/
 │   │   ├── schema.prisma              # ← Modelo de datos completo (12 modelos, 2 enums)
 │   │   ├── seed.ts                    # Usuarios iniciales (admin 9999, técnico 7844)
 │   │   ├── migrate-v1.ts              # Script migración datos de seguit v1
-│   │   ├── migrations/20260322153214_init/  # Migración inicial (schema base)
-│   │   ├── migrations/20260328173932_add_estado_nuevo/  # Agrega NUEVO al enum estado_equipo
+│   │   └── migrations/20260322153214_init/  # Migración inicial (schema base)
+│   │   └── migrations/20260328173932_add_estado_nuevo/  # Agrega NUEVO al enum estado_equipo
 │   │   └── migrations/20260328200000_add_asignacion_accion/  # Agrega ASIGNACION al enum accion_tipo
 │   ├── prisma.config.ts               # Config Prisma 7 con adapter pg
 │   └── src/
 │       ├── index.ts                   # Punto de entrada Express
 │       ├── config/                    # env.ts (JWT_SECRET, DB URL, PORT)
 │       ├── middleware/                # auth.ts, validate.ts, error-handler.ts
+│       ├── utils/                     # prisma.ts, pagination.ts, equipment-status.ts
 │       └── modules/                   # Un directorio por dominio (ver tabla arriba)
 │           └── {dominio}/
 │               ├── {dominio}.routes.ts
 │               ├── {dominio}.controller.ts
-│               └── {dominio}.service.ts
+│               ├── {dominio}.service.ts
+│               └── {dominio}.service.test.ts
 │
 ├── frontend/
 │   ├── vite.config.ts                 # Proxy /api → :3001
@@ -256,16 +258,18 @@ PROSEGIT/
 │       │   ├── api-client.ts          # Singleton con JWT auto-refresh
 │       │   ├── auth-context.tsx       # AuthContext (React 19 use())
 │       │   ├── equipment-status.ts    # resolveEstado(), STATUS_LABEL, STATUS_COLOR — derivar estado desde nombre de oficina
+│       │   ├── action-types.ts        # Labels, colores y opciones de acciones centralizados
+│       │   ├── license-status.ts      # resolveLicenseStatus() para estado derivado de licencias
+│       │   ├── dashboard-helpers.ts   # Utilidades compartidas de widgets (urgencyColor)
 │       │   └── find-soporte-office.ts # Busca la oficina de Soporte en el árbol de ubicaciones
-│       ├── hooks/                     # useEquipment, useLocations, useHistory, useLoans, useUsers, useDashboard
+│       ├── hooks/                     # useEquipment, useLocations, useHistory, useLoans, useUsers, useDashboard, usePageTitle, useLicenses
 │       ├── components/layout/         # Sidebar.tsx, Header.tsx, MainLayout.tsx
-│       ├── pages/                     # 11 páginas (ver tabla arriba)
+│       ├── components/                # LocationCascadeSelect.tsx, dashboard/
+│       ├── pages/                     # 13 páginas (ver tabla arriba)
 │       └── styles/                    # variables.css, reset.css, globals.css
 │
 └── packages/shared/src/
-    ├── types/                         # Tipos TypeScript compartidos
-    ├── schemas/                       # Schemas Zod para validación
-    └── constants/                     # Estados de equipo, roles, tipos de acción
+    └── schemas/                       # Schemas Zod compartidos (equipment.ts, user.ts)
 ```
 
 ---

@@ -136,6 +136,13 @@ Sos un diseñador CSS especializado en interfaces institucionales.
   --z-overlay:  300;
   --z-modal:    400;
   --z-toast:    500;
+
+  /* Aliases semánticos (retrocompatibilidad) */
+  --color-bg-card:          var(--color-surface);
+  --color-bg-input:         var(--color-surface);
+  --color-bg-hover:         var(--color-bg-subtle);
+  --color-text-primary:     var(--color-text);
+  --color-bg-secondary:     var(--color-bg-subtle);
 }
 ```
 

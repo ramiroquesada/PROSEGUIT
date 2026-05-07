@@ -124,20 +124,34 @@ class ApiClient {
   }
 
   /** Sube un archivo (multipart/form-data). No pone Content-Type para que el browser lo genere con el boundary. */
-  upload<T>(endpoint: string, formData: FormData): Promise<T> {
+  async upload<T>(endpoint: string, formData: FormData): Promise<T> {
     const headers: Record<string, string> = {};
     if (this.accessToken) headers['Authorization'] = `Bearer ${this.accessToken}`;
-    return fetch(`${API_URL}${endpoint}`, {
+
+    let response = await fetch(`${API_URL}${endpoint}`, {
       method: 'POST',
       headers,
       body: formData,
-    }).then(async (res) => {
-      if (!res.ok) {
-        const error = await res.json().catch(() => ({ error: 'Error de red' }));
-        throw new ApiError(res.status, error.error || 'Error desconocido');
-      }
-      return res.json();
     });
+
+    if (response.status === 401 && this.refreshToken) {
+      const refreshed = await this.tryRefresh();
+      if (refreshed) {
+        headers['Authorization'] = `Bearer ${this.accessToken}`;
+        response = await fetch(`${API_URL}${endpoint}`, {
+          method: 'POST',
+          headers,
+          body: formData,
+        });
+      }
+    }
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: 'Error de red' }));
+      throw new ApiError(response.status, error.error || 'Error desconocido');
+    }
+
+    return response.json();
   }
 }
 

@@ -4,6 +4,8 @@ import path from 'path';
 import { prisma } from '../../utils/prisma.js';
 import { AppError } from '../../middleware/error-handler.js';
 import type { PaginationParams } from '../../utils/pagination.js';
+import { paginatedResult } from '../../utils/pagination.js';
+import { estadoPorOficina } from '../../utils/equipment-status.js';
 
 interface EquipmentFilters {
   tipoEquipoId?: number;
@@ -124,15 +126,7 @@ export async function listEquipment(pagination: PaginationParams, filters: Equip
     prisma.equipo.count({ where }),
   ]);
 
-  return {
-    data,
-    pagination: {
-      page: pagination.page,
-      limit: pagination.limit,
-      total,
-      totalPages: Math.ceil(total / pagination.limit),
-    },
-  };
+  return paginatedResult(data, total, pagination);
 }
 
 export async function getEquipmentById(id: number) {
@@ -315,14 +309,6 @@ export async function updateEquipment(id: number, data: {
   return updated;
 }
 
-/** Deriva el estado de un equipo según el nombre de la oficina destino */
-function estadoPorOficina(nombreOficina: string): 'ACTIVO' | 'EN_REPARACION' | 'EN_DEPOSITO' {
-  const n = nombreOficina.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  if (n.includes('deposito')) return 'EN_DEPOSITO';
-  if (n.includes('soporte')) return 'EN_REPARACION';
-  return 'ACTIVO';
-}
-
 export async function transferEquipment(id: number, data: {
   oficinaDestinoId: number;
   motivo: string;
@@ -477,10 +463,14 @@ export async function returnFromService(id: number, data: {
     });
   }
 
+  // Derivar estado de la oficina actual, no hardcodear ACTIVO
+  const oficinaActual = await prisma.oficina.findUnique({ where: { id: equipo.oficinaId } });
+  const estadoDerivado = oficinaActual ? estadoPorOficina(oficinaActual.nombre) : 'ACTIVO';
+
   const updated = await prisma.equipo.update({
     where: { id },
     data: {
-      estado: 'ACTIVO',
+      estado: estadoDerivado,
       historial: {
         create: {
           accion: 'RETORNO_SERVICIO_EXTERNO',

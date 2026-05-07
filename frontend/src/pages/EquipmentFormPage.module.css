@@ -75,14 +75,6 @@
   @media (width < 600px) { grid-template-columns: 1fr; }
 }
 
-.grid3 {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: var(--space-md);
-
-  @media (width < 700px) { grid-template-columns: 1fr; }
-}
-
 .field {
   display: flex;
   flex-direction: column;
@@ -255,11 +247,6 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
-}
-
-.templateCardEmpty {
-  color: var(--color-text-secondary);
-  font-style: italic;
 }
 
 .templateCardTitle {

@@ -18,9 +18,9 @@ import usersRoutes from './modules/users/users.routes.js';
 
 const app = express();
 
-// Directorio de uploads (se crea si no existe)
+// Directorio de uploads (se crea si no existe — también se asegura en equipment.routes.ts)
 const uploadsDir = path.join(process.cwd(), 'uploads');
-mkdirSync(path.join(uploadsDir, 'equipment'), { recursive: true });
+mkdirSync(uploadsDir, { recursive: true });
 
 // Middleware global
 app.use(cors(corsOptions));
