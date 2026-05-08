@@ -11,6 +11,7 @@ import { ACCION_LABEL, ACCION_COLOR } from '../lib/action-types';
 import { ArrowRightLeft, Building2, RotateCcw, Pencil, ChevronLeft, LogOut, LogIn, Monitor, Camera, Trash2, X, Plus } from 'lucide-react';
 import { findSoporteOffice } from '../lib/find-soporte-office';
 import LocationCascadeSelect from '../components/LocationCascadeSelect';
+import TypeBadge from '../components/ui/TypeBadge';
 import styles from './EquipmentDetailPage.module.css';
 import { usePageTitle } from '../hooks/usePageTitle';
 
@@ -381,7 +382,7 @@ export default function EquipmentDetailPage() {
             <div>
               <div className={styles.heroTitle}>Serie {equipo.serie}</div>
               <div className={styles.heroSubtitle}>
-                {equipo.tipoEquipo.nombre}{equipo.template ? ` · ${equipo.template.nombre}` : ''}
+                <TypeBadge label={equipo.tipoEquipo.nombre} />{equipo.template ? ` · ${equipo.template.nombre}` : ''}
               </div>
               <div className={styles.heroLocation}>
                 <div className={styles.heroLocationDot} />
@@ -446,7 +447,7 @@ export default function EquipmentDetailPage() {
             <h3 className={styles.cardTitle}>Información del equipo</h3>
           </div>
           <dl className={styles.details}>
-            <div className={styles.detailRow}><dt>Tipo</dt><dd>{equipo.tipoEquipo.nombre}</dd></div>
+            <div className={styles.detailRow}><dt>Tipo</dt><dd><TypeBadge label={equipo.tipoEquipo.nombre} /></dd></div>
             {equipo.template && <div className={styles.detailRow}><dt>Modelo</dt><dd>{equipo.template.nombre}</dd></div>}
             <div className={styles.detailRow}>
               <dt>Ubicación</dt>

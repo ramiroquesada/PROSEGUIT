@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router';
 import { useRepairAlerts } from '../../../hooks/useDashboard';
 import { urgencyColor } from '../../../lib/dashboard-helpers';
+import TypeBadge from '../../../components/ui/TypeBadge';
 import widgetStyles from './Widget.module.css';
 
 export default function RepairAlertWidget() {
@@ -38,9 +39,10 @@ export default function RepairAlertWidget() {
                   <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text)' }}>
                     Serie {eq.serie}
                   </span>
-                  <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {eq.tipoEquipo.nombre}{eq.modelo ? ` — ${eq.modelo}` : ''}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', minWidth: 0 }}>
+                    <TypeBadge label={eq.tipoEquipo.nombre} />
+                    {eq.modelo && <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>— {eq.modelo}</span>}
+                  </div>
                 </div>
                 <span style={{
                   fontSize: 'var(--font-size-xs)',

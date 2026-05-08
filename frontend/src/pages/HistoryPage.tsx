@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useHistory } from '../hooks/useHistory';
 import { ACCION_OPTIONS, ACCION_COLOR } from '../lib/action-types';
+import TypeBadge from '../components/ui/TypeBadge';
 import styles from './HistoryPage.module.css';
 import { usePageTitle } from '../hooks/usePageTitle';
 
@@ -89,14 +90,15 @@ export default function HistoryPage() {
           <div className={styles.tableWrapper}>
             <table className={styles.table}>
               <thead>
-                <tr>
-                  <th>Fecha y hora</th>
-                  <th>Acción</th>
-                  <th>Equipo</th>
-                  <th>Motivo / Comentario</th>
-                  <th>Ubicación</th>
-                  <th>Técnico</th>
-                </tr>
+                  <tr>
+                    <th>Fecha y hora</th>
+                    <th>Acción</th>
+                    <th>Equipo</th>
+                    <th>Tipo</th>
+                    <th>Motivo / Comentario</th>
+                    <th>Ubicación</th>
+                    <th>Técnico</th>
+                  </tr>
               </thead>
               <tbody>
                 {data?.data.map((entry) => (
@@ -129,6 +131,11 @@ export default function HistoryPage() {
                           <span className={styles.serie}>Serie {entry.equipo.serie}</span>
                           {entry.equipo.modelo && <span className={styles.modelo}>{entry.equipo.modelo}</span>}
                         </span>
+                      ) : <span className={styles.muted}>—</span>}
+                    </td>
+                    <td>
+                      {entry.equipo ? (
+                        <TypeBadge label={entry.equipo.tipoEquipo.nombre} />
                       ) : <span className={styles.muted}>—</span>}
                     </td>
                     <td className={styles.motivoTd}>
@@ -165,7 +172,7 @@ export default function HistoryPage() {
                   </tr>
                 ))}
                 {data?.data.length === 0 && (
-                  <tr><td colSpan={6} className={styles.empty}>No hay registros con los filtros aplicados</td></tr>
+                  <tr><td colSpan={7} className={styles.empty}>No hay registros con los filtros aplicados</td></tr>
                 )}
               </tbody>
             </table>

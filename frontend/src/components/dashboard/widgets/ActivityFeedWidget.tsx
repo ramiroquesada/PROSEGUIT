@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { useRecentActivity } from '../../../hooks/useDashboard';
 import { ACCION_LABEL, ACCION_COLOR, ACCION_OPTIONS } from '../../../lib/action-types';
+import TypeBadge from '../../../components/ui/TypeBadge';
 import widgetStyles from './Widget.module.css';
 import styles from './ActivityFeedWidget.module.css';
 
@@ -78,7 +79,7 @@ export default function ActivityFeedWidget() {
                   <span className={styles.activityEquipo}>
                     Serie {item.equipo.serie}
                     {item.equipo.modelo && <span className={styles.activityModelo}> — {item.equipo.modelo}</span>}
-                    <span className={styles.activityTipo}>{item.equipo.tipoEquipo.nombre}</span>
+                    <TypeBadge label={item.equipo.tipoEquipo.nombre} />
                   </span>
                 ) : (
                   <span className={styles.activityEquipo}>—</span>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useLicenses, useLicensesSummary, useCreateLicense, useUpdateLicense, useDeleteLicense, type Licencia } from '../hooks/useLicenses';
 import { LICENSE_STATUS_LABEL, LICENSE_STATUS_COLOR } from '../lib/license-status';
 import { Pencil, Trash2, Plus, Eye, EyeOff } from 'lucide-react';
+import TypeBadge from '../components/ui/TypeBadge';
 import { api } from '../lib/api-client';
 import styles from './LicensesPage.module.css';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -334,7 +335,7 @@ export default function LicensesPage() {
                     <td>{lic.version || '—'}</td>
                     <td className={styles.equipoCell}>
                       {lic.equipo
-                        ? `Serie #${lic.equipo.serie} — ${lic.equipo.tipoEquipo.nombre}`
+                        ? <span>Serie #{lic.equipo.serie} — <TypeBadge label={lic.equipo.tipoEquipo.nombre} /></span>
                         : '— Sin asignar —'}
                     </td>
                     <td>

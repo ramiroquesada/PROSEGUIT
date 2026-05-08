@@ -4,6 +4,7 @@ import { Search, Plus, Package, X, ChevronUp, ChevronDown, ChevronsUpDown } from
 import { useEquipmentList, useEquipmentTypes } from '../hooks/useEquipment';
 import { useLocationTree } from '../hooks/useLocations';
 import { resolveEstado, STATUS_LABEL, STATUS_COLOR } from '../lib/equipment-status';
+import TypeBadge from '../components/ui/TypeBadge';
 import styles from './EquipmentListPage.module.css';
 import { usePageTitle } from '../hooks/usePageTitle';
 
@@ -338,7 +339,9 @@ export default function EquipmentListPage() {
                   return (
                     <tr key={eq.id} onClick={() => navigate(`/equipos/${eq.id}`)} className={styles.row}>
                       <td className={styles.serie}>{eq.serie}</td>
-                      <td className={styles.tipo}>{eq.tipoEquipo.nombre}</td>
+                      <td>
+                        <TypeBadge label={eq.tipoEquipo.nombre} />
+                      </td>
                       <td>{eq.modelo || '—'}</td>
                       <td>
                         <div className={styles.location}>

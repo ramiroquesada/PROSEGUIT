@@ -342,6 +342,80 @@
     border: 1px solid var(--color-new-border);
     &::before { background: var(--color-new); }
   }
+
+  /* ─── Colores de tipo de equipo ─── */
+  &[data-color="type-slate"] {
+    background: var(--color-type-slate-light);
+    color: var(--color-type-slate);
+    border: 1px solid rgb(var(--color-type-slate-rgb) / 0.2);
+    &::before { background: var(--color-type-slate); }
+  }
+  &[data-color="type-sky"] {
+    background: var(--color-type-sky-light);
+    color: var(--color-type-sky);
+    border: 1px solid rgb(var(--color-type-sky-rgb) / 0.2);
+    &::before { background: var(--color-type-sky); }
+  }
+  &[data-color="type-emerald"] {
+    background: var(--color-type-emerald-light);
+    color: var(--color-type-emerald);
+    border: 1px solid rgb(var(--color-type-emerald-rgb) / 0.2);
+    &::before { background: var(--color-type-emerald); }
+  }
+  &[data-color="type-rose"] {
+    background: var(--color-type-rose-light);
+    color: var(--color-type-rose);
+    border: 1px solid rgb(var(--color-type-rose-rgb) / 0.2);
+    &::before { background: var(--color-type-rose); }
+  }
+  &[data-color="type-orange"] {
+    background: var(--color-type-orange-light);
+    color: var(--color-type-orange);
+    border: 1px solid rgb(var(--color-type-orange-rgb) / 0.2);
+    &::before { background: var(--color-type-orange); }
+  }
+  &[data-color="type-violet"] {
+    background: var(--color-type-violet-light);
+    color: var(--color-type-violet);
+    border: 1px solid rgb(var(--color-type-violet-rgb) / 0.2);
+    &::before { background: var(--color-type-violet); }
+  }
+  &[data-color="type-cyan"] {
+    background: var(--color-type-cyan-light);
+    color: var(--color-type-cyan);
+    border: 1px solid rgb(var(--color-type-cyan-rgb) / 0.2);
+    &::before { background: var(--color-type-cyan); }
+  }
+  &[data-color="type-lime"] {
+    background: var(--color-type-lime-light);
+    color: var(--color-type-lime);
+    border: 1px solid rgb(var(--color-type-lime-rgb) / 0.2);
+    &::before { background: var(--color-type-lime); }
+  }
+  &[data-color="type-fuchsia"] {
+    background: var(--color-type-fuchsia-light);
+    color: var(--color-type-fuchsia);
+    border: 1px solid rgb(var(--color-type-fuchsia-rgb) / 0.2);
+    &::before { background: var(--color-type-fuchsia); }
+  }
+  &[data-color="type-amber"] {
+    background: var(--color-type-amber-light);
+    color: var(--color-type-amber);
+    border: 1px solid rgb(var(--color-type-amber-rgb) / 0.2);
+    &::before { background: var(--color-type-amber); }
+  }
+  &[data-color="type-indigo"] {
+    background: var(--color-type-indigo-light);
+    color: var(--color-type-indigo);
+    border: 1px solid rgb(var(--color-type-indigo-rgb) / 0.2);
+    &::before { background: var(--color-type-indigo); }
+  }
+  &[data-color="type-coral"] {
+    background: var(--color-type-coral-light);
+    color: var(--color-type-coral);
+    border: 1px solid rgb(var(--color-type-coral-rgb) / 0.2);
+    &::before { background: var(--color-type-coral); }
+  }
 }
 
 /* ─── Sortable header buttons ─── */

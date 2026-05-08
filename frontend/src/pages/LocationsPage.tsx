@@ -9,6 +9,7 @@ import {
 } from '../hooks/useLocations';
 import { resolveEstado, STATUS_LABEL, STATUS_COLOR } from '../lib/equipment-status';
 import { Pencil, Trash2, GripVertical, Plus, X, Check } from 'lucide-react';
+import TypeBadge from '../components/ui/TypeBadge';
 import styles from './LocationsPage.module.css';
 import { usePageTitle } from '../hooks/usePageTitle';
 
@@ -445,7 +446,7 @@ export default function LocationsPage() {
                         <div className={styles.equipoInfo}>
                           <span className={styles.equipoSerie}>Serie {eq.serie}</span>
                           {eq.modelo && <span className={styles.equipoModelo}>{eq.modelo}</span>}
-                          <span className={styles.equipoTipo}>{eq.tipoEquipo.nombre}</span>
+                          <TypeBadge label={eq.tipoEquipo.nombre} />
                           {eq.ip && <span className={styles.equipoIp}>{eq.ip}</span>}
                         </div>
                         <span className={styles.statusBadge} data-color={STATUS_COLOR[est] || 'neutral'}>

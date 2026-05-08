@@ -34,7 +34,7 @@ export async function listHistory(pagination: PaginationParams, filters: History
     prisma.historial.findMany({
       where,
       include: {
-        equipo: { select: { id: true, serie: true, modelo: true } },
+        equipo: { select: { id: true, serie: true, modelo: true, tipoEquipo: { select: { nombre: true } } } },
         usuario: { select: { id: true, nombre: true, ficha: true } },
         oficinaOrigen: { select: { id: true, nombre: true } },
         oficinaDestino: { select: { id: true, nombre: true } },

@@ -7,7 +7,7 @@ interface HistorialEntry {
   motivo: string;
   comentario: string | null;
   fecha: string;
-  equipo: { id: number; serie: number; modelo: string | null } | null;
+  equipo: { id: number; serie: number; modelo: string | null; tipoEquipo: { nombre: string } } | null;
   usuario: { id: number; nombre: string; ficha: number };
   oficinaOrigen: { id: number; nombre: string } | null;
   oficinaDestino: { id: number; nombre: string } | null;
