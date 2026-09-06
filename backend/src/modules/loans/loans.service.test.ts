@@ -2,6 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../../utils/prisma.js', () => ({
   prisma: {
+    $transaction: vi.fn(),
+    $queryRaw: vi.fn(),
     equipo: {
       findUnique: vi.fn(),
       update: vi.fn(),
@@ -13,26 +15,92 @@ vi.mock('../../utils/prisma.js', () => ({
       upsert: vi.fn(),
     },
     prestamo: {
+      findFirst: vi.fn(),
       findUnique: vi.fn(),
+      create: vi.fn(),
       update: vi.fn(),
+      count: vi.fn(),
     },
   },
 }));
 
-import { returnLoan } from './loans.service.js';
+import { createLoan, returnLoan } from './loans.service.js';
 import { prisma } from '../../utils/prisma.js';
 import { AppError } from '../../middleware/error-handler.js';
 
 const mockPrisma = prisma as unknown as {
+  $transaction: ReturnType<typeof vi.fn>;
+  $queryRaw: ReturnType<typeof vi.fn>;
   equipo: { findUnique: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> };
   oficina: { findUnique: ReturnType<typeof vi.fn> };
   funcionario: { upsert: ReturnType<typeof vi.fn> };
-  prestamo: { findUnique: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> };
+  prestamo: {
+    findFirst: ReturnType<typeof vi.fn>;
+    findUnique: ReturnType<typeof vi.fn>;
+    create: ReturnType<typeof vi.fn>;
+    update: ReturnType<typeof vi.fn>;
+    count: ReturnType<typeof vi.fn>;
+  };
 };
 
-describe('returnLoan', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
+beforeEach(() => {
+  vi.clearAllMocks();
+  mockPrisma.$transaction.mockImplementation(async (callback) => callback(mockPrisma));
+  mockPrisma.$queryRaw.mockResolvedValue([]);
+  mockPrisma.prestamo.count.mockResolvedValue(0);
+});
 
+describe('createLoan', () => {
+  it('rechaza un equipo inexistente dentro de la transacción', async () => {
+    mockPrisma.equipo.findUnique.mockResolvedValue(null);
+
+    await expect(createLoan({
+      equipoId: 99,
+      oficinaDestinoId: 2,
+      solicitanteFicha: 1234,
+    }, 1)).rejects.toMatchObject({ statusCode: 404 });
+
+    expect(mockPrisma.$transaction).toHaveBeenCalledOnce();
+  });
+
+  it('rechaza un préstamo activo aunque el estado heredado siga en ACTIVO', async () => {
+    mockPrisma.equipo.findUnique.mockResolvedValue({ id: 5, oficinaId: 3, estado: 'ACTIVO' });
+    mockPrisma.prestamo.findFirst.mockResolvedValue({ id: 10 });
+
+    await expect(createLoan({
+      equipoId: 5,
+      oficinaDestinoId: 2,
+      solicitanteFicha: 1234,
+    }, 1)).rejects.toMatchObject({ statusCode: 400 });
+
+    expect(mockPrisma.prestamo.create).not.toHaveBeenCalled();
+  });
+
+  it('crea préstamo, estado e historial en la misma transacción', async () => {
+    mockPrisma.equipo.findUnique.mockResolvedValue({ id: 5, oficinaId: 3, estado: 'ACTIVO' });
+    mockPrisma.prestamo.findFirst.mockResolvedValue(null);
+    mockPrisma.funcionario.upsert.mockResolvedValue({ ficha: 1234 });
+    mockPrisma.prestamo.create.mockResolvedValue({ id: 20, equipoId: 5 });
+    mockPrisma.equipo.update.mockResolvedValue({ id: 5 });
+
+    const result = await createLoan({
+      equipoId: 5,
+      oficinaDestinoId: 2,
+      solicitanteFicha: 1234,
+      motivo: 'Prueba',
+    }, 1);
+
+    expect(result).toEqual({ id: 20, equipoId: 5 });
+    expect(mockPrisma.equipo.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        estado: 'PRESTADO',
+        historial: { create: expect.objectContaining({ accion: 'PRESTAMO' }) },
+      }),
+    }));
+  });
+});
+
+describe('returnLoan', () => {
   it('lanza 404 si el préstamo no existe', async () => {
     mockPrisma.prestamo.findUnique.mockResolvedValue(null);
 
@@ -106,5 +174,21 @@ describe('returnLoan', () => {
         }),
       }),
     );
+  });
+
+  it('mantiene PRESTADO si otro préstamo heredado continúa activo', async () => {
+    mockPrisma.prestamo.findUnique.mockResolvedValue({
+      id: 4, activo: true, equipoId: 12, equipo: { id: 12, oficinaId: 3 },
+    });
+    mockPrisma.prestamo.update.mockResolvedValue({ id: 4 });
+    mockPrisma.prestamo.count.mockResolvedValue(1);
+    mockPrisma.equipo.update.mockResolvedValue({ id: 12 });
+
+    await returnLoan(4, { devueltoPorFicha: 0 }, 1);
+
+    expect(mockPrisma.oficina.findUnique).not.toHaveBeenCalled();
+    expect(mockPrisma.equipo.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ estado: 'PRESTADO' }),
+    }));
   });
 });

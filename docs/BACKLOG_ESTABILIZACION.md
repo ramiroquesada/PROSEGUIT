@@ -48,7 +48,7 @@ Este backlog convierte el plan general en unidades ejecutables. Cada ticket debe
 - [x] **DAT-01** Generar un reporte repetible de inconsistencias de préstamos y estados.
 - [x] **DAT-02** Diseñar un registro de anomalías para marcar datos migrados como `A_REVISAR` sin alterar el original.
 - [x] **DAT-03** Integrar la detección de anomalías al proceso repetible de migración desde SEGUIT v1.
-- [ ] **DAT-04** Hacer préstamo y devolución atómicos.
+- [x] **DAT-04** Hacer préstamo y devolución atómicos.
 - [ ] **DAT-05** Activar una prueba real de concurrencia sobre préstamos.
 - [ ] **DAT-06** Definir y aplicar una única fuente de verdad para el estado del equipo.
 - [ ] **DAT-07** Reconciliar oficinas SOPORTE/DEPOSITO, servicios, préstamos y estados.
