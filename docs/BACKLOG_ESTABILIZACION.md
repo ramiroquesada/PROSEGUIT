@@ -45,7 +45,7 @@ Este backlog convierte el plan general en unidades ejecutables. Cada ticket debe
 
 ## Bloque 3 — Integridad de datos y transacciones
 
-- [ ] **DAT-01** Generar un reporte repetible de inconsistencias de préstamos y estados.
+- [x] **DAT-01** Generar un reporte repetible de inconsistencias de préstamos y estados.
 - [ ] **DAT-02** Revisar y resolver los préstamos activos duplicados existentes.
 - [ ] **DAT-03** Agregar restricción que impida más de un préstamo activo por equipo.
 - [ ] **DAT-04** Hacer préstamo y devolución atómicos.
