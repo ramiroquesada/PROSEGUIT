@@ -1,4 +1,6 @@
 import { prisma } from '../utils/prisma.js';
+import type { PrismaClient } from '@prisma/client';
+import { pathToFileURL } from 'node:url';
 
 type Severity = 'error' | 'warning' | 'info';
 
@@ -42,9 +44,9 @@ function expectedOfficeState(tipo: 'OFICINA' | 'SOPORTE' | 'DEPOSITO') {
   return 'ACTIVO';
 }
 
-export async function auditData() {
+export async function auditData(db: PrismaClient = prisma) {
   const [loans, equipment, cities, activeUsers, expiredRefreshTokens] = await Promise.all([
-    prisma.prestamo.findMany({
+    db.prestamo.findMany({
       select: {
         id: true,
         activo: true,
@@ -54,7 +56,7 @@ export async function auditData() {
       },
       orderBy: [{ equipoId: 'asc' }, { fechaPrestamo: 'asc' }],
     }),
-    prisma.equipo.findMany({
+    db.equipo.findMany({
       select: {
         id: true,
         serie: true,
@@ -86,7 +88,7 @@ export async function auditData() {
       },
       orderBy: { serie: 'asc' },
     }),
-    prisma.ciudad.findMany({
+    db.ciudad.findMany({
       select: {
         id: true,
         nombre: true,
@@ -107,12 +109,12 @@ export async function auditData() {
       },
       orderBy: { nombre: 'asc' },
     }),
-    prisma.usuario.findMany({
+    db.usuario.findMany({
       where: { activo: true },
       select: { id: true, rol: true, forcePasswordChange: true },
       orderBy: { ficha: 'asc' },
     }),
-    prisma.refreshToken.count({ where: { expiresAt: { lt: new Date() } } }),
+    db.refreshToken.count({ where: { expiresAt: { lt: new Date() } } }),
   ]);
 
   const activeLoansByEquipment = new Map<number, typeof loans>();
@@ -315,12 +317,18 @@ async function main() {
   }
 }
 
-main()
-  .catch((error) => {
-    console.error('No se pudo completar la auditoría de datos.');
-    console.error(error instanceof Error ? error.message : error);
-    process.exitCode = 1;
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+const isDirectExecution = process.argv[1]
+  ? pathToFileURL(process.argv[1]).href === import.meta.url
+  : false;
+
+if (isDirectExecution) {
+  main()
+    .catch((error) => {
+      console.error('No se pudo completar la auditoría de datos.');
+      console.error(error instanceof Error ? error.message : error);
+      process.exitCode = 1;
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}

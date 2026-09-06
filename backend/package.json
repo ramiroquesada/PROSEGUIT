@@ -12,6 +12,7 @@
     "generate": "prisma generate",
     "studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
+    "migrate:v1": "prisma generate && tsx prisma/migrate-v1.ts",
     "audit:data": "tsx src/scripts/audit-data.ts",
     "test": "vitest run --exclude 'src/__tests__/**'",
     "test:watch": "vitest --exclude 'src/__tests__/**'",

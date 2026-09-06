@@ -46,8 +46,8 @@ Este backlog convierte el plan general en unidades ejecutables. Cada ticket debe
 ## Bloque 3 — Integridad de datos y transacciones
 
 - [x] **DAT-01** Generar un reporte repetible de inconsistencias de préstamos y estados.
-- [ ] **DAT-02** Diseñar un registro de anomalías para marcar datos migrados como `A_REVISAR` sin alterar el original.
-- [ ] **DAT-03** Integrar la detección de anomalías al proceso repetible de migración desde SEGUIT v1.
+- [x] **DAT-02** Diseñar un registro de anomalías para marcar datos migrados como `A_REVISAR` sin alterar el original.
+- [x] **DAT-03** Integrar la detección de anomalías al proceso repetible de migración desde SEGUIT v1.
 - [ ] **DAT-04** Hacer préstamo y devolución atómicos.
 - [ ] **DAT-05** Activar una prueba real de concurrencia sobre préstamos.
 - [ ] **DAT-06** Definir y aplicar una única fuente de verdad para el estado del equipo.
