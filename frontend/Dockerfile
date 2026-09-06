@@ -17,8 +17,8 @@ RUN npm ci
 COPY packages/shared ./packages/shared
 COPY frontend ./frontend
 
-# Build de producción (tsc + vite build)
-RUN npm run build --workspace=frontend
+# Build de producción (shared + tsc + vite)
+RUN npm run build:shared && npm run build --workspace=frontend
 
 # ── Stage 2: nginx ────────────────────────────────────────────────────────────
 FROM nginx:1.27-alpine

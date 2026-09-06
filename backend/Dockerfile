@@ -1,6 +1,6 @@
 # ── PROSEGUIT — Backend ───────────────────────────────────────────────────────
-# Usa tsx para correr TypeScript directamente, evitando problemas de resolución
-# de módulos con @proseguit/shared (que apunta a fuente .ts, no a dist/).
+# Compila el paquete compartido y la API. Producción ejecuta únicamente
+# JavaScript generado, sin depender de tsx ni del código TypeScript fuente.
 
 FROM node:22-alpine
 
@@ -17,12 +17,15 @@ RUN npm ci
 COPY packages/shared ./packages/shared
 COPY backend ./backend
 
-# Generar Prisma client
-RUN cd backend && npx prisma generate
+# Generar Prisma Client y compilar shared + backend
+RUN cd backend && npx prisma generate \
+    && cd /app \
+    && npm run build:shared \
+    && npm run build --workspace=backend
 
 WORKDIR /app/backend
 
 EXPOSE 3001
 
-# Aplica migraciones pendientes y arranca el servidor
-CMD ["sh", "-c", "npx prisma migrate deploy && npx tsx src/index.ts"]
+# Aplica migraciones pendientes y arranca el servidor compilado
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
