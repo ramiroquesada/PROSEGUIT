@@ -41,6 +41,8 @@ La salida a producción será un **GO** únicamente cuando se cumplan los criter
 ### Datos actuales
 
 - Aproximadamente 1.300 equipos migrados desde SEGUIT v1.
+- La base auditada es una copia de desarrollo, no la base definitiva de producción.
+- SEGUIT v1 continuará siendo la fuente de verdad hasta la ventana de corte; la migración completa deberá repetirse con un dump final.
 - 9 ciudades registradas.
 - 14 secciones, 106 oficinas y 1.307 equipos concentrados actualmente en Mercedes.
 - La distribución hacia las demás ciudades es trabajo manual pendiente; no se considera por sí sola una corrupción de datos.
@@ -172,12 +174,15 @@ La salida a producción será un **GO** únicamente cuando se cumplan los criter
 
 ### 1.3 Préstamos y consistencia de equipos
 
-- Identificar y resolver manualmente los préstamos activos duplicados existentes.
-- Crear una restricción de base de datos que impida más de un préstamo activo por equipo.
+- Identificar los préstamos activos duplicados en cada ensayo sin corregir manualmente el snapshot de desarrollo.
+- Crear un registro de anomalías de migración para marcar datos dudosos y permitir su revisión.
+- Codificar como reglas repetibles todas las correcciones inequívocas; no depender de SQL manual aplicado una sola vez.
+- Crear una restricción de base de datos que impida más de un préstamo activo por equipo después de resolver las anomalías del corte.
 - Convertir préstamo y devolución en transacciones atómicas.
 - Definir una única fuente de verdad para el estado del equipo.
 - Reconciliar equipos, oficinas especiales, préstamos y servicios externos.
 - Crear un reporte repetible de inconsistencias que pueda ejecutarse antes y después de cada migración.
+- Ejecutar la secuencia dump → importación → auditoría → revisión en una base descartable antes del corte definitivo.
 - Habilitar y aprobar pruebas de concurrencia para préstamos y otros movimientos sensibles.
 
 ### 1.4 Subidas de imágenes
@@ -201,8 +206,9 @@ La salida a producción será un **GO** únicamente cuando se cumplan los criter
 
 - Build completo limpio desde checkout nuevo.
 - Cero secretos o uploads incorporados a artefactos.
-- Cero préstamos activos duplicados.
-- Restricciones y transacciones impiden recrear las inconsistencias.
+- Las anomalías del snapshot se detectan y marcan automáticamente en cada migración.
+- Las transacciones impiden crear inconsistencias nuevas desde PROSEGUIT v2.
+- La restricción definitiva está preparada para aplicarse cuando la importación final quede revisada.
 - Usuarios productivos con credenciales únicas y cambio obligatorio aplicado.
 - Carga masiva no puede dejar resultados ambiguos.
 - Lint y pruebas unitarias en verde.
@@ -399,7 +405,8 @@ Es técnicamente posible ejecutar PROSEGUIT de forma nativa. Docker se conservar
 
 ### Ensayo general
 
-- Restaurar una copia controlada de datos en preproducción.
+- Obtener un dump reciente de SEGUIT v1 y ejecutar desde cero el proceso completo de migración.
+- Conservar ese dump como entrada inmutable del ensayo.
 - Aplicar exactamente el runbook previsto para producción.
 - Ejecutar migraciones y reporte de integridad.
 - Ejecutar suite automatizada completa.
@@ -412,14 +419,16 @@ Es técnicamente posible ejecutar PROSEGUIT de forma nativa. Docker se conservar
 
 1. Comunicar ventana y responsables.
 2. Congelar escritura en el sistema anterior si continúa en uso.
-3. Tomar backup final de base y uploads.
+3. Tomar backup final de SEGUIT v1, de PROSEGUIT y de sus uploads.
 4. Registrar totales de control.
 5. Desplegar versión aprobada.
 6. Aplicar migraciones controladas.
-7. Restaurar/importar datos definitivos si corresponde.
-8. Ejecutar chequeo de integridad y smoke test.
-9. Habilitar usuarios de forma escalonada.
-10. Observar métricas y logs durante la ventana acordada.
+7. Ejecutar la importación definitiva desde el dump final de SEGUIT v1.
+8. Generar y revisar el registro de anomalías de migración.
+9. Aplicar decisiones de corrección reproducibles y la restricción final de integridad.
+10. Ejecutar chequeo de integridad y smoke test.
+11. Habilitar usuarios de forma escalonada.
+12. Observar métricas y logs durante la ventana acordada.
 
 ### Criterio de rollback
 

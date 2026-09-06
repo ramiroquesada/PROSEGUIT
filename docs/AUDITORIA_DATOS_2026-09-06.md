@@ -4,6 +4,8 @@
 **Método:** auditor de solo lectura `npm run audit:data --workspace=backend`  
 **Estado:** no se modificó ningún registro.
 
+> Esta base es un ensayo de desarrollo. SEGUIT v1 seguirá siendo la fuente de verdad hasta el corte y la migración se ejecutará nuevamente sobre un dump final. Los hallazgos de este documento sirven para mejorar el importador y diseñar el registro de anomalías; no se corregirán manualmente como si fueran datos definitivos.
+
 ## Totales observados
 
 | Entidad | Cantidad |
@@ -59,13 +61,15 @@ Los 296 estados no deben actualizarse en masa todavía. La aplicación combina e
 - 5 oficinas no tienen equipos.
 - Existen 10 refresh tokens vencidos que podrán purgarse durante el saneamiento de autenticación.
 
-## Decisiones necesarias antes del saneamiento
+## Tratamiento correcto de los hallazgos
 
-1. Confirmar cuál préstamo —si alguno— sigue activo para las series 641, 642 y 1307.
-2. Revisar también los otros siete préstamos activos, debido a su antigüedad.
-3. Definir si el estado será completamente persistido o derivado mediante una función de dominio única.
-4. Confirmar si los tres equipos sin historial son registros legítimos y cuál debe ser su evento inicial.
+1. Marcar los duplicados y demás inconsistencias como anomalías de migración `A_REVISAR`.
+2. No editar manualmente los préstamos del snapshot actual.
+3. Incorporar al importador las reparaciones que puedan demostrarse inequívocas.
+4. Mantener las decisiones ambiguas en una cola de revisión con la evidencia original.
+5. Repetir auditoría y revisión con el dump final tomado durante el corte.
+6. Definir si el estado será completamente persistido o derivado mediante una función de dominio única.
 
 ## Próxima implementación segura
 
-Mientras se validan los préstamos con el área responsable, se puede corregir el servicio para que préstamo, estado e historial se escriban dentro de una única transacción y agregar la prueba de concurrencia. La restricción única en PostgreSQL se aplicará después de limpiar los tres conflictos actuales.
+Se puede corregir el servicio para que préstamo, estado e historial se escriban dentro de una única transacción y agregar la prueba de concurrencia. Esto protege todos los datos nuevos creados en PROSEGUIT v2. La restricción única en PostgreSQL se aplicará después de resolver las anomalías generadas por la importación definitiva.
