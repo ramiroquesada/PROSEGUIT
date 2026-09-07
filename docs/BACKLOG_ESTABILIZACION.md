@@ -51,7 +51,7 @@ Este backlog convierte el plan general en unidades ejecutables. Cada ticket debe
 - [x] **DAT-03** Integrar la detección de anomalías al proceso repetible de migración desde SEGUIT v1.
 - [x] **DAT-04** Hacer préstamo y devolución atómicos.
 - [x] **DAT-05** Activar una prueba real de concurrencia sobre préstamos.
-- [ ] **DAT-06** Definir y aplicar una única fuente de verdad para el estado del equipo.
+- [x] **DAT-06** Definir y aplicar la ubicación actual como fuente de verdad para el estado derivado, manteniendo estados especiales para préstamos, altas y servicio externo.
 - [ ] **DAT-07** Reconciliar oficinas SOPORTE/DEPOSITO, servicios, préstamos y estados.
 - [ ] **DAT-08** Ensayar dump final → importación → auditoría → revisión en una base descartable.
 - [ ] **DAT-09** Convertir correcciones inequívocas en reglas de migración deterministas y versionadas.
@@ -60,14 +60,15 @@ Este backlog convierte el plan general en unidades ejecutables. Cada ticket debe
 
 ## Bloque 4 — Defectos funcionales
 
-- [ ] **BUG-01** Corregir fechas absurdas en alertas de reparación.
-- [ ] **BUG-02** Evitar conteos duplicados de equipos prestados en dashboard.
+- [x] **BUG-01** Corregir fechas absurdas en alertas de reparación; si falta ENTRADA se muestra “Sin fecha”.
+- [x] **BUG-02** Evitar conteos duplicados de equipos prestados en dashboard.
 - [ ] **BUG-03** Hacer atómica la carga masiva o devolver resultados exactos por fila.
 - [ ] **BUG-04** Corregir errores de lint sin ocultarlos mediante excepciones generales.
 - [ ] **BUG-05** Convertir cada corrección en una prueba de regresión.
 
 ## Bloque 5 — Ubicaciones y preparación de datos
 
+- [x] **UBI-00** Separar oficina asignada y ubicación actual, con ENTRADA a Mantenimiento y SALIDA exclusiva a la oficina asignada.
 - [x] **UBI-01** Especificar el flujo de movimiento individual con usuario responsable.
 - [x] **UBI-02** Agregar acción `Mover oficina…` con ciudad y sección destino.
 - [x] **UBI-03** Mostrar impacto, confirmar y auditar el movimiento.

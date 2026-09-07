@@ -31,6 +31,19 @@ La migración complementaria `20260908001000_ensure_maintenance_office` crea esa
 
 No mueve equipos, no elimina registros y no intenta reconstruir datos históricos. Por eso una base ya importada con la lógica anterior sigue funcionando, pero no recupera por sí sola los valores de `ubicacion_tmp` descartados durante aquella importación.
 
+## Evidencia de verificación
+
+El importador completo se ejecutó sobre una base temporal y esa base se eliminó al terminar:
+
+- 1.303 equipos y 4.249 historiales importados;
+- 43 préstamos importados;
+- 387 equipos conservaron una oficina asignada diferente de su ubicación actual;
+- 369 equipos quedaron actualmente en Mantenimiento;
+- 64 ubicaciones temporales no reconocidas quedaron registradas como anomalías y usaron la oficina asignada como respaldo;
+- 27 historiales que referían a equipos inexistentes en la fuente quedaron registrados como omitidos.
+
+La verificación de release aprobó el build de backend y frontend, 73 pruebas unitarias y 30 pruebas de integración. La integración aplicó las 16 migraciones desde cero en una base descartable y cubrió creación, cambio de asignación, SALIDA, ENTRADA, servicio externo, jerarquía y concurrencia de préstamos.
+
 ## Camino recomendado para el próximo corte de producción
 
 SEGUIT v1 continúa siendo la fuente de verdad hasta el corte. El camino recomendado es:
