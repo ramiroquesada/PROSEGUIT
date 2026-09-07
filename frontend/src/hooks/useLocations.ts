@@ -16,6 +16,18 @@ interface LocationTree {
   }[];
 }
 
+interface OfficeMovePreview {
+  id: number;
+  nombre: string;
+  cantidadEquipos: number;
+  ubicacionActual: {
+    ciudadId: number;
+    ciudadNombre: string;
+    seccionId: number;
+    seccionNombre: string;
+  };
+}
+
 export function useLocationTree() {
   return useQuery({
     queryKey: ['locations-tree'],
@@ -34,6 +46,14 @@ export function useEquipmentByOficina(oficinaId: number | null) {
       }[];
       pagination: { total: number };
     }>(`/equipment?oficinaId=${oficinaId}&limit=100`),
+    enabled: oficinaId !== null && oficinaId > 0,
+  });
+}
+
+export function useOfficeMovePreview(oficinaId: number | null) {
+  return useQuery({
+    queryKey: ['office-move-preview', oficinaId],
+    queryFn: () => api.get<OfficeMovePreview>(`/locations/offices/${oficinaId}/move-preview`),
     enabled: oficinaId !== null && oficinaId > 0,
   });
 }
@@ -126,9 +146,12 @@ export function useDeleteOffice() {
 export function useMoveOffice() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, seccionId }: { id: number; seccionId: number }) =>
-      api.patch(`/locations/offices/${id}/move`, { seccionId }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['locations-tree'] }),
+    mutationFn: ({ id, seccionId, motivo }: { id: number; seccionId: number; motivo?: string }) =>
+      api.patch(`/locations/offices/${id}/move`, { seccionId, motivo }),
+    onSuccess: (_data, variables) => Promise.all([
+      qc.invalidateQueries({ queryKey: ['locations-tree'] }),
+      qc.invalidateQueries({ queryKey: ['office-move-preview', variables.id] }),
+    ]),
   });
 }
 
@@ -141,4 +164,4 @@ export function useMoveSection() {
   });
 }
 
-export type { LocationTree };
+export type { LocationTree, OfficeMovePreview };

@@ -1,14 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  useLocationTree, useEquipmentByOficina,
+  useLocationTree, useEquipmentByOficina, useOfficeMovePreview,
   useCreateCity, useCreateSection, useCreateOffice,
   useRenameCity, useRenameSection, useRenameOffice,
   useDeleteCity, useDeleteSection, useDeleteOffice,
   useMoveOffice, useMoveSection,
 } from '../hooks/useLocations';
 import { resolveEstado, STATUS_LABEL, STATUS_COLOR } from '../lib/equipment-status';
-import { Pencil, Trash2, GripVertical, Plus, X, Check } from 'lucide-react';
+import { Pencil, Trash2, GripVertical, Plus, X, Check, ArrowRightLeft } from 'lucide-react';
 import TypeBadge from '../components/ui/TypeBadge';
 import styles from './LocationsPage.module.css';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -16,6 +16,7 @@ import { usePageTitle } from '../hooks/usePageTitle';
 type EditTarget = { type: 'ciudad' | 'seccion' | 'oficina'; id: number; value: string };
 type ConfirmTarget = { type: 'ciudad' | 'seccion' | 'oficina'; id: number };
 type DragItem = { type: 'office' | 'section'; id: number };
+type MoveTarget = { id: number; nombre: string };
 
 export default function LocationsPage() {
   usePageTitle('Ubicaciones');
@@ -43,13 +44,25 @@ export default function LocationsPage() {
   const [dragItem, setDragItem] = useState<DragItem | null>(null);
   const [dragOverId, setDragOverId] = useState<number | null>(null);
 
+  // Explicit office movement (works across cities and on keyboard/mobile)
+  const [moveTarget, setMoveTarget] = useState<MoveTarget | null>(null);
+  const [moveCityId, setMoveCityId] = useState<number | null>(null);
+  const [moveSectionId, setMoveSectionId] = useState<number | null>(null);
+  const [moveReason, setMoveReason] = useState('');
+  const [moveError, setMoveError] = useState('');
+  const [creatingMoveSection, setCreatingMoveSection] = useState(false);
+  const [moveSectionName, setMoveSectionName] = useState('');
+
   // Equipment panel
   const { data: equiposData, isLoading: loadingEquipos } = useEquipmentByOficina(selOficinaId);
+  const { data: movePreview, isLoading: loadingMovePreview } = useOfficeMovePreview(moveTarget?.id ?? null);
 
   // Derived data
   const selectedCiudad = tree?.find((c) => c.id === selCiudadId) ?? null;
   const selectedSeccion = selectedCiudad?.secciones.find((s) => s.id === selSeccionId) ?? null;
   const selectedOficina = selectedSeccion?.oficinas.find((o) => o.id === selOficinaId) ?? null;
+  const moveDestinationCity = tree?.find((city) => city.id === moveCityId) ?? null;
+  const moveDestinationSection = moveDestinationCity?.secciones.find((section) => section.id === moveSectionId) ?? null;
 
   // Mutations
   const createCity = useCreateCity();
@@ -63,6 +76,26 @@ export default function LocationsPage() {
   const deleteOffice = useDeleteOffice();
   const moveOffice = useMoveOffice();
   const moveSection = useMoveSection();
+
+  useEffect(() => {
+    if (!moveTarget) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    function handleEscape(event: KeyboardEvent) {
+      if (event.key !== 'Escape' || moveOffice.isPending || createSection.isPending) return;
+      setMoveTarget(null);
+      setMoveError('');
+      setCreatingMoveSection(false);
+    }
+
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [moveTarget, moveOffice.isPending, createSection.isPending]);
 
   const totalSecciones = tree?.reduce((a, c) => a + c.secciones.length, 0) ?? 0;
   const totalOficinas = tree?.reduce((a, c) => a + c.secciones.reduce((b, s) => b + s.oficinas.length, 0), 0) ?? 0;
@@ -88,6 +121,25 @@ export default function LocationsPage() {
     setConfirming({ type, id });
     setDeleteError('');
     setEditing(null);
+  }
+
+  function startMoveOffice(id: number, nombre: string) {
+    setMoveTarget({ id, nombre });
+    setMoveCityId(null);
+    setMoveSectionId(null);
+    setMoveReason('');
+    setMoveError('');
+    setCreatingMoveSection(false);
+    setMoveSectionName('');
+    setEditing(null);
+    setConfirming(null);
+  }
+
+  function closeMoveOffice() {
+    if (moveOffice.isPending || createSection.isPending) return;
+    setMoveTarget(null);
+    setMoveError('');
+    setCreatingMoveSection(false);
   }
 
   // ── Handlers ───────────────────────────────────────────────────────────────
@@ -157,6 +209,48 @@ export default function LocationsPage() {
     } catch { /* tree refetches to original */ }
   }
 
+  async function handleCreateMoveSection() {
+    const nombre = moveSectionName.trim();
+    if (!moveCityId) { setMoveError('Seleccioná primero la ciudad destino'); return; }
+    if (!nombre) { setMoveError('Ingresá el nombre de la nueva sección'); return; }
+
+    try {
+      const section = await createSection.mutateAsync({ nombre, ciudadId: moveCityId });
+      setMoveSectionId(section.id);
+      setMoveSectionName('');
+      setCreatingMoveSection(false);
+      setMoveError('');
+    } catch (error: any) {
+      setMoveError(error?.message || 'No se pudo crear la sección');
+    }
+  }
+
+  async function handleMoveOffice() {
+    if (!moveTarget || !moveSectionId) {
+      setMoveError('Seleccioná la ciudad y la sección destino');
+      return;
+    }
+    if (movePreview?.ubicacionActual.seccionId === moveSectionId) {
+      setMoveError('Elegí una sección diferente de la actual');
+      return;
+    }
+
+    try {
+      await moveOffice.mutateAsync({
+        id: moveTarget.id,
+        seccionId: moveSectionId,
+        motivo: moveReason.trim() || undefined,
+      });
+      setSelCiudadId(moveCityId);
+      setSelSeccionId(moveSectionId);
+      setSelOficinaId(moveTarget.id);
+      setMoveTarget(null);
+      setMoveError('');
+    } catch (error: any) {
+      setMoveError(error?.message || 'No se pudo mover la oficina');
+    }
+  }
+
   function handleDragEnd() {
     setDragItem(null);
     setDragOverId(null);
@@ -181,6 +275,16 @@ export default function LocationsPage() {
   function renderActions(type: 'ciudad' | 'seccion' | 'oficina', id: number, nombre: string) {
     return (
       <div className={styles.itemActions}>
+        {type === 'oficina' && (
+          <button
+            className={styles.iconBtn}
+            title="Mover oficina"
+            aria-label={`Mover oficina ${nombre}`}
+            onClick={(e) => { e.stopPropagation(); startMoveOffice(id, nombre); }}
+          >
+            <ArrowRightLeft size={13} />
+          </button>
+        )}
         <button
           className={styles.iconBtn}
           title="Renombrar"
@@ -471,6 +575,162 @@ export default function LocationsPage() {
           </div>
         )}
       </div>
+
+      {moveTarget && (
+        <div
+          className={styles.modalBackdrop}
+          onMouseDown={(event) => { if (event.target === event.currentTarget) closeMoveOffice(); }}
+          onKeyDown={(event) => { if (event.key === 'Escape') closeMoveOffice(); }}
+        >
+          <section
+            className={styles.moveDialog}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="move-office-title"
+          >
+            <header className={styles.moveHeader}>
+              <div>
+                <h3 id="move-office-title">Mover oficina</h3>
+                <p>Elegí la ubicación definitiva sin crear estructuras momentáneas.</p>
+              </div>
+              <button
+                className={styles.panelClose}
+                onClick={closeMoveOffice}
+                aria-label="Cerrar"
+                disabled={moveOffice.isPending || createSection.isPending}
+              >
+                <X size={18} />
+              </button>
+            </header>
+
+            {loadingMovePreview ? (
+              <p className={styles.moveLoading}>Calculando el impacto...</p>
+            ) : movePreview ? (
+              <div className={styles.moveBody}>
+                <div className={styles.routeComparison}>
+                  <div className={styles.routeBlock}>
+                    <span>Ruta actual</span>
+                    <strong>{movePreview.ubicacionActual.ciudadNombre}</strong>
+                    <p>{movePreview.ubicacionActual.seccionNombre} › {movePreview.nombre}</p>
+                  </div>
+                  <ArrowRightLeft className={styles.routeArrow} size={20} aria-hidden="true" />
+                  <div className={styles.routeBlock} data-destination="true">
+                    <span>Ruta destino</span>
+                    <strong>{moveDestinationCity?.nombre || 'Sin elegir'}</strong>
+                    <p>{moveDestinationSection ? `${moveDestinationSection.nombre} › ${movePreview.nombre}` : 'Seleccioná una sección'}</p>
+                  </div>
+                </div>
+
+                <div className={styles.moveFields}>
+                  <label>
+                    <span>Ciudad destino</span>
+                    <select
+                      autoFocus
+                      value={moveCityId ?? ''}
+                      onChange={(event) => {
+                        setMoveCityId(event.target.value ? Number(event.target.value) : null);
+                        setMoveSectionId(null);
+                        setCreatingMoveSection(false);
+                        setMoveError('');
+                      }}
+                    >
+                      <option value="">Seleccionar ciudad</option>
+                      {tree?.map((city) => <option key={city.id} value={city.id}>{city.nombre}</option>)}
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Sección destino</span>
+                    <select
+                      value={moveSectionId ?? ''}
+                      disabled={!moveCityId || creatingMoveSection}
+                      onChange={(event) => {
+                        setMoveSectionId(event.target.value ? Number(event.target.value) : null);
+                        setMoveError('');
+                      }}
+                    >
+                      <option value="">Seleccionar sección</option>
+                      {moveDestinationCity?.secciones.map((section) => (
+                        <option key={section.id} value={section.id}>{section.nombre}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                {moveCityId && !creatingMoveSection && (
+                  <button
+                    type="button"
+                    className={styles.createSectionLink}
+                    onClick={() => { setCreatingMoveSection(true); setMoveSectionName(''); setMoveError(''); }}
+                  >
+                    <Plus size={14} /> Crear una sección real en {moveDestinationCity?.nombre}
+                  </button>
+                )}
+
+                {creatingMoveSection && (
+                  <div className={styles.createSectionRow}>
+                    <label>
+                      <span>Nueva sección en {moveDestinationCity?.nombre}</span>
+                      <input
+                        value={moveSectionName}
+                        onChange={(event) => { setMoveSectionName(event.target.value); setMoveError(''); }}
+                        onKeyDown={(event) => { if (event.key === 'Enter') handleCreateMoveSection(); }}
+                        placeholder="Nombre definitivo de la sección"
+                      />
+                    </label>
+                    <button onClick={handleCreateMoveSection} disabled={createSection.isPending}>
+                      {createSection.isPending ? 'Creando...' : 'Crear y seleccionar'}
+                    </button>
+                    <button
+                      className={styles.secondaryButton}
+                      onClick={() => { setCreatingMoveSection(false); setMoveSectionName(''); setMoveError(''); }}
+                      disabled={createSection.isPending}
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                )}
+
+                <label className={styles.reasonField}>
+                  <span>Motivo o referencia <small>(opcional)</small></span>
+                  <textarea
+                    value={moveReason}
+                    maxLength={500}
+                    onChange={(event) => setMoveReason(event.target.value)}
+                    placeholder="Ej.: reorganización inicial de la jerarquía"
+                  />
+                </label>
+
+                <div className={styles.impactNotice}>
+                  <strong>{movePreview.cantidadEquipos} equipo{movePreview.cantidadEquipos === 1 ? '' : 's'} afectado{movePreview.cantidadEquipos === 1 ? '' : 's'}</strong>
+                  <p>Seguirán asignados a {movePreview.nombre}; solo cambiará la ruta jerárquica de la oficina.</p>
+                </div>
+
+                {moveError && <p className={styles.moveError} role="alert">{moveError}</p>}
+
+                <footer className={styles.moveFooter}>
+                  <button className={styles.secondaryButton} onClick={closeMoveOffice} disabled={moveOffice.isPending}>
+                    Cancelar
+                  </button>
+                  <button
+                    className={styles.primaryButton}
+                    onClick={handleMoveOffice}
+                    disabled={
+                      moveOffice.isPending ||
+                      !moveSectionId ||
+                      movePreview.ubicacionActual.seccionId === moveSectionId
+                    }
+                  >
+                    {moveOffice.isPending ? 'Moviendo...' : 'Mover oficina'}
+                  </button>
+                </footer>
+              </div>
+            ) : (
+              <p className={styles.moveError} role="alert">No se pudo calcular el impacto del movimiento.</p>
+            )}
+          </section>
+        </div>
+      )}
     </div>
   );
 }

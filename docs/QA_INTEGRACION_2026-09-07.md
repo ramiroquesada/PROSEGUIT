@@ -2,8 +2,8 @@
 
 ## Resultado
 
-- 3 archivos de pruebas aprobados.
-- 23 pruebas de integración aprobadas.
+- 4 archivos de pruebas aprobados.
+- 25 pruebas de integración aprobadas.
 - La prueba de dos préstamos simultáneos produjo una creación `201` y un rechazo `400`.
 - El backend compila sin depender de que haya un servidor escuchando en el puerto 3001.
 
@@ -34,11 +34,11 @@ Se convirtió el resultado del bloqueo a `text`. La segunda ejecución confirmó
 - historial de movimientos;
 - envío y retorno de servicio externo;
 - préstamo concurrente del mismo equipo.
+- movimiento transaccional de una oficina entre ciudades, con conteo de equipos y auditoría del administrador.
 
 ## Cobertura todavía pendiente
 
-- operaciones completas de ciudades, secciones y oficinas;
-- movimiento directo de oficinas entre secciones o ciudades;
+- operaciones de error y conflictos restantes para ciudades, secciones y oficinas;
 - carga y eliminación de imágenes;
 - préstamos y devoluciones idempotentes;
 - importación masiva;

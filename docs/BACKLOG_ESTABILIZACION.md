@@ -29,6 +29,7 @@ Este backlog convierte el plan general en unidades ejecutables. Cada ticket debe
 - [ ] **DEP-03** Resolver el aviso bajo restante de `esbuild` y mantener auditoría continua en CI.
 - [ ] **OPS-01** Hacer que health check consulte realmente PostgreSQL.
 - [x] **OPS-02** Incorporar graceful shutdown del servidor y del pool de conexiones.
+- [ ] **OPS-03** Resolver la colisión del puerto 3001 con la instancia legada de Docker y asegurar una única API activa antes del despliegue nativo.
 
 ## Bloque 2 — Seguridad
 
@@ -67,10 +68,10 @@ Este backlog convierte el plan general en unidades ejecutables. Cada ticket debe
 
 ## Bloque 5 — Ubicaciones y preparación de datos
 
-- [ ] **UBI-01** Especificar el flujo de movimiento individual con usuario responsable.
-- [ ] **UBI-02** Agregar acción `Mover oficina…` con ciudad y sección destino.
-- [ ] **UBI-03** Mostrar impacto, confirmar y auditar el movimiento.
-- [ ] **UBI-04** Permitir crear una sección real dentro del flujo si hace falta.
+- [x] **UBI-01** Especificar el flujo de movimiento individual con usuario responsable.
+- [x] **UBI-02** Agregar acción `Mover oficina…` con ciudad y sección destino.
+- [x] **UBI-03** Mostrar impacto, confirmar y auditar el movimiento.
+- [x] **UBI-04** Permitir crear una sección real dentro del flujo si hace falta.
 - [ ] **UBI-05** Diseñar árbol completo con búsqueda, multiselección y cambios pendientes.
 - [ ] **UBI-06** Implementar endpoint transaccional de movimientos masivos.
 - [ ] **UBI-07** Implementar reorganización masiva con vista previa y deshacer local.

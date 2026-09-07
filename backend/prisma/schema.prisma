@@ -59,6 +59,38 @@ model Oficina {
   @@map("oficina")
 }
 
+enum EntidadMovimientoUbicacion {
+  OFICINA
+  SECCION
+
+  @@map("entidad_movimiento_ubicacion")
+}
+
+model MovimientoUbicacion {
+  id                   Int                        @id @default(autoincrement())
+  entidad              EntidadMovimientoUbicacion
+  entidadId            Int                        @map("entidad_id")
+  entidadNombre        String                     @map("entidad_nombre") @db.VarChar(100)
+  origenCiudadId       Int                        @map("origen_ciudad_id")
+  origenCiudadNombre   String                     @map("origen_ciudad_nombre") @db.VarChar(100)
+  origenSeccionId      Int?                       @map("origen_seccion_id")
+  origenSeccionNombre  String?                    @map("origen_seccion_nombre") @db.VarChar(100)
+  destinoCiudadId      Int                        @map("destino_ciudad_id")
+  destinoCiudadNombre  String                     @map("destino_ciudad_nombre") @db.VarChar(100)
+  destinoSeccionId     Int?                       @map("destino_seccion_id")
+  destinoSeccionNombre String?                    @map("destino_seccion_nombre") @db.VarChar(100)
+  cantidadEquipos      Int                        @default(0) @map("cantidad_equipos")
+  motivo               String?                    @db.Text
+  usuarioId            Int                        @map("usuario_id")
+  usuario              Usuario                    @relation(fields: [usuarioId], references: [id])
+  createdAt            DateTime                   @default(now()) @map("created_at")
+
+  @@index([entidad, entidadId])
+  @@index([usuarioId])
+  @@index([createdAt(sort: Desc)])
+  @@map("movimiento_ubicacion")
+}
+
 // ==========================================
 // EQUIPOS
 // ==========================================
@@ -282,13 +314,14 @@ model Usuario {
   oficina             Oficina?   @relation(fields: [oficinaId], references: [id])
   v1Id                Int?       @map("v1_id")
 
-  historial          Historial[]
-  prestamosTecnico   Prestamo[]      @relation("PrestamoTecnico")
-  prestamosRecibidos Prestamo[]      @relation("PrestamoRecibido")
-  enviosServicio     EnvioServicio[]
-  refreshTokens      RefreshToken[]
-  createdAt          DateTime        @default(now()) @map("created_at")
-  updatedAt          DateTime        @updatedAt @map("updated_at")
+  historial            Historial[]
+  prestamosTecnico     Prestamo[]            @relation("PrestamoTecnico")
+  prestamosRecibidos   Prestamo[]            @relation("PrestamoRecibido")
+  enviosServicio       EnvioServicio[]
+  movimientosUbicacion MovimientoUbicacion[]
+  refreshTokens        RefreshToken[]
+  createdAt            DateTime              @default(now()) @map("created_at")
+  updatedAt            DateTime              @updatedAt @map("updated_at")
 
   @@map("usuario")
 }
