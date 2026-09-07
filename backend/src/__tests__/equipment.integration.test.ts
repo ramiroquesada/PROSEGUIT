@@ -1,8 +1,5 @@
-import request from 'supertest';
 import { describe, it, expect, beforeAll } from 'vitest';
-import { getAdminToken, getTecnicoToken } from './helpers';
-
-const BASE = 'http://localhost:3001';
+import { api, getAdminToken, getTecnicoToken } from './helpers.js';
 
 let adminToken: string;
 
@@ -17,7 +14,7 @@ describe('Equipment Integration — Flujo completo', () => {
   let servicioId: number;
 
   beforeAll(async () => {
-    const treeRes = await request(BASE)
+    const treeRes = await api
       .get('/api/v1/locations/tree')
       .set('Authorization', `Bearer ${adminToken}`);
 
@@ -35,14 +32,14 @@ describe('Equipment Integration — Flujo completo', () => {
       }
     }
 
-    const providersRes = await request(BASE)
+    const providersRes = await api
       .get('/api/v1/service-providers')
       .set('Authorization', `Bearer ${adminToken}`);
 
     if (providersRes.body.data?.length > 0) {
       servicioId = providersRes.body.data[0].id;
     } else {
-      const newProvider = await request(BASE)
+      const newProvider = await api
         .post('/api/v1/service-providers')
         .set('Authorization', `Bearer ${adminToken}`)
         .send({ nombre: 'IT Service Test', contacto: 'test@test.com' });
@@ -51,13 +48,13 @@ describe('Equipment Integration — Flujo completo', () => {
   }, 15000);
 
   it('Paso 1 — Crea equipo (estado NUEVO en soporte)', async () => {
-    const typesRes = await request(BASE).get('/api/v1/equipment/types').set('Authorization', `Bearer ${adminToken}`);
+    const typesRes = await api.get('/api/v1/equipment/types').set('Authorization', `Bearer ${adminToken}`);
     const tipoId = typesRes.body[0]?.id;
 
-    const seriesRes = await request(BASE).get('/api/v1/equipment/next-serie').set('Authorization', `Bearer ${adminToken}`);
+    const seriesRes = await api.get('/api/v1/equipment/next-serie').set('Authorization', `Bearer ${adminToken}`);
     const serie = seriesRes.body.nextSerie + Math.floor(Math.random() * 1000);
 
-    const res = await request(BASE)
+    const res = await api
       .post('/api/v1/equipment')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ serie, tipoEquipoId: tipoId, oficinaId: oficinaSoporteId, modelo: 'Equipo Test Integración', ip: '192.168.1.99' });
@@ -72,7 +69,7 @@ describe('Equipment Integration — Flujo completo', () => {
   });
 
   it('Paso 2 — Transfiere (NUEVO → ACTIVO)', async () => {
-    const res = await request(BASE)
+    const res = await api
       .post(`/api/v1/equipment/${equipoId}/transfer`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ oficinaDestinoId, motivo: 'Asignación inicial' });
@@ -82,7 +79,7 @@ describe('Equipment Integration — Flujo completo', () => {
   });
 
   it('Paso 3 — Historial: CREACION + ASIGNACION', async () => {
-    const res = await request(BASE)
+    const res = await api
       .get('/api/v1/history')
       .set('Authorization', `Bearer ${adminToken}`)
       .query({ equipoId });
@@ -93,7 +90,7 @@ describe('Equipment Integration — Flujo completo', () => {
   });
 
   it('Paso 4 — Envía a servicio externo', async () => {
-    const res = await request(BASE)
+    const res = await api
       .post(`/api/v1/equipment/${equipoId}/send-to-service`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ servicioId, motivo: 'Falla en fuente' });
@@ -103,7 +100,7 @@ describe('Equipment Integration — Flujo completo', () => {
   });
 
   it('Paso 5 — Retorna de servicio externo', async () => {
-    const res = await request(BASE)
+    const res = await api
       .post(`/api/v1/equipment/${equipoId}/return-from-service`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ motivo: 'Reparado', diagnostico: 'Fuente reemplazada' });
@@ -113,7 +110,7 @@ describe('Equipment Integration — Flujo completo', () => {
   });
 
   it('Paso 6 — Historial completo: 4 acciones', async () => {
-    const res = await request(BASE)
+    const res = await api
       .get(`/api/v1/history/equipment/${equipoId}`)
       .set('Authorization', `Bearer ${adminToken}`);
 
@@ -126,7 +123,7 @@ describe('Equipment Integration — Flujo completo', () => {
 
   it('Paso 7 — TECNICO no puede mutar plantillas (403)', async () => {
     const tecnicoToken = await getTecnicoToken();
-    const res = await request(BASE)
+    const res = await api
       .post('/api/v1/model-templates')
       .set('Authorization', `Bearer ${tecnicoToken}`)
       .send({ nombre: 'Hack', tipoEquipoId: 1 });

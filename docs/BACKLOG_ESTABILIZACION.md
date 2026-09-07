@@ -28,7 +28,7 @@ Este backlog convierte el plan general en unidades ejecutables. Cada ticket debe
 - [ ] **DEP-02** Aislar el CLI de Prisma del runtime y resolver sus 4 avisos altos transitivos cuando exista una actualización compatible.
 - [ ] **DEP-03** Resolver el aviso bajo restante de `esbuild` y mantener auditoría continua en CI.
 - [ ] **OPS-01** Hacer que health check consulte realmente PostgreSQL.
-- [ ] **OPS-02** Incorporar graceful shutdown del servidor y del pool de conexiones.
+- [x] **OPS-02** Incorporar graceful shutdown del servidor y del pool de conexiones.
 
 ## Bloque 2 — Seguridad
 
@@ -49,7 +49,7 @@ Este backlog convierte el plan general en unidades ejecutables. Cada ticket debe
 - [x] **DAT-02** Diseñar un registro de anomalías para marcar datos migrados como `A_REVISAR` sin alterar el original.
 - [x] **DAT-03** Integrar la detección de anomalías al proceso repetible de migración desde SEGUIT v1.
 - [x] **DAT-04** Hacer préstamo y devolución atómicos.
-- [ ] **DAT-05** Activar una prueba real de concurrencia sobre préstamos.
+- [x] **DAT-05** Activar una prueba real de concurrencia sobre préstamos.
 - [ ] **DAT-06** Definir y aplicar una única fuente de verdad para el estado del equipo.
 - [ ] **DAT-07** Reconciliar oficinas SOPORTE/DEPOSITO, servicios, préstamos y estados.
 - [ ] **DAT-08** Ensayar dump final → importación → auditoría → revisión en una base descartable.
@@ -79,8 +79,8 @@ Este backlog convierte el plan general en unidades ejecutables. Cada ticket debe
 
 ## Bloque 6 — QA y CI
 
-- [ ] **QA-01** Crear base descartable y setup automático para integración.
-- [ ] **QA-02** Ejecutar la app dentro de las pruebas, sin puerto externo fijo.
+- [x] **QA-01** Crear base descartable y setup automático para integración.
+- [x] **QA-02** Ejecutar la app dentro de las pruebas, sin puerto externo fijo.
 - [ ] **QA-03** Cubrir auth, permisos, equipos, ubicaciones, préstamos y uploads en API.
 - [ ] **QA-04** Agregar pruebas de componentes frontend.
 - [ ] **QA-05** Agregar E2E de los diez recorridos críticos del plan general.

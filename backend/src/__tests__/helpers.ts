@@ -1,6 +1,7 @@
 import request from 'supertest';
+import app from '../app.js';
 
-const BASE = 'http://localhost:3001';
+export const api = request(app);
 
 let cachedToken: string | null = null;
 let lastLogin = 0;
@@ -11,7 +12,7 @@ export async function getAdminToken(): Promise<string> {
   const wait = Math.max(0, 1000 - (now - lastLogin));
   if (wait > 0) await new Promise((r) => setTimeout(r, wait));
 
-  const res = await request(BASE)
+  const res = await api
     .post('/api/v1/auth/login')
     .send({ ficha: 9999, password: 'admin123' });
 
@@ -29,9 +30,9 @@ export async function getTecnicoToken(): Promise<string> {
   const wait = Math.max(0, 1000 - (now - lastLogin));
   if (wait > 0) await new Promise((r) => setTimeout(r, wait));
 
-  const res = await request(BASE)
+  const res = await api
     .post('/api/v1/auth/login')
-    .send({ ficha: 8079, password: '8079' });
+    .send({ ficha: 7844, password: '7844' });
 
   if (res.status !== 200) {
     throw new Error(`Login failed (${res.status}): ${JSON.stringify(res.body)}`);

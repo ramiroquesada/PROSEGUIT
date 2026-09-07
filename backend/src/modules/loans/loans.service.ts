@@ -59,7 +59,7 @@ export async function createLoan(data: {
   return prisma.$transaction(async (tx) => {
     // Serializa todos los préstamos del mismo equipo, incluso antes de poder
     // aplicar la restricción única sobre los datos heredados.
-    await tx.$queryRaw`SELECT pg_advisory_xact_lock(1, ${data.equipoId})`;
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(1, ${data.equipoId})::text`;
 
     const equipo = await tx.equipo.findUnique({ where: { id: data.equipoId } });
     if (!equipo) throw new AppError(404, 'Equipo no encontrado');
@@ -118,7 +118,7 @@ export async function returnLoan(prestamoId: number, data: {
 }, recibidoPorId: number) {
   return prisma.$transaction(async (tx) => {
     // Impide dos devoluciones simultáneas del mismo préstamo.
-    await tx.$queryRaw`SELECT pg_advisory_xact_lock(2, ${prestamoId})`;
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(2, ${prestamoId})::text`;
 
     const prestamo = await tx.prestamo.findUnique({
       where: { id: prestamoId },
@@ -129,7 +129,7 @@ export async function returnLoan(prestamoId: number, data: {
     if (!prestamo.activo) throw new AppError(400, 'El préstamo ya fue devuelto');
 
     // Serializa cambios de estado del equipo con altas u otras devoluciones.
-    await tx.$queryRaw`SELECT pg_advisory_xact_lock(1, ${prestamo.equipoId})`;
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(1, ${prestamo.equipoId})::text`;
 
     if (data.devueltoPorFicha > 0) {
       await tx.funcionario.upsert({
