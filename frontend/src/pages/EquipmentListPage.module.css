@@ -282,6 +282,11 @@
   color: var(--color-text-tertiary);
 }
 
+.locationAssigned {
+  font-size: var(--font-size-xs);
+  color: var(--color-primary);
+}
+
 /* ─── Badges de estado ─── */
 .badge {
   display: inline-flex;

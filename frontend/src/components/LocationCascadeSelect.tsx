@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useLocationTree, useCreateCity, useCreateSection, useCreateOffice } from '../hooks/useLocations';
+import type { OfficeType } from '../hooks/useLocations';
 import styles from './LocationCascadeSelect.module.css';
 
 export interface CascadeValue {
@@ -15,9 +16,10 @@ interface Props {
   required?: boolean;
   className?: string;
   onError?: (msg: string) => void;
+  excludeOfficeTypes?: OfficeType[];
 }
 
-export default function LocationCascadeSelect({ value, onChange, disabled, required, className, onError }: Props) {
+export default function LocationCascadeSelect({ value, onChange, disabled, required, className, onError, excludeOfficeTypes = [] }: Props) {
   const { data: locations } = useLocationTree();
   const createCity = useCreateCity();
   const createSection = useCreateSection();
@@ -128,7 +130,9 @@ export default function LocationCascadeSelect({ value, onChange, disabled, requi
         ) : (
           <select name="oficinaId" value={value.oficinaId} onChange={handleChange} className={styles.select} disabled={disabled || !value.seccionId} required={required}>
             <option value="">Oficina...</option>
-            {seccionSel?.oficinas.map((o) => <option key={o.id} value={o.id}>{o.nombre}</option>)}
+            {seccionSel?.oficinas
+              .filter((o) => !excludeOfficeTypes.includes(o.tipo))
+              .map((o) => <option key={o.id} value={o.id}>{o.nombre}</option>)}
           </select>
         )}
       </div>

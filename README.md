@@ -235,7 +235,7 @@ npm run migrate:v1       # Extrae, repara, valida e importa datos de db_seguit1.
 3. Aplica migraciones pendientes
 4. Limpia datos existentes (equipos, historial, usuarios, etc.)
 5. Importa todos los datos:
-   - 1,300+ equipos con estado ACTIVO
+   - 1,300+ equipos, conservando por separado su oficina asignada y su ubicación temporal
    - 4,200+ registros de historial completo
    - 100+ ubicaciones (Ciudad › Sección › Oficina)
    - 35+ tipos de equipo
@@ -246,7 +246,8 @@ npm run migrate:v1       # Extrae, repara, valida e importa datos de db_seguit1.
 **Detalles técnicos:**
 - Mapea acciones de historial de v1 a PROSEGUIT v2
 - Mapea tipos de equipo automáticamente
-- Calcula estado de equipo según ubicación
+- Interpreta `ubicacion` como oficina asignada y `ubicacion_tmp` como ubicación actual
+- Registra como anomalía toda ubicación temporal que no pueda resolver, sin inventar correcciones
 - Genera contraseñas temporales para usuarios migrados
 - Reporta datos omitidos y razones (ej: referencias a equipos eliminados)
 
@@ -269,6 +270,8 @@ docker compose -f docker-compose.prod.yml exec backend npx tsx prisma/seed.ts
 ```
 
 Las migraciones de base de datos se aplican automáticamente al iniciar. El frontend se sirve desde nginx en el puerto 80 y hace proxy de `/api` al backend.
+
+Para el próximo corte desde SEGUIT v1, seguir el procedimiento de [flujo de equipos y deploy](docs/FLUJO_EQUIPOS_Y_PROXIMO_DEPLOY.md). No debe reutilizarse la copia de datos de desarrollo como fuente definitiva.
 
 ---
 

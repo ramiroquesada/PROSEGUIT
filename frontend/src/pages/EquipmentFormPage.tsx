@@ -56,9 +56,9 @@ export default function EquipmentFormPage() {
         modelo: equipo.modelo || '',
         tipoEquipoId: String(equipo.tipoEquipo.id),
         templateId: equipo.template?.id ? String(equipo.template.id) : '',
-        ciudadId: String(equipo.oficina.seccion.ciudad.id),
-        seccionId: String(equipo.oficina.seccion.id),
-        oficinaId: String(equipo.oficina.id),
+        ciudadId: String(equipo.oficinaAsignada.seccion.ciudad.id),
+        seccionId: String(equipo.oficinaAsignada.seccion.id),
+        oficinaId: String(equipo.oficinaAsignada.id),
         ip: equipo.ip || '',
         mac: equipo.mac || '',
         matricula: equipo.matricula || '',
@@ -82,7 +82,8 @@ export default function EquipmentFormPage() {
     }
   }, [isEditing, nextSerieData]);
 
-  // Pre-seleccionar tipo "PC - Torre" y oficina "soporte" (solo en creación)
+  // Preseleccionar tipo "PC - Torre" y oficina asignada de Soporte (solo en creación).
+  // La ubicación física inicial la fija el backend en Mantenimiento.
   useEffect(() => {
     if (isEditing || !tipos || !locations) return;
 
@@ -133,8 +134,8 @@ export default function EquipmentFormPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.serie || !form.tipoEquipoId || !form.oficinaId) {
-      setError('Serie, tipo y ubicación son obligatorios');
+    if (!form.serie || !form.tipoEquipoId || (!isEditing && !form.oficinaId)) {
+      setError('Serie, tipo y oficina asignada son obligatorios');
       return;
     }
     if (isEditing && !form.motivo.trim()) {
@@ -144,7 +145,6 @@ export default function EquipmentFormPage() {
 
     const payload: Record<string, unknown> = {
       tipoEquipoId: Number(form.tipoEquipoId),
-      oficinaId: Number(form.oficinaId),
       modelo: form.modelo || undefined,
       ip: form.ip || undefined,
       mac: form.mac || undefined,
@@ -162,6 +162,7 @@ export default function EquipmentFormPage() {
 
     if (!isEditing) {
       payload.serie = Number(form.serie);
+      payload.oficinaId = Number(form.oficinaId);
     }
 
     if (isEditing) {
@@ -286,17 +287,19 @@ export default function EquipmentFormPage() {
           </div>
         </div>
 
-        {/* ── Ubicación ── */}
-        <div className={styles.section}>
-          <h3 className={styles.sectionTitle}>Ubicación *</h3>
-
-          <LocationCascadeSelect
-            required
-            value={{ ciudadId: form.ciudadId, seccionId: form.seccionId, oficinaId: form.oficinaId }}
-            onChange={(v) => setForm((p) => ({ ...p, ...v }))}
-            onError={(msg) => setError(msg)}
-          />
-        </div>
+        {!isEditing && (
+          <div className={styles.section}>
+            <h3 className={styles.sectionTitle}>Oficina asignada *</h3>
+            <p className={styles.hint}>El equipo se creará en Mantenimiento. Ésta será la oficina a la que irá cuando reciba la SALIDA.</p>
+            <LocationCascadeSelect
+              required
+              excludeOfficeTypes={['MANTENIMIENTO']}
+              value={{ ciudadId: form.ciudadId, seccionId: form.seccionId, oficinaId: form.oficinaId }}
+              onChange={(v) => setForm((p) => ({ ...p, ...v }))}
+              onError={(msg) => setError(msg)}
+            />
+          </div>
+        )}
 
         {/* ── Datos adicionales ── */}
         <div className={styles.section}>

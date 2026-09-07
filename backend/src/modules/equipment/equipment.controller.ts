@@ -63,6 +63,15 @@ export async function sendToSupportHandler(req: Request, res: Response) {
   res.json(equipo);
 }
 
+export async function exitHandler(req: Request, res: Response) {
+  const equipo = await equipmentService.exitEquipment(
+    Number(req.params.id),
+    req.body,
+    req.user!.userId,
+  );
+  res.json(equipo);
+}
+
 export async function sendToServiceHandler(req: Request, res: Response) {
   const equipo = await equipmentService.sendToService(
     Number(req.params.id),

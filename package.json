@@ -20,6 +20,7 @@
     "db:studio": "npm run studio --workspace=backend",
     "db:seed": "npm run seed --workspace=backend",
     "test": "npm run build:shared && npm run generate --workspace=backend && npm run test --workspace=backend",
+    "release:check": "npm run build && npm test && npm run test:integration --workspace=backend",
     "migrate:v1": "node extract_data.js && npm run migrate:v1 --workspace=backend"
   },
   "engines": {

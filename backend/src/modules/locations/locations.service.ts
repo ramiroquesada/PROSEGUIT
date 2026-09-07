@@ -69,12 +69,13 @@ export async function deleteSection(id: number) {
 export async function deleteOffice(id: number) {
   const oficina = await prisma.oficina.findUnique({
     where: { id },
-    include: { _count: { select: { equipos: true } } },
+    include: { _count: { select: { equipos: true, equiposAsignados: true } } },
   });
   if (!oficina) throw new AppError(404, 'Oficina no encontrada');
 
-  if (oficina._count.equipos > 0) {
-    throw new AppError(409, `No se puede eliminar: la oficina tiene ${oficina._count.equipos} equipo${oficina._count.equipos > 1 ? 's' : ''} asignado${oficina._count.equipos > 1 ? 's' : ''}`);
+  const equiposRelacionados = oficina._count.equipos + oficina._count.equiposAsignados;
+  if (equiposRelacionados > 0) {
+    throw new AppError(409, 'No se puede eliminar: la oficina tiene equipos ubicados o asignados');
   }
 
   return prisma.oficina.delete({ where: { id } });
@@ -85,7 +86,7 @@ export async function getOfficeMovePreview(id: number) {
     where: { id },
     include: {
       seccion: { include: { ciudad: true } },
-      _count: { select: { equipos: true } },
+      _count: { select: { equipos: true, equiposAsignados: true } },
     },
   });
   if (!oficina) throw new AppError(404, 'Oficina no encontrada');
@@ -93,7 +94,9 @@ export async function getOfficeMovePreview(id: number) {
   return {
     id: oficina.id,
     nombre: oficina.nombre,
-    cantidadEquipos: oficina._count.equipos,
+    cantidadEquipos: oficina.tipo === 'MANTENIMIENTO'
+      ? oficina._count.equipos
+      : oficina._count.equiposAsignados,
     ubicacionActual: {
       ciudadId: oficina.seccion.ciudad.id,
       ciudadNombre: oficina.seccion.ciudad.nombre,
@@ -112,7 +115,7 @@ export async function moveOffice(id: number, seccionId: number, usuarioId: numbe
         where: { id },
         include: {
           seccion: { include: { ciudad: true } },
-          _count: { select: { equipos: true } },
+          _count: { select: { equipos: true, equiposAsignados: true } },
         },
       });
       if (!oficina) throw new AppError(404, 'Oficina no encontrada');
@@ -145,7 +148,9 @@ export async function moveOffice(id: number, seccionId: number, usuarioId: numbe
           destinoCiudadNombre: destino.ciudad.nombre,
           destinoSeccionId: destino.id,
           destinoSeccionNombre: destino.nombre,
-          cantidadEquipos: oficina._count.equipos,
+          cantidadEquipos: oficina.tipo === 'MANTENIMIENTO'
+            ? oficina._count.equipos
+            : oficina._count.equiposAsignados,
           motivo: motivo?.trim() || null,
           usuarioId,
         },

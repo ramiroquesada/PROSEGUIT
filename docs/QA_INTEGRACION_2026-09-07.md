@@ -3,7 +3,7 @@
 ## Resultado
 
 - 4 archivos de pruebas aprobados.
-- 25 pruebas de integración aprobadas.
+- 30 pruebas de integración aprobadas.
 - La prueba de dos préstamos simultáneos produjo una creación `201` y un rechazo `400`.
 - El backend compila sin depender de que haya un servidor escuchando en el puerto 3001.
 
@@ -30,7 +30,8 @@ Se convirtió el resultado del bloqueo a `text`. La segunda ejecución confirmó
 - autenticación de administrador y técnico;
 - permisos básicos por rol;
 - validaciones Zod de entradas inválidas;
-- alta y transferencia de equipo;
+- alta de equipo en Mantenimiento, cambio de oficina asignada, ENTRADA y SALIDA;
+- separación entre inventario asignado a una oficina y equipos actualmente en Mantenimiento;
 - historial de movimientos;
 - envío y retorno de servicio externo;
 - préstamo concurrente del mismo equipo.

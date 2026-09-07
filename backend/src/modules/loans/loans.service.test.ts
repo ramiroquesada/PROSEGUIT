@@ -157,7 +157,7 @@ describe('returnLoan', () => {
     );
   });
 
-  it('deriva EN_REPARACION si la oficina es tipo soporte', async () => {
+  it('deriva ACTIVO si la oficina es Informática - Soporte', async () => {
     mockPrisma.prestamo.findUnique.mockResolvedValue({
       id: 3, activo: true, equipoId: 10, equipo: { id: 10, oficinaId: 1 },
     });
@@ -170,7 +170,7 @@ describe('returnLoan', () => {
     expect(mockPrisma.equipo.update).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          estado: 'EN_REPARACION',
+          estado: 'ACTIVO',
         }),
       }),
     );

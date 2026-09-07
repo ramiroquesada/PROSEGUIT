@@ -17,9 +17,12 @@ async function main() {
     data: { nombre: 'Informática QA', ciudadId: ciudad.id },
   });
 
-  const [soporte, oficina] = await Promise.all([
+  const [soporte, mantenimiento, oficina] = await Promise.all([
     prisma.oficina.create({
       data: { nombre: 'Soporte QA', tipo: 'SOPORTE', seccionId: seccion.id },
+    }),
+    prisma.oficina.create({
+      data: { nombre: 'Mantenimiento', tipo: 'MANTENIMIENTO', seccionId: seccion.id },
     }),
     prisma.oficina.create({
       data: { nombre: 'Oficina destino QA', tipo: 'OFICINA', seccionId: seccion.id },

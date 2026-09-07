@@ -544,7 +544,8 @@ export default function LocationsPage() {
                 <p className={styles.panelCount}>{equiposData.pagination.total} equipos</p>
                 <div className={styles.equipoList}>
                   {equiposData.data.map((eq) => {
-                    const est = resolveEstado(eq.estado, selectedOficina.nombre);
+                    const est = resolveEstado(eq.estado, eq.oficina.nombre);
+                    const estaEnOtraUbicacion = eq.oficina.id !== selectedOficina.id;
                     return (
                       <div key={eq.id} className={styles.equipoItem} onClick={() => navigate(`/equipos/${eq.id}`)}>
                         <div className={styles.equipoInfo}>
@@ -552,6 +553,9 @@ export default function LocationsPage() {
                           {eq.modelo && <span className={styles.equipoModelo}>{eq.modelo}</span>}
                           <TypeBadge label={eq.tipoEquipo.nombre} />
                           {eq.ip && <span className={styles.equipoIp}>{eq.ip}</span>}
+                          {estaEnOtraUbicacion && (
+                            <span className={styles.equipoModelo}>Ahora: {eq.oficina.nombre}</span>
+                          )}
                         </div>
                         <span className={styles.statusBadge} data-color={STATUS_COLOR[est] || 'neutral'}>
                           {STATUS_LABEL[est] || est}

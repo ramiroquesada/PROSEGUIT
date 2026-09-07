@@ -36,16 +36,12 @@ const router = Router();
 
 router.use(authMiddleware);
 
-const updateSchema = createEquipmentSchema.partial().extend({
+const updateSchema = createEquipmentSchema.omit({ oficinaId: true }).partial().extend({
   motivo: z.string().min(1),
 });
 
 const returnFromServiceSchema = sendToSupportSchema.extend({
   diagnostico: z.string().optional(),
-});
-
-const sendToSupportExtSchema = sendToSupportSchema.extend({
-  oficinaDestinoId: z.number().int().positive().optional(),
 });
 
 // Routes
@@ -56,7 +52,8 @@ router.get('/:id', controller.getByIdHandler);
 router.post('/', validate(createEquipmentSchema), controller.createHandler);
 router.put('/:id', validate(updateSchema), controller.updateHandler);
 router.post('/:id/transfer', validate(transferEquipmentSchema), controller.transferHandler);
-router.post('/:id/send-to-support', validate(sendToSupportExtSchema), controller.sendToSupportHandler);
+router.post('/:id/send-to-support', validate(sendToSupportSchema), controller.sendToSupportHandler);
+router.post('/:id/exit', validate(sendToSupportSchema), controller.exitHandler);
 router.post('/:id/send-to-service', validate(sendToServiceSchema), controller.sendToServiceHandler);
 router.post('/:id/return-from-service', validate(returnFromServiceSchema), controller.returnFromServiceHandler);
 router.post('/:id/images', upload.single('image'), controller.uploadImageHandler);

@@ -86,6 +86,7 @@ async function preflight() {
 }
 // Maps
 const oficinaMap = new Map<number, number>();   // v1 ubicacion id -> v2 oficina id
+const oficinaByName = new Map<string, number>(); // nombre v1 -> v2 oficina id
 const tipoMap = new Map<number, number>();      // v1 tipo id -> v2 tipo id
 const usuarioByFicha = new Map<number, number>(); // ficha -> v2 usuario id
 const equipoBySerie = new Map<number, number>(); // serie -> v2 equipo id
@@ -105,13 +106,22 @@ function registerMigrationAnomaly(anomaly: MigrationAnomaly) {
   if (anomaly.count > 0) migrationAnomalies.push(anomaly);
 }
 
+function normalizeLocationName(value: unknown) {
+  return String(value ?? '')
+    .trim()
+    .toLocaleLowerCase('es')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ');
+}
+
 // Map v1 observacion text -> v2 AccionTipo
 function mapAccion(obs: string): string {
   const lower = (obs || '').toLowerCase().trim();
   if (lower.includes('se creo')) return 'CREACION';
   if (lower.includes('se envio al propietario')) return 'ASIGNACION';
   if (lower.includes('se cambio la ubicacion')) return 'TRANSFERENCIA';
-  if (lower.includes('se ingreso')) return 'RETORNO_SOPORTE';
+  if (lower.includes('se ingreso')) return 'ENVIO_SOPORTE';
   if (lower.includes('se envio a service')) return 'ENVIO_SERVICIO_EXTERNO';
   return 'EDICION';
 }
@@ -123,7 +133,7 @@ async function migrateLocations() {
   for (const sourceLocation of v1.ubicacion) {
     const normalizedName = String(sourceLocation.nombre || '').trim();
     if (!normalizedName) continue;
-    const key = normalizedName.toLocaleLowerCase('es');
+    const key = normalizeLocationName(normalizedName);
     const group = locationsByName.get(key) ?? [];
     group.push({ id: sourceLocation.id, nombre: normalizedName });
     locationsByName.set(key, group);
@@ -156,9 +166,11 @@ async function migrateLocations() {
     const nombre = (ub.nombre || '').trim();
     if (!nombre) continue;
 
-    const nombreLower = nombre.toLowerCase();
+    const nombreLower = normalizeLocationName(nombre);
     let tipo: TipoOficina = 'OFICINA';
-    if (nombreLower.includes('soporte')) {
+    if (nombreLower === 'mantenimiento') {
+      tipo = 'MANTENIMIENTO';
+    } else if (nombreLower.includes('soporte')) {
       tipo = 'SOPORTE';
     } else if (nombreLower === 'deposito') {
       tipo = 'DEPOSITO';
@@ -170,10 +182,21 @@ async function migrateLocations() {
       create: { nombre, seccionId: general.id, v1Id: ub.id, tipo },
     });
     oficinaMap.set(ub.id, oficina.id);
+    oficinaByName.set(normalizeLocationName(nombre), oficina.id);
   }
 
+  // SEGUIT 1 usaba "Mantenimiento" como ubicación temporal en equipo.ubicacion_tmp,
+  // pero no la incluía en su tabla formal de ubicaciones. En v2 es una ubicación
+  // lógica explícita: allí quedan los equipos entre ENTRADA y SALIDA.
+  const mantenimiento = await prisma.oficina.upsert({
+    where: { nombre_seccionId: { nombre: 'Mantenimiento', seccionId: general.id } },
+    update: { tipo: 'MANTENIMIENTO' },
+    create: { nombre: 'Mantenimiento', seccionId: general.id, tipo: 'MANTENIMIENTO' },
+  });
+  oficinaByName.set(normalizeLocationName(mantenimiento.nombre), mantenimiento.id);
+
   const resultingOfficeCount = new Set(oficinaMap.values()).size;
-  console.log(`  -> ${resultingOfficeCount} oficinas resultantes para ${oficinaMap.size} referencias de v1`);
+  console.log(`  -> ${resultingOfficeCount + 1} oficinas resultantes para ${oficinaMap.size} referencias de v1 y Mantenimiento`);
 }
 
 async function migrateTypes() {
@@ -260,12 +283,28 @@ async function migrateEquipment() {
   let migrated = 0;
   let skipped = 0;
   let duplicateSeries = 0;
+  let missingCurrentLocation = 0;
   const duplicateSamples: unknown[] = [];
   const errorSamples: unknown[] = [];
+  const missingCurrentLocationSamples: unknown[] = [];
 
   for (const eq of v1.equipo) {
-    const oficinaId = oficinaMap.get(eq.ubicacion) ?? fallbackOficinaId;
+    const oficinaAsignadaId = oficinaMap.get(eq.ubicacion) ?? fallbackOficinaId;
+    const currentLocationName = normalizeLocationName(eq.ubicacion_tmp);
+    const oficinaId = oficinaByName.get(currentLocationName) ?? oficinaAsignadaId;
+    if (currentLocationName && !oficinaByName.has(currentLocationName)) {
+      missingCurrentLocation++;
+      if (missingCurrentLocationSamples.length < 25) {
+        missingCurrentLocationSamples.push({ v1Id: eq.id, serie: eq.serie, ubicacionTmp: eq.ubicacion_tmp });
+      }
+    }
     const tipoEquipoId = tipoMap.get(eq.tipo) ?? fallbackTipoId;
+    const currentOfficeName = [...oficinaByName.entries()].find(([, id]) => id === oficinaId)?.[0] ?? '';
+    const estado = currentOfficeName === 'mantenimiento'
+      ? 'EN_REPARACION'
+      : currentOfficeName === 'deposito'
+        ? 'EN_DEPOSITO'
+        : 'ACTIVO';
 
     try {
       const equipo = await prisma.equipo.create({
@@ -274,7 +313,8 @@ async function migrateEquipment() {
           modelo: (eq.modelo || '').trim() || null,
           tipoEquipoId,
           oficinaId,
-          estado: 'ACTIVO',
+          oficinaAsignadaId,
+          estado,
           ip: String(eq.ip ?? '').trim() || null,
           observacion: String(eq.observacion ?? '').trim() || null,
           v1Id: eq.id,
@@ -308,6 +348,13 @@ async function migrateEquipment() {
     sample: duplicateSamples,
   });
   registerMigrationAnomaly({
+    code: 'MIGRATION_EQUIPMENT_CURRENT_LOCATION_NOT_FOUND',
+    severity: 'warning',
+    description: 'Equipos cuya ubicación temporal no coincidió con una oficina; se usó la oficina asignada como ubicación actual.',
+    count: missingCurrentLocation,
+    sample: missingCurrentLocationSamples,
+  });
+  registerMigrationAnomaly({
     code: 'MIGRATION_EQUIPMENT_CREATE_FAILED',
     severity: 'error',
     description: 'Equipos que no pudieron crearse por un error distinto a serie duplicada.',
@@ -325,7 +372,7 @@ async function migrateHistory() {
   // Build ubicacion name -> oficina id map
   const nombreToOficinaId = new Map<string, number>();
   for (const ub of v1.ubicacion) {
-    const nombre = (ub.nombre || '').trim().toLowerCase();
+    const nombre = normalizeLocationName(ub.nombre);
     const ofId = oficinaMap.get(ub.id);
     if (ofId) nombreToOficinaId.set(nombre, ofId);
   }
@@ -356,7 +403,7 @@ async function migrateHistory() {
     const usuarioId = usuarioByFicha.get(h.usuario) ?? adminId;
 
     // Try to resolve ubicacion name to oficina
-    const ubNombre = (h.ubicacion || '').trim().toLowerCase();
+    const ubNombre = normalizeLocationName(h.ubicacion);
     const oficinaDestinoId = nombreToOficinaId.get(ubNombre) ?? null;
 
     try {

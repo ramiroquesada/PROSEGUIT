@@ -25,7 +25,7 @@ export default function StatsRow({ stats, loading }: StatsRowProps) {
         onClick={() => navigate('/equipos?estado=ACTIVO')}
       />
       <StatCard
-        label="En Reparación"
+        label="En Mantenimiento"
         value={stats?.enReparacion}
         loading={loading}
         color="warning"

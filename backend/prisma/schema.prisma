@@ -13,6 +13,7 @@ datasource db {
 enum TipoOficina {
   OFICINA
   SOPORTE
+  MANTENIMIENTO
   DEPOSITO
 
   @@map("tipo_oficina")
@@ -47,7 +48,8 @@ model Oficina {
   tipo      TipoOficina @default(OFICINA)
   v1Id      Int?        @map("v1_id")
 
-  equipos          Equipo[]
+  equipos          Equipo[]      @relation("EquipoUbicacionActual")
+  equiposAsignados Equipo[]      @relation("EquipoOficinaAsignada")
   usuarios         Usuario[]
   funcionarios     Funcionario[]
   historialOrigen  Historial[]   @relation("HistorialOrigen")
@@ -131,29 +133,31 @@ model ModeloTemplate {
 }
 
 model Equipo {
-  id               Int             @id @default(autoincrement())
-  serie            Int             @unique
-  modelo           String?         @db.VarChar(100)
-  templateId       Int?            @map("template_id")
-  template         ModeloTemplate? @relation(fields: [templateId], references: [id])
-  tipoEquipoId     Int             @map("tipo_equipo_id")
-  tipoEquipo       TipoEquipo      @relation(fields: [tipoEquipoId], references: [id])
-  oficinaId        Int             @map("oficina_id")
-  oficina          Oficina         @relation(fields: [oficinaId], references: [id])
-  estado           EstadoEquipo    @default(NUEVO)
-  ip               String?         @db.VarChar(45)
-  mac              String?         @db.VarChar(17)
-  matricula        String?         @unique @db.VarChar(100)
-  asignadoA        String?         @map("asignado_a") @db.Text
-  proveedor        String?         @db.VarChar(200)
-  fechaAdquisicion DateTime?       @map("fecha_adquisicion")
-  nroInventario    String?         @map("nro_inventario") @db.VarChar(100)
-  garantiaHasta    DateTime?       @map("garantia_hasta")
-  fechaFinVida     DateTime?       @map("fecha_fin_vida")
-  precioCompra     Decimal?        @map("precio_compra") @db.Decimal(10, 2)
-  observacion      String?         @db.Text
-  especificaciones Json            @default("{}") @db.JsonB
-  v1Id             Int?            @map("v1_id")
+  id                Int             @id @default(autoincrement())
+  serie             Int             @unique
+  modelo            String?         @db.VarChar(100)
+  templateId        Int?            @map("template_id")
+  template          ModeloTemplate? @relation(fields: [templateId], references: [id])
+  tipoEquipoId      Int             @map("tipo_equipo_id")
+  tipoEquipo        TipoEquipo      @relation(fields: [tipoEquipoId], references: [id])
+  oficinaId         Int             @map("oficina_id")
+  oficina           Oficina         @relation("EquipoUbicacionActual", fields: [oficinaId], references: [id])
+  oficinaAsignadaId Int             @map("oficina_asignada_id")
+  oficinaAsignada   Oficina         @relation("EquipoOficinaAsignada", fields: [oficinaAsignadaId], references: [id])
+  estado            EstadoEquipo    @default(NUEVO)
+  ip                String?         @db.VarChar(45)
+  mac               String?         @db.VarChar(17)
+  matricula         String?         @unique @db.VarChar(100)
+  asignadoA         String?         @map("asignado_a") @db.Text
+  proveedor         String?         @db.VarChar(200)
+  fechaAdquisicion  DateTime?       @map("fecha_adquisicion")
+  nroInventario     String?         @map("nro_inventario") @db.VarChar(100)
+  garantiaHasta     DateTime?       @map("garantia_hasta")
+  fechaFinVida      DateTime?       @map("fecha_fin_vida")
+  precioCompra      Decimal?        @map("precio_compra") @db.Decimal(10, 2)
+  observacion       String?         @db.Text
+  especificaciones  Json            @default("{}") @db.JsonB
+  v1Id              Int?            @map("v1_id")
 
   historial      Historial[]
   prestamos      Prestamo[]
@@ -165,6 +169,7 @@ model Equipo {
 
   @@index([tipoEquipoId])
   @@index([oficinaId])
+  @@index([oficinaAsignadaId])
   @@index([estado])
   @@map("equipo")
 }

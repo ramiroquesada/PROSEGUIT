@@ -12,7 +12,7 @@ const STATUS_OPTIONS = [
   { value: '', label: 'Todos los estados' },
   { value: 'NUEVO', label: 'Nuevo' },
   { value: 'ACTIVO', label: 'Activo' },
-  { value: 'EN_REPARACION', label: 'En Soporte' },
+  { value: 'EN_REPARACION', label: 'En Mantenimiento' },
   { value: 'EN_DEPOSITO', label: 'En Depósito' },
   { value: 'PRESTADO', label: 'Prestado' },
   { value: 'EN_SERVICIO_EXTERNO', label: 'En Servicio Externo' },
@@ -347,6 +347,9 @@ export default function EquipmentListPage() {
                         <div className={styles.location}>
                           <span className={styles.locationCity}>{eq.oficina.seccion.ciudad.nombre}</span>
                           <span className={styles.locationOffice}>{eq.oficina.nombre}</span>
+                          {eq.oficina.id !== eq.oficinaAsignada.id && (
+                            <span className={styles.locationAssigned}>Asignado: {eq.oficinaAsignada.nombre}</span>
+                          )}
                         </div>
                       </td>
                       <td>

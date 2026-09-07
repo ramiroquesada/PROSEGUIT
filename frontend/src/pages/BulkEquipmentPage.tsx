@@ -68,7 +68,8 @@ export default function BulkEquipmentPage() {
     shared.tipoEquipoId ? Number(shared.tipoEquipoId) : undefined
   );
 
-  // Pre-seleccionar oficina soporte al cargar ubicaciones
+  // Preseleccionar la oficina asignada. La ubicación física inicial siempre
+  // será Mantenimiento y la determina el backend.
   useEffect(() => {
     if (!locations) return;
     const soporte = findSoporteOffice(locations);
@@ -143,7 +144,7 @@ export default function BulkEquipmentPage() {
     e.preventDefault();
 
     if (!shared.tipoEquipoId || !shared.oficinaId) {
-      setSubmitError('Tipo de equipo y ubicación son obligatorios');
+      setSubmitError('Tipo de equipo y oficina asignada son obligatorios');
       return;
     }
     if (rows.length === 0) {
@@ -298,9 +299,11 @@ export default function BulkEquipmentPage() {
           )}
 
           <div>
-            <label className={styles.label}>Ubicación *</label>
+            <label className={styles.label}>Oficina asignada *</label>
+            <p className={styles.hint}>Todos se crearán en Mantenimiento y saldrán luego hacia esta oficina.</p>
             <LocationCascadeSelect
               required
+              excludeOfficeTypes={['MANTENIMIENTO']}
               value={{
                 ciudadId: shared.ciudadId,
                 seccionId: shared.seccionId,

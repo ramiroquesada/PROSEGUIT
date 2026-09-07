@@ -21,19 +21,39 @@ interface EquipmentFilters {
 // NUEVO, PRESTADO y EN_SERVICIO_EXTERNO son estados "reales" en DB (no se derivan de la oficina)
 const ESPECIALES: EstadoEquipo[] = ['NUEVO', 'PRESTADO', 'EN_SERVICIO_EXTERNO'];
 
+async function getMaintenanceOffice() {
+  const oficina = await prisma.oficina.findFirst({
+    where: { tipo: 'MANTENIMIENTO' },
+    include: { seccion: { include: { ciudad: true } } },
+  });
+  if (!oficina) {
+    throw new AppError(409, 'No hay una oficina de Mantenimiento configurada');
+  }
+  return oficina;
+}
+
 export async function listEquipment(pagination: PaginationParams, filters: EquipmentFilters) {
   const where: Prisma.EquipoWhereInput = {};
   const andConditions: Prisma.EquipoWhereInput[] = [];
 
   if (filters.tipoEquipoId) where.tipoEquipoId = filters.tipoEquipoId;
 
-  // Filtro de ubicación en cascada: oficina > seccion > ciudad
+  // La jerarquía agrupa por oficina asignada. La ubicación física temporal
+  // se muestra en el resultado, pero no mueve al equipo de su oficina dueña.
   if (filters.oficinaId) {
-    where.oficinaId = filters.oficinaId;
+    const oficinaFiltro = await prisma.oficina.findUnique({
+      where: { id: filters.oficinaId },
+      select: { tipo: true },
+    });
+    if (oficinaFiltro?.tipo === 'MANTENIMIENTO') {
+      where.oficinaId = filters.oficinaId;
+    } else {
+      where.oficinaAsignadaId = filters.oficinaId;
+    }
   } else if (filters.seccionId) {
-    andConditions.push({ oficina: { seccionId: filters.seccionId } });
+    andConditions.push({ oficinaAsignada: { seccionId: filters.seccionId } });
   } else if (filters.ciudadId) {
-    andConditions.push({ oficina: { seccion: { ciudadId: filters.ciudadId } } });
+    andConditions.push({ oficinaAsignada: { seccion: { ciudadId: filters.ciudadId } } });
   }
 
   // Filtro de estado
@@ -44,7 +64,7 @@ export async function listEquipment(pagination: PaginationParams, filters: Equip
   } else if (filters.estado === 'EN_REPARACION') {
     andConditions.push({
       estado: { notIn: ESPECIALES },
-      oficina: { tipo: 'SOPORTE' },
+      oficina: { tipo: 'MANTENIMIENTO' },
     });
   } else if (filters.estado === 'EN_DEPOSITO') {
     andConditions.push({
@@ -54,7 +74,7 @@ export async function listEquipment(pagination: PaginationParams, filters: Equip
   } else if (filters.estado === 'ACTIVO') {
     andConditions.push({
       estado: { notIn: ESPECIALES },
-      oficina: { tipo: 'OFICINA' },
+      oficina: { tipo: { in: ['OFICINA', 'SOPORTE'] } },
     });
   } else if (filters.estado) {
     // PRESTADO, EN_SERVICIO_EXTERNO — filtrar por campo DB directamente
@@ -79,6 +99,7 @@ export async function listEquipment(pagination: PaginationParams, filters: Equip
       { oficina:     { nombre: { contains: filters.search, mode: 'insensitive' } } },
       { oficina:     { seccion: { nombre: { contains: filters.search, mode: 'insensitive' } } } },
       { oficina:     { seccion: { ciudad: { nombre: { contains: filters.search, mode: 'insensitive' } } } } },
+      { oficinaAsignada: { nombre: { contains: filters.search, mode: 'insensitive' } } },
       ...(Number.isInteger(searchNum) && searchNum > 0 ? [{ serie: searchNum }] : []),
     ];
   }
@@ -106,6 +127,9 @@ export async function listEquipment(pagination: PaginationParams, filters: Equip
             },
           },
         },
+        oficinaAsignada: {
+          include: { seccion: { include: { ciudad: true } } },
+        },
         template: true,
       },
       orderBy,
@@ -124,6 +148,13 @@ export async function getEquipmentById(id: number) {
     include: {
       tipoEquipo: true,
       oficina: {
+        include: {
+          seccion: {
+            include: { ciudad: true },
+          },
+        },
+      },
+      oficinaAsignada: {
         include: {
           seccion: {
             include: { ciudad: true },
@@ -186,13 +217,23 @@ export async function createEquipment(data: {
     }
   }
 
+  const [oficinaAsignada, mantenimiento] = await Promise.all([
+    prisma.oficina.findUnique({ where: { id: data.oficinaId } }),
+    getMaintenanceOffice(),
+  ]);
+  if (!oficinaAsignada) throw new AppError(404, 'Oficina asignada no encontrada');
+  if (oficinaAsignada.tipo === 'MANTENIMIENTO') {
+    throw new AppError(400, 'Mantenimiento es una ubicación temporal y no puede ser la oficina asignada');
+  }
+
   const equipo = await prisma.equipo.create({
     data: {
       serie: data.serie,
       modelo: data.modelo,
       templateId: data.templateId,
       tipoEquipoId: data.tipoEquipoId,
-      oficinaId: data.oficinaId,
+      oficinaId: mantenimiento.id,
+      oficinaAsignadaId: oficinaAsignada.id,
       estado: 'NUEVO',
       ip: data.ip,
       mac: data.mac,
@@ -209,15 +250,17 @@ export async function createEquipment(data: {
       historial: {
         create: {
           accion: 'CREACION',
-          oficinaDestinoId: data.oficinaId,
+          oficinaDestinoId: mantenimiento.id,
           usuarioId,
           motivo: 'Alta de equipo',
+          metadata: { oficinaAsignadaId: oficinaAsignada.id },
         },
       },
     },
     include: {
       tipoEquipo: true,
       oficina: true,
+      oficinaAsignada: true,
     },
   });
 
@@ -229,7 +272,6 @@ export async function updateEquipment(id: number, data: {
   modelo?: string;
   templateId?: number;
   tipoEquipoId?: number;
-  oficinaId?: number;
   ip?: string;
   mac?: string;
   matricula?: string;
@@ -283,7 +325,7 @@ export async function updateEquipment(id: number, data: {
       historial: {
         create: {
           accion: 'EDICION',
-          oficinaDestinoId: data.oficinaId ?? equipo.oficinaId,
+          oficinaDestinoId: equipo.oficinaId,
           usuarioId,
           motivo,
         },
@@ -303,35 +345,33 @@ export async function transferEquipment(id: number, data: {
   motivo: string;
   comentario?: string;
 }, usuarioId: number) {
-  const equipo = await prisma.equipo.findUnique({ where: { id } });
+  const equipo = await prisma.equipo.findUnique({
+    where: { id },
+    include: { oficina: true },
+  });
   if (!equipo) throw new AppError(404, 'Equipo no encontrado');
 
-  if (equipo.oficinaId === data.oficinaDestinoId) {
-    throw new AppError(400, 'La oficina destino es la misma que la actual');
+  if (equipo.oficina.tipo !== 'MANTENIMIENTO') {
+    throw new AppError(400, 'La oficina asignada sólo se puede cambiar mientras el equipo está en Mantenimiento');
+  }
+  if (equipo.oficinaAsignadaId === data.oficinaDestinoId) {
+    throw new AppError(400, 'El equipo ya tiene esa oficina asignada');
   }
 
   const oficinaDest = await prisma.oficina.findUnique({ where: { id: data.oficinaDestinoId } });
   if (!oficinaDest) throw new AppError(404, 'Oficina destino no encontrada');
-
-  const nuevoEstado = estadoPorOficina(oficinaDest.tipo);
-  let accionHistorial: 'ASIGNACION' | 'RETORNO_SOPORTE' | 'TRANSFERENCIA';
-  if (equipo.estado === 'EN_REPARACION') {
-    accionHistorial = 'RETORNO_SOPORTE';
-  } else if (equipo.estado === 'NUEVO' || equipo.estado === 'EN_DEPOSITO') {
-    accionHistorial = 'ASIGNACION';
-  } else {
-    accionHistorial = 'TRANSFERENCIA';
+  if (oficinaDest.tipo === 'MANTENIMIENTO') {
+    throw new AppError(400, 'Mantenimiento es una ubicación temporal y no puede ser la oficina asignada');
   }
 
   const updated = await prisma.equipo.update({
     where: { id },
     data: {
-      oficinaId: data.oficinaDestinoId,
-      estado: nuevoEstado,
+      oficinaAsignadaId: data.oficinaDestinoId,
       historial: {
         create: {
-          accion: accionHistorial,
-          oficinaOrigenId: equipo.oficinaId,
+          accion: 'TRANSFERENCIA',
+          oficinaOrigenId: equipo.oficinaAsignadaId,
           oficinaDestinoId: data.oficinaDestinoId,
           usuarioId,
           motivo: data.motivo,
@@ -342,6 +382,9 @@ export async function transferEquipment(id: number, data: {
     include: {
       tipoEquipo: true,
       oficina: {
+        include: { seccion: { include: { ciudad: true } } },
+      },
+      oficinaAsignada: {
         include: { seccion: { include: { ciudad: true } } },
       },
     },
@@ -353,21 +396,30 @@ export async function transferEquipment(id: number, data: {
 export async function sendToSupport(id: number, data: {
   motivo: string;
   comentario?: string;
-  oficinaDestinoId?: number;
 }, usuarioId: number) {
-  const equipo = await prisma.equipo.findUnique({ where: { id } });
+  const equipo = await prisma.equipo.findUnique({
+    where: { id },
+    include: { oficina: true },
+  });
   if (!equipo) throw new AppError(404, 'Equipo no encontrado');
+  if (equipo.estado === 'PRESTADO') throw new AppError(400, 'El equipo está prestado');
+  if (equipo.estado === 'EN_SERVICIO_EXTERNO') throw new AppError(400, 'El equipo está en servicio externo');
+  if (equipo.oficina.tipo === 'MANTENIMIENTO') {
+    throw new AppError(400, 'El equipo ya se encuentra en Mantenimiento');
+  }
+
+  const mantenimiento = await getMaintenanceOffice();
 
   const updated = await prisma.equipo.update({
     where: { id },
     data: {
       estado: 'EN_REPARACION',
-      ...(data.oficinaDestinoId ? { oficinaId: data.oficinaDestinoId } : {}),
+      oficinaId: mantenimiento.id,
       historial: {
         create: {
           accion: 'ENVIO_SOPORTE',
           oficinaOrigenId: equipo.oficinaId,
-          oficinaDestinoId: data.oficinaDestinoId,
+          oficinaDestinoId: mantenimiento.id,
           usuarioId,
           motivo: data.motivo,
           comentario: data.comentario,
@@ -379,6 +431,53 @@ export async function sendToSupport(id: number, data: {
       oficina: {
         include: { seccion: { include: { ciudad: true } } },
       },
+      oficinaAsignada: {
+        include: { seccion: { include: { ciudad: true } } },
+      },
+    },
+  });
+
+  return updated;
+}
+
+export async function exitEquipment(id: number, data: {
+  motivo: string;
+  comentario?: string;
+}, usuarioId: number) {
+  const equipo = await prisma.equipo.findUnique({
+    where: { id },
+    include: { oficina: true, oficinaAsignada: true },
+  });
+  if (!equipo) throw new AppError(404, 'Equipo no encontrado');
+  if (equipo.estado === 'PRESTADO') throw new AppError(400, 'El equipo está prestado');
+  if (equipo.estado === 'EN_SERVICIO_EXTERNO') throw new AppError(400, 'El equipo está en servicio externo');
+  if (equipo.oficina.tipo !== 'MANTENIMIENTO') {
+    throw new AppError(400, 'Sólo se puede dar SALIDA a un equipo que está en Mantenimiento');
+  }
+  if (equipo.oficinaAsignada.tipo === 'MANTENIMIENTO') {
+    throw new AppError(409, 'El equipo no tiene una oficina asignada válida');
+  }
+
+  const updated = await prisma.equipo.update({
+    where: { id },
+    data: {
+      oficinaId: equipo.oficinaAsignadaId,
+      estado: estadoPorOficina(equipo.oficinaAsignada.tipo),
+      historial: {
+        create: {
+          accion: equipo.estado === 'NUEVO' ? 'ASIGNACION' : 'RETORNO_SOPORTE',
+          oficinaOrigenId: equipo.oficinaId,
+          oficinaDestinoId: equipo.oficinaAsignadaId,
+          usuarioId,
+          motivo: data.motivo,
+          comentario: data.comentario,
+        },
+      },
+    },
+    include: {
+      tipoEquipo: true,
+      oficina: { include: { seccion: { include: { ciudad: true } } } },
+      oficinaAsignada: { include: { seccion: { include: { ciudad: true } } } },
     },
   });
 
@@ -390,8 +489,14 @@ export async function sendToService(id: number, data: {
   motivo: string;
   comentario?: string;
 }, usuarioId: number) {
-  const equipo = await prisma.equipo.findUnique({ where: { id } });
+  const equipo = await prisma.equipo.findUnique({
+    where: { id },
+    include: { oficina: true },
+  });
   if (!equipo) throw new AppError(404, 'Equipo no encontrado');
+  if (equipo.oficina.tipo !== 'MANTENIMIENTO') {
+    throw new AppError(400, 'El equipo debe recibir ENTRADA antes de enviarlo a servicio externo');
+  }
 
   const servicio = await prisma.servicioExterno.findUnique({ where: { id: data.servicioId } });
   if (!servicio) throw new AppError(404, 'Servicio externo no encontrado');

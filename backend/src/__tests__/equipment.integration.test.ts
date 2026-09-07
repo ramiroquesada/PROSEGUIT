@@ -10,6 +10,7 @@ beforeAll(async () => {
 describe('Equipment Integration — Flujo completo', () => {
   let equipoId: number;
   let oficinaSoporteId: number;
+  let oficinaMantenimientoId: number;
   let oficinaDestinoId: number;
   let servicioId: number;
 
@@ -25,9 +26,9 @@ describe('Equipment Integration — Flujo completo', () => {
     for (const ciudad of treeRes.body) {
       for (const seccion of (ciudad.secciones || [])) {
         for (const oficina of (seccion.oficinas || [])) {
-          const nombre = (oficina.nombre || '').toLowerCase();
-          if (nombre.includes('soporte') && !oficinaSoporteId) oficinaSoporteId = oficina.id;
-          else if (!nombre.includes('soporte') && !nombre.includes('deposito') && !oficinaDestinoId) oficinaDestinoId = oficina.id;
+          if (oficina.tipo === 'SOPORTE' && !oficinaSoporteId) oficinaSoporteId = oficina.id;
+          else if (oficina.tipo === 'MANTENIMIENTO' && !oficinaMantenimientoId) oficinaMantenimientoId = oficina.id;
+          else if (oficina.tipo === 'OFICINA' && !oficinaDestinoId) oficinaDestinoId = oficina.id;
         }
       }
     }
@@ -47,7 +48,7 @@ describe('Equipment Integration — Flujo completo', () => {
     }
   }, 15000);
 
-  it('Paso 1 — Crea equipo (estado NUEVO en soporte)', async () => {
+  it('Paso 1 — Crea equipo en Mantenimiento con oficina asignada', async () => {
     const typesRes = await api.get('/api/v1/equipment/types').set('Authorization', `Bearer ${adminToken}`);
     const tipoId = typesRes.body[0]?.id;
 
@@ -57,28 +58,81 @@ describe('Equipment Integration — Flujo completo', () => {
     const res = await api
       .post('/api/v1/equipment')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ serie, tipoEquipoId: tipoId, oficinaId: oficinaSoporteId, modelo: 'Equipo Test Integración', ip: '192.168.1.99' });
+      .send({ serie, tipoEquipoId: tipoId, oficinaId: oficinaDestinoId, modelo: 'Equipo Test Integración', ip: '192.168.1.99' });
 
     if (res.status !== 201) {
       console.log('Paso1 body:', JSON.stringify(res.body).slice(0, 400));
-      console.log('series:', serie, 'tipoId:', tipoId, 'soporteId:', oficinaSoporteId);
+      console.log('series:', serie, 'tipoId:', tipoId, 'destinoId:', oficinaDestinoId);
     }
     expect(res.status).toBe(201);
     expect(res.body.estado).toBe('NUEVO');
+    expect(res.body.oficina.id).toBe(oficinaMantenimientoId);
+    expect(res.body.oficinaAsignada.id).toBe(oficinaDestinoId);
     equipoId = res.body.id;
   });
 
-  it('Paso 2 — Transfiere (NUEVO → ACTIVO)', async () => {
+  it('Paso 2 — Cambia la oficina asignada mientras está adentro', async () => {
     const res = await api
       .post(`/api/v1/equipment/${equipoId}/transfer`)
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ oficinaDestinoId, motivo: 'Asignación inicial' });
+      .send({ oficinaDestinoId: oficinaSoporteId, motivo: 'Reasignación inicial' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.estado).toBe('NUEVO');
+    expect(res.body.oficina.id).toBe(oficinaMantenimientoId);
+    expect(res.body.oficinaAsignada.id).toBe(oficinaSoporteId);
+  });
+
+  it('Paso 3 — Da SALIDA únicamente a la oficina asignada', async () => {
+    const res = await api
+      .post(`/api/v1/equipment/${equipoId}/exit`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ motivo: 'Equipo pronto' });
 
     expect(res.status).toBe(200);
     expect(res.body.estado).toBe('ACTIVO');
+    expect(res.body.oficina.id).toBe(oficinaSoporteId);
   });
 
-  it('Paso 3 — Historial: CREACION + ASIGNACION', async () => {
+  it('Paso 3b — Un equipo en Informática - Soporte aparece al filtrar Activos', async () => {
+    const res = await api
+      .get('/api/v1/equipment')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .query({ estado: 'ACTIVO', oficinaId: oficinaSoporteId, limit: 100 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.some((equipo: { id: number }) => equipo.id === equipoId)).toBe(true);
+  });
+
+  it('Paso 4 — Registra ENTRADA temporal a Mantenimiento', async () => {
+    const res = await api
+      .post(`/api/v1/equipment/${equipoId}/send-to-support`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ motivo: 'Revisión preventiva' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.estado).toBe('EN_REPARACION');
+    expect(res.body.oficina.id).toBe(oficinaMantenimientoId);
+    expect(res.body.oficinaAsignada.id).toBe(oficinaSoporteId);
+  });
+
+  it('Paso 4b — La jerarquía conserva la oficina dueña y muestra quién está adentro', async () => {
+    const [asignados, enMantenimiento] = await Promise.all([
+      api
+        .get('/api/v1/equipment')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .query({ oficinaId: oficinaSoporteId, limit: 100 }),
+      api
+        .get('/api/v1/equipment')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .query({ oficinaId: oficinaMantenimientoId, limit: 100 }),
+    ]);
+
+    expect(asignados.body.data.some((equipo: { id: number }) => equipo.id === equipoId)).toBe(true);
+    expect(enMantenimiento.body.data.some((equipo: { id: number }) => equipo.id === equipoId)).toBe(true);
+  });
+
+  it('Paso 5 — Historial conserva creación, cambio, salida y entrada', async () => {
     const res = await api
       .get('/api/v1/history')
       .set('Authorization', `Bearer ${adminToken}`)
@@ -86,10 +140,12 @@ describe('Equipment Integration — Flujo completo', () => {
 
     const acciones = res.body.data.map((h: any) => h.accion);
     expect(acciones).toContain('CREACION');
+    expect(acciones).toContain('TRANSFERENCIA');
     expect(acciones).toContain('ASIGNACION');
+    expect(acciones).toContain('ENVIO_SOPORTE');
   });
 
-  it('Paso 4 — Envía a servicio externo', async () => {
+  it('Paso 6 — Envía a servicio externo desde Mantenimiento', async () => {
     const res = await api
       .post(`/api/v1/equipment/${equipoId}/send-to-service`)
       .set('Authorization', `Bearer ${adminToken}`)
@@ -99,17 +155,28 @@ describe('Equipment Integration — Flujo completo', () => {
     expect(res.body.estado).toBe('EN_SERVICIO_EXTERNO');
   });
 
-  it('Paso 5 — Retorna de servicio externo', async () => {
+  it('Paso 7 — Retorna del servicio a Mantenimiento', async () => {
     const res = await api
       .post(`/api/v1/equipment/${equipoId}/return-from-service`)
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ motivo: 'Reparado', diagnostico: 'Fuente reemplazada' });
 
     expect(res.status).toBe(200);
-    expect(res.body.estado).toBe('ACTIVO');
+    expect(res.body.estado).toBe('EN_REPARACION');
   });
 
-  it('Paso 6 — Historial completo: 4 acciones', async () => {
+  it('Paso 8 — Da SALIDA nuevamente a Informática - Soporte', async () => {
+    const res = await api
+      .post(`/api/v1/equipment/${equipoId}/exit`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ motivo: 'Retorno completado' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.estado).toBe('ACTIVO');
+    expect(res.body.oficina.id).toBe(oficinaSoporteId);
+  });
+
+  it('Paso 9 — Historial completo', async () => {
     const res = await api
       .get(`/api/v1/history/equipment/${equipoId}`)
       .set('Authorization', `Bearer ${adminToken}`);
@@ -119,9 +186,10 @@ describe('Equipment Integration — Flujo completo', () => {
     expect(acciones).toContain('ASIGNACION');
     expect(acciones).toContain('ENVIO_SERVICIO_EXTERNO');
     expect(acciones).toContain('RETORNO_SERVICIO_EXTERNO');
+    expect(acciones).toContain('RETORNO_SOPORTE');
   });
 
-  it('Paso 7 — TECNICO no puede mutar plantillas (403)', async () => {
+  it('Paso 10 — TECNICO no puede mutar plantillas (403)', async () => {
     const tecnicoToken = await getTecnicoToken();
     const res = await api
       .post('/api/v1/model-templates')

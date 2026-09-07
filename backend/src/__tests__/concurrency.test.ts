@@ -22,9 +22,8 @@ describe('Concurrency — Race condition en préstamos', () => {
     for (const ciudad of (treeRes.body || [])) {
       for (const seccion of (ciudad.secciones || [])) {
         for (const oficina of (seccion.oficinas || [])) {
-          const n = (oficina.nombre || '').toLowerCase();
-          if (n.includes('soporte') && !oficinaSoporteId) oficinaSoporteId = oficina.id;
-          else if (!n.includes('soporte') && !n.includes('deposito') && !oficinaDestinoId) oficinaDestinoId = oficina.id;
+          if (oficina.tipo === 'SOPORTE' && !oficinaSoporteId) oficinaSoporteId = oficina.id;
+          else if (oficina.tipo === 'OFICINA' && !oficinaDestinoId) oficinaDestinoId = oficina.id;
         }
       }
     }
@@ -37,12 +36,12 @@ describe('Concurrency — Race condition en préstamos', () => {
     if (create.status !== 201) throw new Error(`Create failed: ${JSON.stringify(create.body)}`);
     equipoId = create.body.id;
 
-    const transfer = await api
-      .post(`/api/v1/equipment/${equipoId}/transfer`)
+    const exit = await api
+      .post(`/api/v1/equipment/${equipoId}/exit`)
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ oficinaDestinoId, motivo: 'Activar para test' });
+      .send({ motivo: 'Activar para test' });
 
-    if (transfer.status !== 200) throw new Error(`Transfer failed: ${JSON.stringify(transfer.body)}`);
+    if (exit.status !== 200) throw new Error(`Exit failed: ${JSON.stringify(exit.body)}`);
   }, 15000);
 
   it('dos préstamos simultáneos — solo uno debe crearse', async () => {

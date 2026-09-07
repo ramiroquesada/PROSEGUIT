@@ -38,8 +38,8 @@ function findingCount(
   return { code, severity, description, count, sample: [] };
 }
 
-function expectedOfficeState(tipo: 'OFICINA' | 'SOPORTE' | 'DEPOSITO') {
-  if (tipo === 'SOPORTE') return 'EN_REPARACION';
+function expectedOfficeState(tipo: 'OFICINA' | 'SOPORTE' | 'MANTENIMIENTO' | 'DEPOSITO') {
+  if (tipo === 'MANTENIMIENTO') return 'EN_REPARACION';
   if (tipo === 'DEPOSITO') return 'EN_DEPOSITO';
   return 'ACTIVO';
 }
@@ -101,7 +101,7 @@ export async function auditData(db: PrismaClient = prisma) {
                 id: true,
                 nombre: true,
                 tipo: true,
-                _count: { select: { equipos: true } },
+                _count: { select: { equipos: true, equiposAsignados: true } },
               },
             },
           },
@@ -229,7 +229,11 @@ export async function auditData(db: PrismaClient = prisma) {
 
   const officesWithoutEquipment = cities.flatMap((city) => city.secciones.flatMap((section) =>
     section.oficinas
-      .filter((office) => office._count.equipos === 0)
+      .filter((office) => (
+        office.tipo === 'MANTENIMIENTO'
+          ? office._count.equipos === 0
+          : office._count.equiposAsignados === 0
+      ))
       .map((office) => ({
         ciudad: city.nombre,
         seccion: section.nombre,

@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api-client';
 
+export type OfficeType = 'OFICINA' | 'SOPORTE' | 'MANTENIMIENTO' | 'DEPOSITO';
+
 interface LocationTree {
   id: number;
   nombre: string;
@@ -12,6 +14,7 @@ interface LocationTree {
       id: number;
       nombre: string;
       seccionId: number;
+      tipo: OfficeType;
     }[];
   }[];
 }
@@ -43,6 +46,7 @@ export function useEquipmentByOficina(oficinaId: number | null) {
       data: {
         id: number; serie: number; modelo: string | null; estado: string;
         tipoEquipo: { nombre: string }; ip: string | null;
+        oficina: { id: number; nombre: string; tipo: OfficeType };
       }[];
       pagination: { total: number };
     }>(`/equipment?oficinaId=${oficinaId}&limit=100`),

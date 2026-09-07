@@ -3,7 +3,7 @@
  * El estado en DB puede estar desactualizado (ej: migración desde v1 puso todo ACTIVO).
  * La fuente de verdad es la ubicación:
  *   - Oficinas con "deposito" en el nombre → EN_DEPOSITO
- *   - Oficinas con "soporte" en el nombre  → EN_REPARACION
+ *   - La ubicación temporal "Mantenimiento" → EN_REPARACION
  *
  * Estados que se leen directamente de DB (no se derivan de la ubicación):
  *   - NUEVO: equipo recién ingresado, aún sin destino final asignado
@@ -11,9 +11,8 @@
  *   - EN_SERVICIO_EXTERNO: gestionado por el módulo de servicios externos
  *
  * Flujo NUEVO → ACTIVO:
- *   El equipo se crea con estado NUEVO y queda en la oficina de soporte.
- *   Al realizar una transferencia a cualquier oficina que NO sea soporte/depósito,
- *   el backend cambia automáticamente el estado a ACTIVO.
+ *   El equipo se crea con estado NUEVO y ubicación actual Mantenimiento.
+ *   Su primera SALIDA lo lleva exclusivamente a la oficina asignada.
  */
 
 const norm = (s: string) =>
@@ -25,14 +24,14 @@ export function resolveEstado(estadoDB: string, oficinaNombre: string): string {
 
   const n = norm(oficinaNombre);
   if (n.includes('deposito')) return 'EN_DEPOSITO';
-  if (n.includes('soporte')) return 'EN_REPARACION';
+  if (n === 'mantenimiento') return 'EN_REPARACION';
   return 'ACTIVO';
 }
 
 export const STATUS_LABEL: Record<string, string> = {
   NUEVO: 'Nuevo',
   ACTIVO: 'Activo',
-  EN_REPARACION: 'En Reparación',
+  EN_REPARACION: 'En Mantenimiento',
   EN_DEPOSITO: 'En Depósito',
   PRESTADO: 'Prestado',
   EN_SERVICIO_EXTERNO: 'En Servicio Externo',

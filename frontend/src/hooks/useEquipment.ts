@@ -90,6 +90,15 @@ interface Equipment {
       ciudad: { id: number; nombre: string };
     };
   };
+  oficinaAsignada: {
+    id: number;
+    nombre: string;
+    seccion: {
+      id: number;
+      nombre: string;
+      ciudad: { id: number; nombre: string };
+    };
+  };
   template: { id: number; nombre: string } | null;
   createdAt: string;
   updatedAt: string;
@@ -112,10 +121,24 @@ export function useTransferEquipment() {
 export function useSendToSupport() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }: { id: number; motivo: string; comentario?: string; oficinaDestinoId?: number }) =>
+    mutationFn: ({ id, ...data }: { id: number; motivo: string; comentario?: string }) =>
       api.post(`/equipment/${id}/send-to-support`, data),
     onSuccess: (_data, { id }) => {
       qc.invalidateQueries({ queryKey: ['equipment', id] });
+      qc.invalidateQueries({ queryKey: ['history', 'equipment', id] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
+export function useExitEquipment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: number; motivo: string; comentario?: string }) =>
+      api.post(`/equipment/${id}/exit`, data),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: ['equipment', id] });
+      qc.invalidateQueries({ queryKey: ['equipment'] });
       qc.invalidateQueries({ queryKey: ['history', 'equipment', id] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
     },
