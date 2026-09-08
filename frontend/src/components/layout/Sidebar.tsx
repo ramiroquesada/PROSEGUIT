@@ -58,6 +58,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <h1 className={styles.logo}>Inventario IT</h1>
             <span className={styles.logoSubtitle}>PROSEGUIT</span>
           </div>
+          <span className={styles.version} title="Versión instalada">
+            v{__APP_VERSION__}
+          </span>
         </div>
 
         <nav className={styles.nav}>

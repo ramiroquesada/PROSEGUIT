@@ -1,11 +1,22 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { api, getAdminToken } from './helpers.js';
+import { APP_VERSION } from '../config/version.js';
 
 let token: string;
 
 beforeAll(async () => {
   token = await getAdminToken();
 }, 15000);
+
+describe('GET /health', () => {
+  it('informa la versión instalada', async () => {
+    const res = await api.get('/api/v1/health');
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('ok');
+    expect(res.body.version).toBe(APP_VERSION);
+  });
+});
 
 describe('Validation — Zod middleware', () => {
   describe('POST /equipment', () => {

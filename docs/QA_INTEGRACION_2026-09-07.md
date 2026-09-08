@@ -3,7 +3,8 @@
 ## Resultado
 
 - 4 archivos de pruebas aprobados.
-- 31 pruebas de integración aprobadas sobre 17 migraciones aplicadas desde cero.
+- 32 pruebas de integración aprobadas sobre 17 migraciones aplicadas desde cero.
+- El health check informa la versión exacta del backend desplegado.
 - La batería incorpora una regresión que abre el detalle del equipo después de aplicar todas las migraciones desde cero.
 - La prueba de dos préstamos simultáneos produjo una creación `201` y un rechazo `400`.
 - El backend compila sin depender de que haya un servidor escuchando en el puerto 3001.

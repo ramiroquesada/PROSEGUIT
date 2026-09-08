@@ -1,6 +1,6 @@
 <div align="center">
 
-# PROSEGUIT v2
+# PROSEGUIT v2.1
 
 **Sistema de Gestión de Inventario IT**
 
@@ -118,7 +118,7 @@
 | **UI** | CSS Modules + nesting nativo + custom properties | — |
 | **Íconos** | Lucide React | — |
 | **Logging** | Pino (structured JSON) + request-id middleware | 10.x |
-| **Tests** | Vitest (67 tests, sin DB) | 4.x |
+| **Tests** | Vitest (unitarios e integración) | 4.x |
 | **Dev** | Docker Compose | — |
 
 **Colores institucionales:** Teal `#00A79D` · Navy `#003366`
@@ -209,8 +209,9 @@ npm run dev              # Backend (:3001) + Frontend (:5173) simultáneamente
 npm run dev:backend      # Solo backend
 npm run dev:frontend     # Solo frontend
 
-# Tests (no requiere base de datos)
-npm test                 # Corre los 67 tests del backend (Vitest)
+# Tests unitarios (no requiere base de datos)
+npm test                 # Corre los tests unitarios del backend (Vitest)
+npm run release:check   # Versiones, build, tests unitarios e integración
 
 # Base de datos
 npm run db:up            # Levanta PostgreSQL en Docker (puerto 5433)
@@ -272,6 +273,8 @@ docker compose -f docker-compose.prod.yml exec backend npx tsx prisma/seed.ts
 Las migraciones de base de datos se aplican automáticamente al iniciar. El frontend se sirve desde nginx en el puerto 80 y hace proxy de `/api` al backend.
 
 Para el próximo corte desde SEGUIT v1, seguir el procedimiento de [flujo de equipos y deploy](docs/FLUJO_EQUIPOS_Y_PROXIMO_DEPLOY.md). No debe reutilizarse la copia de datos de desarrollo como fuente definitiva.
+
+El número de release, el procedimiento para aumentarlo y la comprobación posterior están en [versionado y despliegue](docs/VERSIONADO_Y_DEPLOY.md).
 
 ---
 

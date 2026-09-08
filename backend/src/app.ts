@@ -15,6 +15,7 @@ import licensesRoutes from './modules/licenses/licenses.routes.js';
 import modelTemplatesRoutes from './modules/model-templates/model-templates.routes.js';
 import serviceProvidersRoutes from './modules/service-providers/service-providers.routes.js';
 import usersRoutes from './modules/users/users.routes.js';
+import { APP_VERSION } from './config/version.js';
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use((_req, res, next) => {
 app.get('/api/v1/health', (_req, res) => {
   res.json({
     status: 'ok',
+    version: APP_VERSION,
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     memory: process.memoryUsage(),
