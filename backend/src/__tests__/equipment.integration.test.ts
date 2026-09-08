@@ -71,6 +71,18 @@ describe('Equipment Integration — Flujo completo', () => {
     equipoId = res.body.id;
   });
 
+  it('Paso 1b — Abre el detalle del equipo en una base migrada desde cero', async () => {
+    const res = await api
+      .get(`/api/v1/equipment/${equipoId}`)
+      .set('Authorization', `Bearer ${adminToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBe(equipoId);
+    expect(res.body.imagenes).toEqual([]);
+    expect(res.body.oficina.id).toBe(oficinaMantenimientoId);
+    expect(res.body.oficinaAsignada.id).toBe(oficinaDestinoId);
+  });
+
   it('Paso 2 — Cambia la oficina asignada mientras está adentro', async () => {
     const res = await api
       .post(`/api/v1/equipment/${equipoId}/transfer`)
