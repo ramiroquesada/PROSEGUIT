@@ -38,11 +38,19 @@ En el servidor, sobre el repositorio ya configurado:
 git fetch origin
 git switch codex/estabilizacion-produccion
 git pull --ff-only origin codex/estabilizacion-produccion
-npm ci
-npm run release:check
+npm run version:check
+git describe --tags --exact-match
 ```
 
-Después se ejecuta el procedimiento de despliegue que ya use el servidor. En la instalación Docker actual, el backend aplica las migraciones pendientes al arrancar. No se debe ejecutar `npm run migrate:v1` contra la base existente salvo que se esté realizando el corte definitivo y se tenga el dump final de SEGUIT v1.
+El segundo comando de verificación debe mostrar `v2.1.0`. `npm run release:check` ya fue aprobado antes de publicar la etiqueta; no debe repetirse conectado a producción porque la integración crea una base descartable y requiere permisos para crear bases.
+
+Después se ejecuta el procedimiento de despliegue que ya use el servidor. Con la instalación Docker actual:
+
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+```
+
+El backend aplica las migraciones pendientes al arrancar. No se debe ejecutar `npm run migrate:v1` contra la base existente salvo que se esté realizando el corte definitivo y se tenga el dump final de SEGUIT v1.
 
 Antes de actualizar producción:
 
