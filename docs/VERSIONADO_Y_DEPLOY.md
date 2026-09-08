@@ -51,11 +51,13 @@ Antes de actualizar producción:
 3. Ejecutar el control de release.
 4. Desplegar y esperar a que terminen las migraciones.
 
-Comprobación posterior:
+Comprobación posterior en el despliegue Docker (cambiar el puerto si `HTTP_PORT` no es 80):
 
 ```bash
-curl http://localhost:3001/api/v1/health
+curl http://localhost/api/v1/health
 ```
+
+En una instalación nativa con el backend expuesto directamente en su puerto predeterminado se usa `curl http://localhost:3001/api/v1/health`.
 
 La respuesta debe incluir `"status":"ok"` y `"version":"2.1.0"`. La barra lateral también debe mostrar `v2.1.0`. Luego conviene probar ingreso, apertura de un equipo, ENTRADA, SALIDA y cambio de oficina con un equipo de prueba controlado.
 
