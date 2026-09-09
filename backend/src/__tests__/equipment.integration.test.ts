@@ -83,6 +83,16 @@ describe('Equipment Integration — Flujo completo', () => {
     expect(res.body.oficinaAsignada.id).toBe(oficinaDestinoId);
   });
 
+  it('Paso 1c — Consulta las licencias en una base migrada desde cero', async () => {
+    const res = await api
+      .get('/api/v1/licenses')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .query({ equipoId, page: 1, limit: 25 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.data).toEqual([]);
+  });
+
   it('Paso 2 — Cambia la oficina asignada mientras está adentro', async () => {
     const res = await api
       .post(`/api/v1/equipment/${equipoId}/transfer`)

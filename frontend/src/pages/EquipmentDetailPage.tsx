@@ -380,6 +380,28 @@ export default function EquipmentDetailPage() {
             </button>
           </div>
         </div>
+        {accionesDisponibles.length > 0 && (
+          <div className={styles.heroActions}>
+            <span className={styles.heroActionsLabel}>Acciones principales</span>
+            <div className={styles.heroActionsList}>
+              {accionesDisponibles.map((a) => {
+                const Icon = ACCION_ICON[a.type];
+                return (
+                  <button
+                    key={a.type}
+                    className={styles.heroActionBtn}
+                    data-variant={a.variant}
+                    onClick={() => openAction(a.type)}
+                  >
+                    <Icon size={17} />
+                    <span>{a.label}</span>
+                    <small>{a.desc}</small>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Bento Row ─────────────────────────────────────────────────── */}
@@ -567,39 +589,6 @@ export default function EquipmentDetailPage() {
         {estadoReal === 'PRESTADO' && (
           <div className={styles.prestamoNotice}>
             Equipo en préstamo. Gestioná la devolución desde la sección de Préstamos.
-          </div>
-        )}
-
-        {/* Card: Acciones */}
-        {accionesDisponibles.length > 0 && (
-          <div className={styles.card}>
-            <div className={styles.cardHeader}>
-              <div className={styles.cardHeaderBar} style={{ background: 'var(--color-secondary)' }} />
-              <h3 className={styles.cardTitle}>Acciones</h3>
-            </div>
-            <div className={styles.cardBody}>
-              <div className={styles.actionsGrid}>
-                {accionesDisponibles.map((a) => {
-                  const Icon = ACCION_ICON[a.type];
-                  return (
-                    <button
-                      key={a.type}
-                      className={styles.actionBtn}
-                      data-variant={a.variant}
-                      onClick={() => openAction(a.type)}
-                    >
-                      <div className={styles.actionBtnIcon}>
-                        <Icon size={15} />
-                      </div>
-                      <div className={styles.actionBtnText}>
-                        <span className={styles.actionBtnName}>{a.label}</span>
-                        <span className={styles.actionBtnDesc}>{a.desc}</span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
           </div>
         )}
 
