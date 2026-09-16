@@ -2,6 +2,25 @@
 
 Todos los cambios relevantes de PROSEGUIT se documentan en este archivo. El proyecto usa versionado semántico (`MAJOR.MINOR.PATCH`).
 
+## [2.2.0] - 2026-09-16
+
+### Agregado
+
+- Página `/etiquetas` para imprimir las etiquetas numeradas que se pegan en los equipos, en hojas A4 de 33 (3 × 11, de 63,5 × 25,4 mm). Reemplaza a la planilla `Codigos Pre Impresos - 33 Etiquetas.ods`, que había que editar a mano en cada tirada.
+- El rango arranca en el próximo número libre y avisa si pisa números ya existentes.
+- Opción de empezar en una etiqueta intermedia, para terminar hojas a medio despegar.
+- Calibración de corrimiento X/Y en milímetros y borde de etiqueta dibujable, para ajustar el desvío de la impresora. Queda guardada en el navegador.
+
+### Corregido
+
+- La página de licencias mostraba `PROSEGUIT` en la barra superior en lugar de su título, porque faltaba en el mapa de títulos.
+- Faltaba en la cadena de migraciones el agregado de `FOTO_AGREGADA` y `FOTO_ELIMINADA` al enum `accion_tipo`, que ya estaban en el esquema y en el módulo de imágenes. Una base creada desde cero quedaba sin esos valores.
+
+### Notas de actualización
+
+- La migración nueva es aditiva e idempotente, y se aplica al iniciar el backend en el despliegue Docker.
+- La impresión requiere papel A4 vertical, escala 100 % y márgenes en "ninguno". La primera vez conviene imprimir una hoja de prueba en papel común y compararla contra la hoja de etiquetas antes de gastar una.
+
 ## [2.1.0] - 2026-09-08
 
 ### Agregado
