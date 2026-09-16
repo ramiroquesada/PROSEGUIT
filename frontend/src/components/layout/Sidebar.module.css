@@ -286,3 +286,10 @@
     border-color: rgb(220 38 38 / 0.3);
   }
 }
+
+@media print {
+  .sidebar,
+  .overlay {
+    display: none;
+  }
+}

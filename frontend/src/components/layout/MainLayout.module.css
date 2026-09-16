@@ -24,3 +24,24 @@
     padding: var(--space-md);
   }
 }
+
+/*
+ * Al imprimir (hoy: /etiquetas) el contenido tiene que poder pasar de página.
+ * Los overflow del layout lo recortarían a una sola hoja.
+ */
+@media print {
+  .layout {
+    display: block;
+    min-height: 0;
+    background: #FFFFFF;
+  }
+
+  .main {
+    overflow: visible;
+  }
+
+  .content {
+    padding: 0;
+    overflow: visible;
+  }
+}

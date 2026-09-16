@@ -5,6 +5,7 @@ import {
   MapPin,
   ArrowLeftRight,
   ScrollText,
+  Tag,
   KeyRound,
   LayoutTemplate,
   Users,
@@ -23,6 +24,7 @@ const navItems = [
   { to: '/prestamos', label: 'Préstamos', icon: ArrowLeftRight },
   { to: '/licencias', label: 'Licencias', icon: KeyRound },
   { to: '/historial', label: 'Historial', icon: ScrollText },
+  { to: '/etiquetas', label: 'Etiquetas', icon: Tag },
   { to: '/plantillas', label: 'Plantillas', icon: LayoutTemplate },
   { to: '/usuarios', label: 'Usuarios', icon: Users },
 ];

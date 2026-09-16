@@ -90,3 +90,9 @@
     padding: 0 var(--space-md);
   }
 }
+
+@media print {
+  .header {
+    display: none;
+  }
+}

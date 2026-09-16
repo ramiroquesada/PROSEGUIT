@@ -31,6 +31,7 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 
 ### ✅ Completado recientemente (abril 17)
 
+- **Impresión de etiquetas de equipos** — Nueva página `/etiquetas` que reemplaza al Excel `Codigos Pre Impresos - 33 Etiquetas.ods`. Imprime el número en Arial grande (opcionalmente entre asteriscos, como venía saliendo del .ods) sobre una grilla A4 uniforme de 3 × 11 = 33 etiquetas de 63,5 × 25,4 mm. Rango correlativo arrancando en `max(serie)+1`, opción de empezar en una etiqueta intermedia para reusar hojas a medio despegar, y calibración de offset X/Y guardada en `localStorage`. **Sin código de barras ni QR**: no hay lector de barras, y los celulares no están en la misma red que el servidor
 - **Auto-fill modelo desde plantilla** — Al seleccionar una plantilla en el formulario de equipo (individual o masivo), el campo Modelo se rellena automáticamente con el nombre de la plantilla; el usuario puede editarlo libremente después
 - **Carga masiva de equipos** — Nueva página `/equipos/lote` accesible desde botón en EquipmentListPage. Campos compartidos (tipo, plantilla, ubicación, fechas, etc.) + tabla por fila con serie editable, matrícula, MAC e IP. Genera N filas desde max(serie)+1, validación de duplicados client-side, envío secuencial con abort en primer error
 - **Fix reset password** — `UsersPage` ahora muestra la contraseña temporal real devuelta por el backend al hacer reset, en lugar del mensaje desactualizado "la nueva contraseña es la ficha"
@@ -52,7 +53,7 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 | `service-providers` | CRUD completo (admin only) |
 | `users` | CRUD + reset-password + change-password |
 
-### ✅ Frontend — 12 páginas
+### ✅ Frontend — 14 páginas
 
 | Ruta | Página | Descripción |
 |------|--------|-------------|
@@ -68,6 +69,7 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 | `/licencias` | LicensesPage | Resumen por software + tabla filtrable, estado derivado |
 | `/ubicaciones` | LocationsPage | Árbol Ciudad›Sección›Oficina + panel de equipos |
 | `/historial` | HistoryPage | Historial global con filtros y badges |
+| `/etiquetas` | LabelsPage | Impresión de etiquetas numeradas en hojas A4 de 33 |
 | `/plantillas` | TemplatesPage | CRUD plantillas de modelos (admin) |
 | `/usuarios` | UsersPage | CRUD usuarios (admin) |
 
@@ -270,12 +272,13 @@ PROSEGIT/
 │       │   ├── action-types.ts        # Labels, colores y opciones de acciones centralizados
 │       │   ├── license-status.ts      # resolveLicenseStatus() para estado derivado de licencias
 │       │   ├── dashboard-helpers.ts   # Utilidades compartidas de widgets (urgencyColor)
-│       │   └── find-soporte-office.ts # Busca la oficina de Soporte en el árbol de ubicaciones
+│       │   ├── find-soporte-office.ts # Busca la oficina de Soporte en el árbol de ubicaciones
+│       │   └── label-sheet.ts         # Geometría de las hojas A4 de 33 etiquetas (mm, grilla, slots)
 │       ├── hooks/                     # useEquipment, useLocations, useHistory, useLoans, useUsers, useDashboard, usePageTitle, useLicenses
 │       ├── components/layout/         # Sidebar.tsx, Header.tsx, MainLayout.tsx
 │       ├── components/                # LocationCascadeSelect.tsx, dashboard/
 │       ├── components/ui/             # DataTable.tsx (tabla + paginación reutilizable), StatusBadge.tsx
-│       ├── pages/                     # 13 páginas (ver tabla arriba)
+│       ├── pages/                     # 14 páginas (ver tabla arriba)
 │       └── styles/                    # variables.css, reset.css, globals.css
 │
 └── packages/shared/src/
