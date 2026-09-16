@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { mkdirSync } from 'fs';
-import { corsOptions } from './config/cors.js';
+import { corsOptionsDelegate } from './config/cors.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { requestIdMiddleware } from './middleware/request-id.js';
 import authRoutes from './modules/auth/auth.routes.js';
@@ -23,7 +23,7 @@ const uploadsDir = path.join(process.cwd(), 'uploads');
 mkdirSync(uploadsDir, { recursive: true });
 
 app.use(requestIdMiddleware);
-app.use(cors(corsOptions));
+app.use(cors(corsOptionsDelegate));
 app.use(express.json());
 app.use('/uploads', express.static(uploadsDir));
 

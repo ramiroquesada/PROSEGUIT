@@ -339,6 +339,23 @@ netstat -ano | findstr :3001
 El hook `.githooks/pre-push` verifica que el repo local esté actualizado antes de pushear.
 Si falla: `git pull origin main` primero.
 
+### CORS: "error del servidor" al iniciar sesión tras un deploy
+
+Si después de desplegar el login falla con un error 500 pero la navegación anda, mirá `backend/src/config/cors.ts`.
+
+El navegador manda la cabecera `Origin` en **todo** pedido que no sea GET/HEAD, incluso cuando es del mismo origen. Por eso un POST como el login llega con `Origin` y un GET no: si la política de CORS rechaza ese origen, falla el login y parece que anda todo lo demás.
+
+Dos reglas que hay que mantener:
+
+1. **Nunca devolver un `Error` desde el callback de CORS.** El paquete `cors` lo deriva a `next()`, el manejador de errores lo toma como fallo del servidor y responde 500. Hay que devolver `origin: false`: así no se agregan las cabeceras y el bloqueo lo hace el navegador, que es como CORS funciona.
+2. **El mismo origen se detecta solo**, comparando `Origin` contra `Host` (`isSameOrigin`). Depende de que nginx reenvíe el Host original con `proxy_set_header Host $http_host` — con `$host` se pierde el puerto y se rompe si `HTTP_PORT` no es 80.
+
+Para un frontend servido desde otro dominio está `CORS_ALLOWED_ORIGINS` (separada por comas). Con el despliegue Docker habitual va vacía.
+
+Cubierto por `backend/src/config/cors.test.ts`, que incluye dos pruebas contra la app real: contra el código anterior devuelven 500.
+
+---
+
 ### Migraciones de Prisma con cambios de Enums
 
 **Problema técnico:** PostgreSQL no permite usar valores nuevos de enums en la misma transacción que se agregan.
@@ -412,6 +429,8 @@ docker compose -f docker-compose.prod.yml exec backend npx tsx prisma/seed.ts
 ```
 
 Las migraciones de DB se aplican automáticamente al iniciar el backend (`prisma migrate deploy`).
+
+`CORS_ALLOWED_ORIGINS` es opcional y normalmente va vacía: nginx sirve la SPA y hace proxy de `/api` en el mismo origen, y el backend lo reconoce comparando `Origin` contra `Host`. Solo se completa si el frontend pasa a servirse desde otro dominio.
 
 ### Actualizar a una versión nueva
 

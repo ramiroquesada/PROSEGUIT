@@ -17,6 +17,10 @@ const rawEnvSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(16, 'debe tener al menos 16 caracteres'),
   JWT_EXPIRES_IN: durationSchema.default('15m'),
   JWT_REFRESH_EXPIRES_IN: durationSchema.default('7d'),
+  // Origenes extra separados por coma. Con el despliegue Docker habitual no
+  // hace falta: nginx sirve la SPA y el API en el mismo origen, y eso se
+  // detecta solo comparando Origin contra Host.
+  CORS_ALLOWED_ORIGINS: z.string().default(''),
 }).superRefine((values, context) => {
   if (values.NODE_ENV !== 'production') return;
 
@@ -68,6 +72,12 @@ export function parseEnv(source: NodeJS.ProcessEnv) {
       refreshSecret: result.data.JWT_REFRESH_SECRET,
       expiresIn: result.data.JWT_EXPIRES_IN,
       refreshExpiresIn: result.data.JWT_REFRESH_EXPIRES_IN,
+    },
+    cors: {
+      allowedOrigins: result.data.CORS_ALLOWED_ORIGINS
+        .split(',')
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0),
     },
   } as const;
 }
