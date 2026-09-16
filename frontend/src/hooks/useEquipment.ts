@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api-client';
+import { compressImage } from '../lib/compress-image';
 
 interface EquipmentFilters {
   page?: number;
@@ -174,9 +175,9 @@ export function useReturnFromService() {
 export function useUploadEquipmentImage() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, file, descripcion }: { id: number; file: File; descripcion?: string }) => {
+    mutationFn: async ({ id, file, descripcion }: { id: number; file: File; descripcion?: string }) => {
       const formData = new FormData();
-      formData.append('image', file);
+      formData.append('image', await compressImage(file));
       if (descripcion) formData.append('descripcion', descripcion);
       return api.upload<{ imagen: { id: number; url: string; descripcion: string | null; createdAt: string } }>(`/equipment/${id}/images`, formData);
     },

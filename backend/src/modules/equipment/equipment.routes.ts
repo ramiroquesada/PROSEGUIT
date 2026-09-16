@@ -3,6 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import { mkdirSync } from 'fs';
 import { authMiddleware } from '../../middleware/auth.js';
+import { AppError } from '../../middleware/error-handler.js';
 import { validate } from '../../middleware/validate.js';
 import * as controller from './equipment.controller.js';
 import {
@@ -24,11 +25,11 @@ const upload = multer({
       cb(null, `${req.params.id}_${Date.now()}${ext}`);
     },
   }),
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB — client_max_body_size en nginx.conf tiene que ser mayor
   fileFilter: (_req, file, cb) => {
     const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
     if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error('Solo se permiten imágenes JPEG, PNG o WebP') as any);
+    else cb(new AppError(400, 'Formato no soportado. Solo se permiten imágenes JPEG, PNG o WebP'));
   },
 });
 

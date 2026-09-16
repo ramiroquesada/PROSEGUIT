@@ -147,7 +147,9 @@ class ApiClient {
     }
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: 'Error de red' }));
+      // Un 413 de nginx llega como HTML, no como JSON
+      const fallback = response.status === 413 ? 'La imagen es demasiado grande' : 'Error de red';
+      const error = await response.json().catch(() => ({ error: fallback }));
       throw new ApiError(response.status, error.error || 'Error desconocido');
     }
 
