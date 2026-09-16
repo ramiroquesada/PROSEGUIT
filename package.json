@@ -1,6 +1,6 @@
 {
   "name": "proseguit",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "PROSEGUIT - Sistema de Gestión de Inventario IT",
   "private": true,
   "workspaces": [

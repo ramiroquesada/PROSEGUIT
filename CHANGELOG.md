@@ -2,6 +2,20 @@
 
 Todos los cambios relevantes de PROSEGUIT se documentan en este archivo. El proyecto usa versionado semántico (`MAJOR.MINOR.PATCH`).
 
+## [2.2.1] - 2026-09-16
+
+### Corregido
+
+- No se podía iniciar sesión en el despliegue: el backend rechazaba por CORS el origen del propio servidor y devolvía un 500. En producción no había forma de declarar un origen permitido, así que cualquier pedido con cabecera `Origin` quedaba rechazado. Afectaba solo a POST, PUT, PATCH y DELETE, porque el navegador manda `Origin` en esos métodos aunque el pedido sea del mismo origen; por eso fallaba el login y no la navegación.
+- Un origen rechazado ya no se convierte en error 500. Antes se entregaba un `Error` al paquete de CORS, que lo derivaba al manejador de errores. Ahora simplemente no se agregan las cabeceras CORS y el bloqueo queda a cargo del navegador, que es a quien le corresponde.
+- El backend reconoce por sí solo los pedidos del mismo origen comparando `Origin` contra `Host`, así que cambiar la IP o el dominio del servidor no requiere configurar nada.
+- nginx reenvía el `Host` original con `$http_host` en lugar de `$host`, que descarta el puerto. Con un `HTTP_PORT` distinto de 80 el pedido del mismo origen no se reconocía.
+
+### Agregado
+
+- Variable opcional `CORS_ALLOWED_ORIGINS`, separada por comas, para el caso en que el frontend se sirva desde otro dominio. Con el despliegue Docker habitual se deja vacía.
+- Pruebas de CORS, incluidas dos contra la aplicación real que reproducen el fallo del despliegue: contra el código anterior devuelven 500.
+
 ## [2.2.0] - 2026-09-16
 
 ### Agregado
