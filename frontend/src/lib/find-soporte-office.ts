@@ -11,7 +11,7 @@ export function findSoporteOffice(locations: LocationTree[]): SoporteOffice | nu
   for (const ciudad of locations) {
     for (const seccion of ciudad.secciones) {
       const oficina = seccion.oficinas.find((o) =>
-        o.nombre.toLowerCase().includes('soporte')
+        o.tipo === 'SOPORTE'
       );
       if (oficina) {
         return {

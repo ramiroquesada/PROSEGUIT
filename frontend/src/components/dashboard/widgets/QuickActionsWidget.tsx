@@ -21,8 +21,8 @@ export default function QuickActionsWidget() {
       color: 'info' as const,
     },
     {
-      label: 'Ver reparaciones',
-      description: 'Equipos en soporte actualmente',
+      label: 'Ver Mantenimiento',
+      description: 'Equipos actualmente en Mantenimiento',
       icon: <Wrench size={18} strokeWidth={1.75} />,
       onClick: () => navigate('/equipos?estado=EN_REPARACION'),
       color: 'warning' as const,

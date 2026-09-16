@@ -11,7 +11,7 @@ export async function getStats() {
     enDeposito,
     enReparacion,
     enServicioExterno,
-    prestamosActivos,
+    equiposPrestados,
     totalOficinas,
   ] = await Promise.all([
     prisma.equipo.count(),
@@ -25,14 +25,19 @@ export async function getStats() {
     prisma.equipo.count({
       where: {
         estado: { notIn: ESTADOS_ESPECIALES },
-        oficina: { tipo: 'SOPORTE' },
+        oficina: { tipo: 'MANTENIMIENTO' },
       },
     }),
     prisma.equipo.count({ where: { estado: 'EN_SERVICIO_EXTERNO' } }),
-    prisma.prestamo.count({ where: { fechaDevolucion: null } }),
+    prisma.prestamo.findMany({
+      where: { activo: true },
+      distinct: ['equipoId'],
+      select: { equipoId: true },
+    }),
     prisma.oficina.count(),
   ]);
 
+  const prestamosActivos = equiposPrestados.length;
   const activos = totalEquipos - equiposNuevos - enDeposito - enReparacion - enServicioExterno - prestamosActivos;
 
   return {
@@ -63,7 +68,7 @@ export async function getRecentActivity(limit = 20, accion?: string) {
 
 export async function getLoansAlerts(limit = 5) {
   const loans = await prisma.prestamo.findMany({
-    where: { fechaDevolucion: null },
+    where: { activo: true },
     orderBy: { fechaPrestamo: 'asc' },
     take: limit,
     include: {
@@ -89,11 +94,11 @@ export async function getLoansAlerts(limit = 5) {
 }
 
 export async function getRepairAlerts(limit = 5) {
-  // Equipos cuya oficina contiene "soporte" (estado EN_REPARACION derivado)
+  // Equipos que recibieron ENTRADA y están físicamente en Mantenimiento.
   const equipos = await prisma.equipo.findMany({
     where: {
       estado: { notIn: ESTADOS_ESPECIALES },
-      oficina: { nombre: { contains: 'soporte', mode: 'insensitive' } },
+      oficina: { tipo: 'MANTENIMIENTO' },
     },
     select: {
       id: true,
@@ -111,19 +116,21 @@ export async function getRepairAlerts(limit = 5) {
 
   const now = new Date();
   const result = equipos.map((eq) => {
-    const fechaIngreso = eq.historial[0]?.fecha ?? new Date(0);
+    const fechaIngreso = eq.historial[0]?.fecha ?? null;
     return {
       id: eq.id,
       serie: eq.serie,
       modelo: eq.modelo,
       tipoEquipo: eq.tipoEquipo,
-      diasEnReparacion: Math.floor((now.getTime() - fechaIngreso.getTime()) / 86400000),
-      fechaIngreso: fechaIngreso.toISOString(),
+      diasEnReparacion: fechaIngreso
+        ? Math.floor((now.getTime() - fechaIngreso.getTime()) / 86400000)
+        : null,
+      fechaIngreso: fechaIngreso?.toISOString() ?? null,
     };
   });
 
   // Ordenar por días en reparación descendente (más tiempo primero)
-  result.sort((a, b) => b.diasEnReparacion - a.diasEnReparacion);
+  result.sort((a, b) => (b.diasEnReparacion ?? -1) - (a.diasEnReparacion ?? -1));
   return result.slice(0, limit);
 }
 

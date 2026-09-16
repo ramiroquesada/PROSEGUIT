@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router';
 import { useRepairAlerts } from '../../../hooks/useDashboard';
 import { urgencyColor } from '../../../lib/dashboard-helpers';
+import TypeBadge from '../../../components/ui/TypeBadge';
 import widgetStyles from './Widget.module.css';
 
 export default function RepairAlertWidget() {
@@ -10,7 +11,7 @@ export default function RepairAlertWidget() {
   return (
     <div className={widgetStyles.widget}>
       <div className={widgetStyles.widgetHeader}>
-        <h3 className={widgetStyles.widgetTitle}>Equipos en reparación</h3>
+        <h3 className={widgetStyles.widgetTitle}>Equipos en Mantenimiento</h3>
         <button className={widgetStyles.widgetLink} onClick={() => navigate('/equipos?estado=EN_REPARACION')}>
           Ver todos →
         </button>
@@ -19,7 +20,7 @@ export default function RepairAlertWidget() {
         {isLoading ? (
           <p className={widgetStyles.loadingText}>Cargando...</p>
         ) : !equipos || equipos.length === 0 ? (
-          <p className={widgetStyles.emptyText}>No hay equipos en reparación</p>
+          <p className={widgetStyles.emptyText}>No hay equipos en Mantenimiento</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-sm)' }}>
             {equipos.map((eq) => (
@@ -38,18 +39,19 @@ export default function RepairAlertWidget() {
                   <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text)' }}>
                     Serie {eq.serie}
                   </span>
-                  <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {eq.tipoEquipo.nombre}{eq.modelo ? ` — ${eq.modelo}` : ''}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', minWidth: 0 }}>
+                    <TypeBadge label={eq.tipoEquipo.nombre} />
+                    {eq.modelo && <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>— {eq.modelo}</span>}
+                  </div>
                 </div>
                 <span style={{
                   fontSize: 'var(--font-size-xs)',
                   fontWeight: 'var(--font-weight-semibold)',
-                  color: urgencyColor(eq.diasEnReparacion),
+                  color: eq.diasEnReparacion === null ? 'var(--color-text-tertiary)' : urgencyColor(eq.diasEnReparacion),
                   whiteSpace: 'nowrap',
                   flexShrink: 0,
                 }}>
-                  {eq.diasEnReparacion === 0 ? 'Hoy' : `${eq.diasEnReparacion}d`}
+                  {eq.diasEnReparacion === null ? 'Sin fecha' : eq.diasEnReparacion === 0 ? 'Hoy' : `${eq.diasEnReparacion}d`}
                 </span>
               </div>
             ))}

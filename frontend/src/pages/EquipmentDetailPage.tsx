@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { useEquipmentDetail, useTransferEquipment, useSendToSupport, useSendToService, useReturnFromService, useUploadEquipmentImage, useDeleteEquipmentImage, useUpdateImageDescription } from '../hooks/useEquipment';
+import { useEquipmentDetail, useTransferEquipment, useSendToSupport, useExitEquipment, useSendToService, useReturnFromService, useUploadEquipmentImage, useDeleteEquipmentImage, useUpdateImageDescription } from '../hooks/useEquipment';
 import { resolveEstado, STATUS_LABEL, STATUS_COLOR, getWarrantyStatus, getWarrantyDaysLeft } from '../lib/equipment-status';
 import { useEquipmentHistory } from '../hooks/useHistory';
 import { useLocationTree } from '../hooks/useLocations';
@@ -9,8 +9,9 @@ import { useEquipmentLicenses, useCreateLicense, useDeleteLicense } from '../hoo
 import { LICENSE_STATUS_LABEL, LICENSE_STATUS_COLOR } from '../lib/license-status';
 import { ACCION_LABEL, ACCION_COLOR } from '../lib/action-types';
 import { ArrowRightLeft, Building2, RotateCcw, Pencil, ChevronLeft, LogOut, LogIn, Monitor, Camera, Trash2, X, Plus } from 'lucide-react';
-import { findSoporteOffice } from '../lib/find-soporte-office';
+import { findMaintenanceOffice } from '../lib/find-maintenance-office';
 import LocationCascadeSelect from '../components/LocationCascadeSelect';
+import TypeBadge from '../components/ui/TypeBadge';
 import styles from './EquipmentDetailPage.module.css';
 import { usePageTitle } from '../hooks/usePageTitle';
 
@@ -38,19 +39,19 @@ const INITIAL_ACTION: ActionState = {
 // ── Acciones disponibles por estado ───────────────────────────────────────
 const ACCIONES_POR_ESTADO: Record<string, { type: ActionType; label: string; desc: string; variant: string }[]> = {
   NUEVO: [
-    { type: 'salida', label: 'SALIDA', desc: 'Asignar a oficina destino', variant: 'primary' },
+    { type: 'salida', label: 'SALIDA', desc: 'Enviar a su oficina asignada', variant: 'primary' },
+    { type: 'transfer', label: 'Cambiar oficina asignada', desc: 'Definir adónde pertenece', variant: 'secondary' },
   ],
   ACTIVO: [
-    { type: 'entrada',  label: 'ENTRADA',          desc: 'Retorno temporal a Soporte', variant: 'warning'   },
-    { type: 'transfer', label: 'Transferir',        desc: 'Mover a otra oficina',       variant: 'secondary' },
-    { type: 'service',  label: 'Servicio Externo',  desc: 'Enviar a reparación',        variant: 'warning'   },
+    { type: 'entrada', label: 'ENTRADA', desc: 'Ingreso temporal a Mantenimiento', variant: 'warning' },
   ],
   EN_REPARACION: [
-    { type: 'salida',  label: 'SALIDA',           desc: 'Devolver a su oficina', variant: 'primary' },
+    { type: 'salida', label: 'SALIDA', desc: 'Enviar a su oficina asignada', variant: 'primary' },
+    { type: 'transfer', label: 'Cambiar oficina asignada', desc: 'Elegir un nuevo destino', variant: 'secondary' },
     { type: 'service', label: 'Servicio Externo', desc: 'Enviar a reparación',   variant: 'warning' },
   ],
   EN_DEPOSITO: [
-    { type: 'salida', label: 'SALIDA', desc: 'Asignar a oficina', variant: 'primary' },
+    { type: 'entrada', label: 'ENTRADA', desc: 'Ingreso temporal a Mantenimiento', variant: 'warning' },
   ],
   EN_SERVICIO_EXTERNO: [
     { type: 'returnService', label: 'Registrar retorno', desc: 'Confirmar regreso del servicio', variant: 'primary' },
@@ -77,17 +78,17 @@ const MODAL_CONFIG: Record<ActionType, { title: string; motiLabel: string; place
     confirmVariant: 'primary',
   },
   entrada: {
-    title: 'Entrada de Equipo a Soporte',
+    title: 'Entrada de Equipo',
     motiLabel: 'Motivo de la entrada *',
     placeholder: 'Ej: Equipo con falla en fuente de alimentación',
     confirmLabel: 'Confirmar entrada',
     confirmVariant: 'warning',
   },
   transfer: {
-    title: 'Transferir Equipo',
-    motiLabel: 'Motivo de la transferencia *',
-    placeholder: 'Ej: Reubicación por reforma de oficina',
-    confirmLabel: 'Confirmar transferencia',
+    title: 'Cambiar oficina asignada',
+    motiLabel: 'Motivo del cambio *',
+    placeholder: 'Ej: Reasignación a Tesorería',
+    confirmLabel: 'Guardar nueva asignación',
     confirmVariant: 'primary',
   },
   service: {
@@ -169,10 +170,11 @@ export default function EquipmentDetailPage() {
   const { data: locations } = useLocationTree();
   const { data: servicios } = useServiceProviders();
 
-  const soporteOffice = locations ? findSoporteOffice(locations) : null;
+  const maintenanceOffice = locations ? findMaintenanceOffice(locations) : null;
 
   const transferMutation = useTransferEquipment();
   const supportMutation = useSendToSupport();
+  const exitMutation = useExitEquipment();
   const serviceMutation = useSendToService();
   const returnServiceMutation = useReturnFromService();
   const uploadImageMutation = useUploadEquipmentImage();
@@ -207,7 +209,7 @@ export default function EquipmentDetailPage() {
     return () => window.removeEventListener('keydown', onKey);
   }, [lightboxUrl]);
 
-  const isPending = transferMutation.isPending || supportMutation.isPending || serviceMutation.isPending || returnServiceMutation.isPending;
+  const isPending = transferMutation.isPending || supportMutation.isPending || exitMutation.isPending || serviceMutation.isPending || returnServiceMutation.isPending;
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -270,28 +272,7 @@ export default function EquipmentDetailPage() {
   }
 
   function openAction(type: ActionType) {
-    let initial = { ...INITIAL_ACTION, type };
-
-    // Para SALIDA desde EN_REPARACION: pre-rellenar destino con la última oficina origen del ENVIO_SOPORTE
-    if (type === 'salida' && equipo && historial && locations) {
-      const estado = resolveEstado(equipo.estado, equipo.oficina.nombre);
-      if (estado === 'EN_REPARACION') {
-        const lastEnvio = historial.find((h) => h.accion === 'ENVIO_SOPORTE');
-        const origenId = lastEnvio?.oficinaOrigen?.id;
-        if (origenId) {
-          outer: for (const ciudad of locations) {
-            for (const seccion of ciudad.secciones) {
-              if (seccion.oficinas.some((o) => o.id === origenId)) {
-                initial = { ...initial, ciudadId: String(ciudad.id), seccionId: String(seccion.id), oficinaId: String(origenId) };
-                break outer;
-              }
-            }
-          }
-        }
-      }
-    }
-
-    setAction(initial);
+    setAction({ ...INITIAL_ACTION, type });
     setActionError('');
   }
 
@@ -314,15 +295,16 @@ export default function EquipmentDetailPage() {
     try {
       switch (action.type) {
         case 'salida':
+          await exitMutation.mutateAsync(base);
+          break;
         case 'transfer':
           if (!action.oficinaId) { setActionError('Seleccioná la oficina de destino'); return; }
-          if (Number(action.oficinaId) === equipo.oficina.id) { setActionError('El destino es la misma oficina actual'); return; }
+          if (Number(action.oficinaId) === equipo.oficinaAsignada.id) { setActionError('El equipo ya tiene esa oficina asignada'); return; }
           await transferMutation.mutateAsync({ ...base, oficinaDestinoId: Number(action.oficinaId) });
           break;
         case 'entrada':
-          if (!soporteOffice) { setActionError('No se encontró la oficina de Soporte en el sistema'); return; }
-          if (soporteOffice.oficinaId === equipo.oficina.id) { setActionError('El equipo ya está en Soporte'); return; }
-          await supportMutation.mutateAsync({ ...base, oficinaDestinoId: soporteOffice.oficinaId });
+          if (!maintenanceOffice) { setActionError('No se encontró la oficina de Mantenimiento en el sistema'); return; }
+          await supportMutation.mutateAsync(base);
           break;
         case 'service':
           if (!action.servicioId) { setActionError('Seleccioná el servicio externo'); return; }
@@ -349,7 +331,6 @@ export default function EquipmentDetailPage() {
   const lastAction = historial && historial.length > 0
     ? [...historial].sort((a, b) => new Date(b.fecha).getTime() - new Date(a.fecha).getTime())[0]
     : null;
-  const totalHistorial = historial?.length ?? 0;
   const totalPrestamos = historial?.filter(h => h.accion === 'PRESTAMO').length ?? 0;
   const prestamosActivos = totalPrestamos - (historial?.filter(h => h.accion === 'DEVOLUCION').length ?? 0);
 
@@ -381,7 +362,7 @@ export default function EquipmentDetailPage() {
             <div>
               <div className={styles.heroTitle}>Serie {equipo.serie}</div>
               <div className={styles.heroSubtitle}>
-                {equipo.tipoEquipo.nombre}{equipo.template ? ` · ${equipo.template.nombre}` : ''}
+                <TypeBadge label={equipo.tipoEquipo.nombre} />{equipo.template ? ` · ${equipo.template.nombre}` : ''}
               </div>
               <div className={styles.heroLocation}>
                 <div className={styles.heroLocationDot} />
@@ -399,6 +380,28 @@ export default function EquipmentDetailPage() {
             </button>
           </div>
         </div>
+        {accionesDisponibles.length > 0 && (
+          <div className={styles.heroActions}>
+            <span className={styles.heroActionsLabel}>Acciones principales</span>
+            <div className={styles.heroActionsList}>
+              {accionesDisponibles.map((a) => {
+                const Icon = ACCION_ICON[a.type];
+                return (
+                  <button
+                    key={a.type}
+                    className={styles.heroActionBtn}
+                    data-variant={a.variant}
+                    onClick={() => openAction(a.type)}
+                  >
+                    <Icon size={17} />
+                    <span>{a.label}</span>
+                    <small>{a.desc}</small>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── Bento Row ─────────────────────────────────────────────────── */}
@@ -408,6 +411,13 @@ export default function EquipmentDetailPage() {
           <span className={styles.bentoCellValue}>{equipo.oficina.nombre}</span>
           <span className={styles.bentoCellSub}>
             {equipo.oficina.seccion.nombre} · {equipo.oficina.seccion.ciudad.nombre}
+          </span>
+        </div>
+        <div className={styles.bentoCell}>
+          <span className={styles.bentoCellLabel}>🏢 Oficina asignada</span>
+          <span className={styles.bentoCellValue}>{equipo.oficinaAsignada.nombre}</span>
+          <span className={styles.bentoCellSub}>
+            {equipo.oficinaAsignada.seccion.nombre} · {equipo.oficinaAsignada.seccion.ciudad.nombre}
           </span>
         </div>
         <div className={styles.bentoCell}>
@@ -426,15 +436,6 @@ export default function EquipmentDetailPage() {
           </span>
           <span className={styles.bentoCellSub}>{totalPrestamos} histórico{totalPrestamos !== 1 ? 's' : ''}</span>
         </div>
-        <div className={styles.bentoCell}>
-          <span className={styles.bentoCellLabel}>🛠 Historial</span>
-          <span className={styles.bentoCellValue}>{totalHistorial} acción{totalHistorial !== 1 ? 'es' : ''}</span>
-          <span className={styles.bentoCellSub}>
-            {historial && historial.length > 0
-              ? `desde ${new Date([...historial].sort((a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime())[0].fecha).getFullYear()}`
-              : 'Sin registros'}
-          </span>
-        </div>
       </div>
 
       {/* ── Body ─────────────────────────────────────────────────────── */}
@@ -446,11 +447,15 @@ export default function EquipmentDetailPage() {
             <h3 className={styles.cardTitle}>Información del equipo</h3>
           </div>
           <dl className={styles.details}>
-            <div className={styles.detailRow}><dt>Tipo</dt><dd>{equipo.tipoEquipo.nombre}</dd></div>
+            <div className={styles.detailRow}><dt>Tipo</dt><dd><TypeBadge label={equipo.tipoEquipo.nombre} /></dd></div>
             {equipo.template && <div className={styles.detailRow}><dt>Modelo</dt><dd>{equipo.template.nombre}</dd></div>}
             <div className={styles.detailRow}>
-              <dt>Ubicación</dt>
+              <dt>Ubicación actual</dt>
               <dd>{equipo.oficina.seccion.ciudad.nombre} › {equipo.oficina.seccion.nombre} › {equipo.oficina.nombre}</dd>
+            </div>
+            <div className={styles.detailRow}>
+              <dt>Oficina asignada</dt>
+              <dd>{equipo.oficinaAsignada.seccion.ciudad.nombre} › {equipo.oficinaAsignada.seccion.nombre} › {equipo.oficinaAsignada.nombre}</dd>
             </div>
             {equipo.matricula && <div className={styles.detailRow}><dt>Matrícula</dt><dd className={styles.mono}>{equipo.matricula}</dd></div>}
             {equipo.asignadoA && <div className={styles.detailRow}><dt>Asignado a</dt><dd>{equipo.asignadoA}</dd></div>}
@@ -573,7 +578,7 @@ export default function EquipmentDetailPage() {
         {/* Notices */}
         {estadoReal === 'NUEVO' && (
           <div className={styles.nuevoNotice}>
-            Equipo recién ingresado. Realizá una <strong>SALIDA</strong> para asignarlo a su oficina destino.
+            Equipo recién creado en Mantenimiento. La <strong>SALIDA</strong> lo enviará a su oficina asignada.
           </div>
         )}
         {estadoReal === 'EN_DEPOSITO' && (
@@ -584,39 +589,6 @@ export default function EquipmentDetailPage() {
         {estadoReal === 'PRESTADO' && (
           <div className={styles.prestamoNotice}>
             Equipo en préstamo. Gestioná la devolución desde la sección de Préstamos.
-          </div>
-        )}
-
-        {/* Card: Acciones */}
-        {accionesDisponibles.length > 0 && (
-          <div className={styles.card}>
-            <div className={styles.cardHeader}>
-              <div className={styles.cardHeaderBar} style={{ background: 'var(--color-secondary)' }} />
-              <h3 className={styles.cardTitle}>Acciones</h3>
-            </div>
-            <div className={styles.cardBody}>
-              <div className={styles.actionsGrid}>
-                {accionesDisponibles.map((a) => {
-                  const Icon = ACCION_ICON[a.type];
-                  return (
-                    <button
-                      key={a.type}
-                      className={styles.actionBtn}
-                      data-variant={a.variant}
-                      onClick={() => openAction(a.type)}
-                    >
-                      <div className={styles.actionBtnIcon}>
-                        <Icon size={15} />
-                      </div>
-                      <div className={styles.actionBtnText}>
-                        <span className={styles.actionBtnName}>{a.label}</span>
-                        <span className={styles.actionBtnDesc}>{a.desc}</span>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
           </div>
         )}
 
@@ -753,20 +725,27 @@ export default function EquipmentDetailPage() {
             <form onSubmit={handleActionSubmit} className={styles.modalForm}>
 
               {/* Campos específicos por tipo */}
-              {action.type === 'entrada' && soporteOffice && (
+              {action.type === 'entrada' && maintenanceOffice && (
                 <div className={styles.entradaInfo}>
-                  El equipo será devuelto a <strong>{soporteOffice.fullPath}</strong>
+                  El equipo ingresará temporalmente a <strong>{maintenanceOffice.fullPath}</strong>. Su oficina asignada seguirá siendo <strong>{equipo.oficinaAsignada.nombre}</strong>.
                 </div>
               )}
-              {action.type === 'entrada' && !soporteOffice && (
+              {action.type === 'entrada' && !maintenanceOffice && (
                 <div className={styles.modalError}>
-                  No se encontró la oficina de Soporte en el sistema. Creala primero en Ubicaciones.
+                  No se encontró la oficina de Mantenimiento configurada.
                 </div>
               )}
 
-              {(action.type === 'salida' || action.type === 'transfer') && (
+              {action.type === 'salida' && (
+                <div className={styles.entradaInfo}>
+                  El equipo saldrá hacia su oficina asignada: <strong>{equipo.oficinaAsignada.seccion.ciudad.nombre} › {equipo.oficinaAsignada.seccion.nombre} › {equipo.oficinaAsignada.nombre}</strong>.
+                </div>
+              )}
+
+              {action.type === 'transfer' && (
                 <LocationCascadeSelect
                   required
+                  excludeOfficeTypes={['MANTENIMIENTO']}
                   value={{ ciudadId: action.ciudadId, seccionId: action.seccionId, oficinaId: action.oficinaId }}
                   onChange={(v) => setAction((p) => p ? { ...p, ...v } : p)}
                   onError={(msg) => setActionError(msg)}

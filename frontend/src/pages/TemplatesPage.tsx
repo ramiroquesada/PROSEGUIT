@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Pencil } from 'lucide-react';
+import TypeBadge from '../components/ui/TypeBadge';
 import { useEquipmentTypes, useTemplates, type Template } from '../hooks/useEquipment';
 import { api } from '../lib/api-client';
 import styles from './TemplatesPage.module.css';
@@ -171,7 +172,7 @@ export default function TemplatesPage() {
           {templates?.map((t) => (
             <div key={t.id} className={styles.card}>
               <div className={styles.cardHeader}>
-                <span className={styles.tipoBadge}>{t.tipoEquipo.nombre}</span>
+                <TypeBadge label={t.tipoEquipo.nombre} />
                 <div className={styles.cardActions}>
                   <button
                     className={styles.editBtn}

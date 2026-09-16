@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router';
 import { useLoansAlerts } from '../../../hooks/useDashboard';
 import { urgencyColor } from '../../../lib/dashboard-helpers';
+import TypeBadge from '../../../components/ui/TypeBadge';
 import widgetStyles from './Widget.module.css';
 
 export default function LoansAlertWidget() {
@@ -38,9 +39,10 @@ export default function LoansAlertWidget() {
                   <span style={{ fontSize: 'var(--font-size-sm)', fontWeight: 'var(--font-weight-semibold)', color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {loan.funcionario.nombre}
                   </span>
-                  <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>
-                    Serie {loan.equipo.serie} — {loan.equipo.tipoEquipo.nombre}
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)' }}>Serie {loan.equipo.serie} —</span>
+                    <TypeBadge label={loan.equipo.tipoEquipo.nombre} />
+                  </div>
                 </div>
                 <span style={{
                   fontSize: 'var(--font-size-xs)',

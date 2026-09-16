@@ -69,23 +69,95 @@ export async function deleteSection(id: number) {
 export async function deleteOffice(id: number) {
   const oficina = await prisma.oficina.findUnique({
     where: { id },
-    include: { _count: { select: { equipos: true } } },
+    include: { _count: { select: { equipos: true, equiposAsignados: true } } },
   });
   if (!oficina) throw new AppError(404, 'Oficina no encontrada');
 
-  if (oficina._count.equipos > 0) {
-    throw new AppError(409, `No se puede eliminar: la oficina tiene ${oficina._count.equipos} equipo${oficina._count.equipos > 1 ? 's' : ''} asignado${oficina._count.equipos > 1 ? 's' : ''}`);
+  const equiposRelacionados = oficina._count.equipos + oficina._count.equiposAsignados;
+  if (equiposRelacionados > 0) {
+    throw new AppError(409, 'No se puede eliminar: la oficina tiene equipos ubicados o asignados');
   }
 
   return prisma.oficina.delete({ where: { id } });
 }
 
-export async function moveOffice(id: number, seccionId: number) {
-  const seccion = await prisma.seccion.findUnique({ where: { id: seccionId } });
-  if (!seccion) throw new AppError(404, 'Sección destino no encontrada');
+export async function getOfficeMovePreview(id: number) {
+  const oficina = await prisma.oficina.findUnique({
+    where: { id },
+    include: {
+      seccion: { include: { ciudad: true } },
+      _count: { select: { equipos: true, equiposAsignados: true } },
+    },
+  });
+  if (!oficina) throw new AppError(404, 'Oficina no encontrada');
 
+  return {
+    id: oficina.id,
+    nombre: oficina.nombre,
+    cantidadEquipos: oficina.tipo === 'MANTENIMIENTO'
+      ? oficina._count.equipos
+      : oficina._count.equiposAsignados,
+    ubicacionActual: {
+      ciudadId: oficina.seccion.ciudad.id,
+      ciudadNombre: oficina.seccion.ciudad.nombre,
+      seccionId: oficina.seccion.id,
+      seccionNombre: oficina.seccion.nombre,
+    },
+  };
+}
+
+export async function moveOffice(id: number, seccionId: number, usuarioId: number, motivo?: string) {
   try {
-    return await prisma.oficina.update({ where: { id }, data: { seccionId } });
+    return await prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT pg_advisory_xact_lock(3, ${id})::text`;
+
+      const oficina = await tx.oficina.findUnique({
+        where: { id },
+        include: {
+          seccion: { include: { ciudad: true } },
+          _count: { select: { equipos: true, equiposAsignados: true } },
+        },
+      });
+      if (!oficina) throw new AppError(404, 'Oficina no encontrada');
+      if (oficina.seccionId === seccionId) {
+        throw new AppError(400, 'La oficina ya pertenece a la sección seleccionada');
+      }
+
+      const destino = await tx.seccion.findUnique({
+        where: { id: seccionId },
+        include: { ciudad: true },
+      });
+      if (!destino) throw new AppError(404, 'Sección destino no encontrada');
+
+      const actualizada = await tx.oficina.update({
+        where: { id },
+        data: { seccionId },
+        include: { seccion: { include: { ciudad: true } } },
+      });
+
+      const movimiento = await tx.movimientoUbicacion.create({
+        data: {
+          entidad: 'OFICINA',
+          entidadId: oficina.id,
+          entidadNombre: oficina.nombre,
+          origenCiudadId: oficina.seccion.ciudad.id,
+          origenCiudadNombre: oficina.seccion.ciudad.nombre,
+          origenSeccionId: oficina.seccion.id,
+          origenSeccionNombre: oficina.seccion.nombre,
+          destinoCiudadId: destino.ciudad.id,
+          destinoCiudadNombre: destino.ciudad.nombre,
+          destinoSeccionId: destino.id,
+          destinoSeccionNombre: destino.nombre,
+          cantidadEquipos: oficina.tipo === 'MANTENIMIENTO'
+            ? oficina._count.equipos
+            : oficina._count.equiposAsignados,
+          motivo: motivo?.trim() || null,
+          usuarioId,
+        },
+      });
+
+      return { oficina: actualizada, movimiento };
+    });
   } catch (e: any) {
     if (e?.code === 'P2002') throw new AppError(409, 'Ya existe una oficina con ese nombre en la sección destino');
     throw e;

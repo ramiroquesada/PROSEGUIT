@@ -11,7 +11,10 @@ router.use(authMiddleware);
 const nameSchema = z.object({ nombre: z.string().min(1) });
 const sectionSchema = z.object({ nombre: z.string().min(1), ciudadId: z.number().int().positive() });
 const officeSchema = z.object({ nombre: z.string().min(1), seccionId: z.number().int().positive() });
-const moveOfficeSchema = z.object({ seccionId: z.number().int().positive() });
+const moveOfficeSchema = z.object({
+  seccionId: z.number().int().positive(),
+  motivo: z.string().trim().max(500).optional(),
+});
 const moveSectionSchema = z.object({ ciudadId: z.number().int().positive() });
 
 router.get('/tree', controller.treeHandler);
@@ -28,6 +31,7 @@ router.patch('/sections/:id/move', adminOnly, validate(moveSectionSchema), contr
 router.post('/offices', adminOnly, validate(officeSchema), controller.createOfficeHandler);
 router.put('/offices/:id', adminOnly, validate(nameSchema), controller.updateOfficeHandler);
 router.delete('/offices/:id', adminOnly, controller.deleteOfficeHandler);
+router.get('/offices/:id/move-preview', adminOnly, controller.moveOfficePreviewHandler);
 router.patch('/offices/:id/move', adminOnly, validate(moveOfficeSchema), controller.moveOfficeHandler);
 
 export default router;

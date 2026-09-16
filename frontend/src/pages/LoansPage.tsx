@@ -3,6 +3,7 @@ import { useLoans, useCreateLoan, useReturnLoan } from '../hooks/useLoans';
 import { useLocationTree } from '../hooks/useLocations';
 import { api } from '../lib/api-client';
 import styles from './LoansPage.module.css';
+import TypeBadge from '../components/ui/TypeBadge';
 import { usePageTitle } from '../hooks/usePageTitle';
 
 type ModalType = 'nuevo' | 'devolucion' | null;
@@ -145,7 +146,7 @@ export default function LoansPage() {
                     <td>
                       <span className={styles.serie}>Serie {p.equipo.serie}</span>
                       {p.equipo.modelo && <span className={styles.modelo}>{p.equipo.modelo}</span>}
-                      <span className={styles.tipo}>{p.equipo.tipoEquipo.nombre}</span>
+                      <TypeBadge label={p.equipo.tipoEquipo.nombre} />
                     </td>
                     <td>
                       {p.solicitante

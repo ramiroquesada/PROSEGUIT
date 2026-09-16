@@ -36,8 +36,8 @@ export interface RepairAlert {
   serie: number;
   modelo: string | null;
   tipoEquipo: { nombre: string };
-  diasEnReparacion: number;
-  fechaIngreso: string;
+  diasEnReparacion: number | null;
+  fechaIngreso: string | null;
 }
 
 export interface EquipmentByType {

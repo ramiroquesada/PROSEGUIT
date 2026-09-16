@@ -56,6 +56,55 @@
   --color-violet:          #7C3AED;
   --color-violet-light:    #EDE9FE;
 
+  /* ─── Colores para tipos de equipo ─── */
+  --color-type-slate:         #475569;
+  --color-type-slate-light:   #E2E8F0;
+  --color-type-slate-rgb:     71, 85, 105;
+
+  --color-type-sky:           #0284C7;
+  --color-type-sky-light:     #E0F2FE;
+  --color-type-sky-rgb:       2, 132, 199;
+
+  --color-type-emerald:       #059669;
+  --color-type-emerald-light: #D1FAE5;
+  --color-type-emerald-rgb:   5, 150, 105;
+
+  --color-type-rose:          #E11D48;
+  --color-type-rose-light:    #FFE4E6;
+  --color-type-rose-rgb:      225, 29, 72;
+
+  --color-type-orange:        #EA580C;
+  --color-type-orange-light:  #FFEDD5;
+  --color-type-orange-rgb:    234, 88, 12;
+
+  --color-type-violet:        #7C3AED;
+  --color-type-violet-light:  #EDE9FE;
+  --color-type-violet-rgb:    124, 58, 237;
+
+  --color-type-cyan:          #0891B2;
+  --color-type-cyan-light:    #CFFAFE;
+  --color-type-cyan-rgb:      8, 145, 178;
+
+  --color-type-lime:          #65A30D;
+  --color-type-lime-light:    #ECFCCB;
+  --color-type-lime-rgb:      101, 163, 13;
+
+  --color-type-fuchsia:       #C026D3;
+  --color-type-fuchsia-light: #FAE8FF;
+  --color-type-fuchsia-rgb:   192, 38, 211;
+
+  --color-type-amber:         #D97706;
+  --color-type-amber-light:   #FDE68A;
+  --color-type-amber-rgb:     217, 119, 6;
+
+  --color-type-indigo:        #4F46E5;
+  --color-type-indigo-light:  #E0E7FF;
+  --color-type-indigo-rgb:    79, 70, 229;
+
+  --color-type-coral:         #E76F51;
+  --color-type-coral-light:   #FDE8E5;
+  --color-type-coral-rgb:     231, 111, 81;
+
   --color-table-head:      #003366;
 
   /* ─── Espaciado ─── */
@@ -172,6 +221,55 @@
 
   --color-violet:          #C4B5FD;
   --color-violet-light:    rgb(124 58 237 / 0.2);
+
+  /* ─── Colores para tipos de equipo (dark) ─── */
+  --color-type-slate:         #94A3B8;
+  --color-type-slate-light:   rgb(71 85 105 / 0.2);
+  --color-type-slate-rgb:     148, 163, 184;
+
+  --color-type-sky:           #38BDF8;
+  --color-type-sky-light:     rgb(2 132 199 / 0.2);
+  --color-type-sky-rgb:       56, 189, 248;
+
+  --color-type-emerald:       #34D399;
+  --color-type-emerald-light: rgb(5 150 105 / 0.2);
+  --color-type-emerald-rgb:   52, 211, 153;
+
+  --color-type-rose:          #FB7185;
+  --color-type-rose-light:    rgb(225 29 72 / 0.2);
+  --color-type-rose-rgb:      251, 113, 133;
+
+  --color-type-orange:        #FB923C;
+  --color-type-orange-light:  rgb(234 88 12 / 0.2);
+  --color-type-orange-rgb:    251, 146, 60;
+
+  --color-type-violet:        #C4B5FD;
+  --color-type-violet-light:  rgb(124 58 237 / 0.2);
+  --color-type-violet-rgb:    196, 181, 253;
+
+  --color-type-cyan:          #22D3EE;
+  --color-type-cyan-light:    rgb(8 145 178 / 0.2);
+  --color-type-cyan-rgb:      34, 211, 238;
+
+  --color-type-lime:          #A3E635;
+  --color-type-lime-light:    rgb(101 163 13 / 0.2);
+  --color-type-lime-rgb:      163, 230, 53;
+
+  --color-type-fuchsia:       #E879F9;
+  --color-type-fuchsia-light: rgb(192 38 211 / 0.2);
+  --color-type-fuchsia-rgb:   232, 121, 249;
+
+  --color-type-amber:         #FBBF24;
+  --color-type-amber-light:   rgb(217 119 6 / 0.2);
+  --color-type-amber-rgb:     251, 191, 36;
+
+  --color-type-indigo:        #818CF8;
+  --color-type-indigo-light:  rgb(79 70 229 / 0.2);
+  --color-type-indigo-rgb:    129, 140, 248;
+
+  --color-type-coral:         #F4A261;
+  --color-type-coral-light:   rgb(231 111 81 / 0.2);
+  --color-type-coral-rgb:     244, 162, 97;
 
   --color-table-head:      #1A2E4A;
 

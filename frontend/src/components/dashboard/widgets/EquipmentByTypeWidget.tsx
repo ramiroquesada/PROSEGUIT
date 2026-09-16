@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router';
 import { useEquipmentByType } from '../../../hooks/useDashboard';
+import TypeBadge from '../../../components/ui/TypeBadge';
 import widgetStyles from './Widget.module.css';
 
 export default function EquipmentByTypeWidget() {
@@ -26,9 +27,7 @@ export default function EquipmentByTypeWidget() {
             {tipos.map((tipo) => (
               <div key={tipo.tipoNombre} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                  <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-secondary)', fontWeight: 'var(--font-weight-medium)' }}>
-                    {tipo.tipoNombre}
-                  </span>
+                  <TypeBadge label={tipo.tipoNombre} />
                   <span style={{ fontSize: 'var(--font-size-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'var(--font-weight-semibold)' }}>
                     {tipo.count}
                   </span>

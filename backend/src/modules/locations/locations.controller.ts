@@ -51,9 +51,19 @@ export async function deleteOfficeHandler(req: Request, res: Response) {
   res.status(204).end();
 }
 
+export async function moveOfficePreviewHandler(req: Request, res: Response) {
+  const preview = await locationsService.getOfficeMovePreview(Number(req.params.id));
+  res.json(preview);
+}
+
 export async function moveOfficeHandler(req: Request, res: Response) {
-  const office = await locationsService.moveOffice(Number(req.params.id), req.body.seccionId);
-  res.json(office);
+  const result = await locationsService.moveOffice(
+    Number(req.params.id),
+    req.body.seccionId,
+    req.user!.userId,
+    req.body.motivo,
+  );
+  res.json(result);
 }
 
 export async function moveSectionHandler(req: Request, res: Response) {

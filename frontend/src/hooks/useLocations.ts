@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api-client';
 
+export type OfficeType = 'OFICINA' | 'SOPORTE' | 'MANTENIMIENTO' | 'DEPOSITO';
+
 interface LocationTree {
   id: number;
   nombre: string;
@@ -12,8 +14,21 @@ interface LocationTree {
       id: number;
       nombre: string;
       seccionId: number;
+      tipo: OfficeType;
     }[];
   }[];
+}
+
+interface OfficeMovePreview {
+  id: number;
+  nombre: string;
+  cantidadEquipos: number;
+  ubicacionActual: {
+    ciudadId: number;
+    ciudadNombre: string;
+    seccionId: number;
+    seccionNombre: string;
+  };
 }
 
 export function useLocationTree() {
@@ -31,9 +46,18 @@ export function useEquipmentByOficina(oficinaId: number | null) {
       data: {
         id: number; serie: number; modelo: string | null; estado: string;
         tipoEquipo: { nombre: string }; ip: string | null;
+        oficina: { id: number; nombre: string; tipo: OfficeType };
       }[];
       pagination: { total: number };
     }>(`/equipment?oficinaId=${oficinaId}&limit=100`),
+    enabled: oficinaId !== null && oficinaId > 0,
+  });
+}
+
+export function useOfficeMovePreview(oficinaId: number | null) {
+  return useQuery({
+    queryKey: ['office-move-preview', oficinaId],
+    queryFn: () => api.get<OfficeMovePreview>(`/locations/offices/${oficinaId}/move-preview`),
     enabled: oficinaId !== null && oficinaId > 0,
   });
 }
@@ -126,9 +150,12 @@ export function useDeleteOffice() {
 export function useMoveOffice() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, seccionId }: { id: number; seccionId: number }) =>
-      api.patch(`/locations/offices/${id}/move`, { seccionId }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['locations-tree'] }),
+    mutationFn: ({ id, seccionId, motivo }: { id: number; seccionId: number; motivo?: string }) =>
+      api.patch(`/locations/offices/${id}/move`, { seccionId, motivo }),
+    onSuccess: (_data, variables) => Promise.all([
+      qc.invalidateQueries({ queryKey: ['locations-tree'] }),
+      qc.invalidateQueries({ queryKey: ['office-move-preview', variables.id] }),
+    ]),
   });
 }
 
@@ -141,4 +168,4 @@ export function useMoveSection() {
   });
 }
 
-export type { LocationTree };
+export type { LocationTree, OfficeMovePreview };

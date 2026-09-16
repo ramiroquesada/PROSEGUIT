@@ -82,7 +82,7 @@ export default function LoginPage() {
         </div>
 
         <div className={styles.cardFooter}>
-          Sistema de Gestión de Inventario IT · v2.0
+          Sistema de Gestión de Inventario IT · v{__APP_VERSION__}
         </div>
       </div>
     </div>
