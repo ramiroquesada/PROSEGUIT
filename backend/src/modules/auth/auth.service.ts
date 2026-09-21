@@ -5,6 +5,7 @@ import { env } from '../../config/env.js';
 import { prisma } from '../../utils/prisma.js';
 import { AppError } from '../../middleware/error-handler.js';
 import type { JwtPayload } from '../../middleware/auth.js';
+import { recordAccess, getLockMinutesLeft, type AccessContext } from '../access-log/access-log.service.js';
 
 function parseDuration(duration: string): number {
   const match = duration.match(/^(\d+)([dhm])$/);
@@ -19,15 +20,29 @@ function parseDuration(duration: string): number {
   }
 }
 
-export async function login(ficha: number, password: string) {
+export async function login(ficha: number, password: string, ctx?: AccessContext) {
   const usuario = await prisma.usuario.findUnique({ where: { ficha } });
 
-  if (!usuario || !usuario.activo) {
+  if (!usuario) {
+    await recordAccess({ evento: 'USUARIO_INEXISTENTE', ficha }, ctx);
+    throw new AppError(401, 'Credenciales inválidas');
+  }
+
+  // El bloqueo se chequea antes de la contraseña: si no, se podría seguir probando
+  const lockMinutes = await getLockMinutesLeft(ficha);
+  if (lockMinutes > 0) {
+    await recordAccess({ evento: 'USUARIO_BLOQUEADO', ficha, usuarioId: usuario.id }, ctx);
+    throw new AppError(429, `Demasiados intentos fallidos. Probá de nuevo en ${lockMinutes} minuto${lockMinutes === 1 ? '' : 's'} o pedile a un administrador que resetee tu contraseña.`);
+  }
+
+  if (!usuario.activo) {
+    await recordAccess({ evento: 'USUARIO_INACTIVO', ficha, usuarioId: usuario.id }, ctx);
     throw new AppError(401, 'Credenciales inválidas');
   }
 
   const validPassword = await bcrypt.compare(password, usuario.passwordHash);
   if (!validPassword) {
+    await recordAccess({ evento: 'LOGIN_FALLIDO', ficha, usuarioId: usuario.id }, ctx);
     throw new AppError(401, 'Credenciales inválidas');
   }
 
@@ -56,6 +71,9 @@ export async function login(ficha: number, password: string) {
       expiresAt,
     },
   });
+
+  await prisma.usuario.update({ where: { id: usuario.id }, data: { ultimoAcceso: new Date() } });
+  await recordAccess({ evento: 'LOGIN_OK', ficha, usuarioId: usuario.id }, ctx);
 
   return {
     accessToken,
@@ -118,6 +136,13 @@ export async function refreshAccessToken(refreshToken: string) {
   return { accessToken, refreshToken: newRefreshToken };
 }
 
-export async function logout(refreshToken: string) {
+export async function logout(refreshToken: string, ctx?: AccessContext) {
+  const stored = await prisma.refreshToken.findUnique({
+    where: { token: refreshToken },
+    select: { usuario: { select: { id: true, ficha: true } } },
+  });
   await prisma.refreshToken.deleteMany({ where: { token: refreshToken } });
+  if (stored) {
+    await recordAccess({ evento: 'LOGOUT', ficha: stored.usuario.ficha, usuarioId: stored.usuario.id }, ctx);
+  }
 }

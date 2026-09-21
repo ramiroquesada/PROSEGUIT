@@ -25,5 +25,6 @@ router.get('/:id', adminOnly, controller.getByIdHandler);
 router.post('/', adminOnly, validate(createUserSchema), controller.createHandler);
 router.put('/:id', adminOnly, validate(updateSchema), controller.updateHandler);
 router.post('/:id/reset-password', adminOnly, controller.resetPasswordHandler);
+router.post('/:id/revoke-sessions', adminOnly, controller.revokeSessionsHandler);
 
 export default router;

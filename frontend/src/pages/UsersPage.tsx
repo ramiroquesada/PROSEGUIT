@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { use } from 'react';
-import { useUsers, useCurrentUser, useCreateUser, useUpdateUser, useResetPassword, useChangePassword } from '../hooks/useUsers';
+import { useUsers, useCurrentUser, useCreateUser, useUpdateUser, useResetPassword, useChangePassword, useRevokeSessions } from '../hooks/useUsers';
 import { AuthContext } from '../lib/auth-context';
 import styles from './UsersPage.module.css';
 import { usePageTitle } from '../hooks/usePageTitle';
@@ -12,6 +12,7 @@ export default function UsersPage() {
   const createMutation = useCreateUser();
   const updateMutation = useUpdateUser();
   const resetMutation = useResetPassword();
+  const revokeMutation = useRevokeSessions();
 
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ nombre: '', ficha: '', rol: 'TECNICO' as 'ADMIN' | 'TECNICO' });
@@ -42,7 +43,14 @@ export default function UsersPage() {
   async function handleResetPassword(id: number, nombre: string) {
     if (!confirm(`¿Resetear contraseña de ${nombre}?`)) return;
     const result = await resetMutation.mutateAsync(id);
-    alert(`Contraseña reseteada.\nContraseña temporal: ${result.tempPassword}\nGuárdala, no se mostrará de nuevo.`);
+    alert(`Contraseña reseteada (también desbloquea la cuenta si estaba bloqueada por intentos fallidos).\nContraseña temporal: ${result.tempPassword}\nGuárdala, no se mostrará de nuevo.`);
+  }
+
+  async function handleRevokeSessions(id: number, nombre: string) {
+    if (!confirm(`¿Cerrar todas las sesiones de ${nombre}?
+Va a tener que volver a iniciar sesión (en 15 minutos como máximo).`)) return;
+    const result = await revokeMutation.mutateAsync(id);
+    alert(result.count > 0 ? `Se cerraron ${result.count} sesión(es).` : 'No tenía sesiones abiertas.');
   }
 
   const { data: me } = useCurrentUser();
@@ -153,6 +161,7 @@ export default function UsersPage() {
                 <th>Ficha</th>
                 <th>Rol</th>
                 <th>Estado</th>
+                <th>Último acceso</th>
                 <th></th>
               </tr>
             </thead>
@@ -176,20 +185,37 @@ export default function UsersPage() {
                       {u.activo ? 'Activo' : 'Inactivo'}
                     </button>
                   </td>
+                  <td className={styles.ultimoAcceso}>
+                    {u.ultimoAcceso
+                      ? new Date(u.ultimoAcceso).toLocaleString('es-UY', {
+                          day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit',
+                        })
+                      : <span className={styles.muted}>Nunca</span>}
+                  </td>
                   <td className={styles.actions}>
                     {u.id === currentUser?.id ? (
                       <button className={styles.resetBtn} onClick={() => setShowChangePassword(true)}>
                         Cambiar contraseña
                       </button>
                     ) : (
-                      <button
-                        className={styles.resetBtn}
-                        onClick={() => handleResetPassword(u.id, u.nombre)}
-                        disabled={resetMutation.isPending}
-                        title="Resetear contraseña a la ficha"
-                      >
-                        Resetear clave
-                      </button>
+                      <>
+                        <button
+                          className={styles.resetBtn}
+                          onClick={() => handleResetPassword(u.id, u.nombre)}
+                          disabled={resetMutation.isPending}
+                          title="Genera una contraseña temporal y desbloquea la cuenta"
+                        >
+                          Resetear clave
+                        </button>
+                        <button
+                          className={styles.resetBtn}
+                          onClick={() => handleRevokeSessions(u.id, u.nombre)}
+                          disabled={revokeMutation.isPending}
+                          title="Obliga a volver a iniciar sesión en todos los dispositivos"
+                        >
+                          Cerrar sesiones
+                        </button>
+                      </>
                     )}
                   </td>
                 </tr>

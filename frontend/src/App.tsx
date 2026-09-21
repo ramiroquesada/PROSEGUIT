@@ -17,6 +17,7 @@ const TemplatesPage = lazy(() => import('./pages/TemplatesPage'));
 const HistoryPage = lazy(() => import('./pages/HistoryPage'));
 const BulkEquipmentPage = lazy(() => import('./pages/BulkEquipmentPage'));
 const LabelsPage = lazy(() => import('./pages/LabelsPage'));
+const AccessLogPage = lazy(() => import('./pages/AccessLogPage'));
 
 const PageLoader = () => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '200px', color: 'var(--color-text-secondary)' }}>
@@ -69,6 +70,7 @@ export default function App() {
           <Route path="etiquetas" element={<LabelsPage />} />
           <Route path="plantillas" element={<TemplatesPage />} />
           <Route path="usuarios" element={<UsersPage />} />
+          <Route path="accesos" element={<AccessLogPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

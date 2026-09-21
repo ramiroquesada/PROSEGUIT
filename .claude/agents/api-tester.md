@@ -86,7 +86,13 @@ Usar en requests protegidos: `Authorization: Bearer <token>`
 - `GET /users/:id` — (admin)
 - `POST /users` — (admin) body: `{nombre, ficha, rol, oficinaId}`
 - `PUT /users/:id` — (admin)
-- `POST /users/:id/reset-password` — (admin) body: `{newPassword}`
+- `POST /users/:id/reset-password` — (admin) sin body; devuelve `{tempPassword}` y desbloquea la ficha
+- `POST /users/:id/revoke-sessions` — (admin) borra los refresh tokens del usuario; devuelve `{count}`
+
+### Access log (`/access-log`, solo admin)
+- `GET /access-log` — paginado; filtros `evento`, `ficha`, `desde`, `hasta`
+- `GET /access-log/summary` — `{loginsOk, fallidos, bloqueos}` de las últimas 24 h
+- `POST /auth/login` responde **429** tras 5 intentos fallidos en 15 min para la misma ficha
 
 ## Qué testear en cada endpoint
 

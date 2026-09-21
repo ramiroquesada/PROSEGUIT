@@ -15,6 +15,7 @@ import licensesRoutes from './modules/licenses/licenses.routes.js';
 import modelTemplatesRoutes from './modules/model-templates/model-templates.routes.js';
 import serviceProvidersRoutes from './modules/service-providers/service-providers.routes.js';
 import usersRoutes from './modules/users/users.routes.js';
+import accessLogRoutes from './modules/access-log/access-log.routes.js';
 import { APP_VERSION } from './config/version.js';
 
 const app = express();
@@ -57,6 +58,7 @@ app.use('/api/v1/licenses', licensesRoutes);
 app.use('/api/v1/model-templates', modelTemplatesRoutes);
 app.use('/api/v1/service-providers', serviceProvidersRoutes);
 app.use('/api/v1/users', usersRoutes);
+app.use('/api/v1/access-log', accessLogRoutes);
 
 app.use(errorHandler);
 

@@ -2,6 +2,7 @@ import { prisma } from '../../utils/prisma.js';
 import { AppError } from '../../middleware/error-handler.js';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
+import { recordAccess, type AccessContext } from '../access-log/access-log.service.js';
 
 function generateTempPassword(): string {
   return randomBytes(4).toString('hex'); // 8 chars hex aleatorios
@@ -18,6 +19,7 @@ export async function listUsers() {
       activo: true,
       forcePasswordChange: true,
       oficina: { select: { id: true, nombre: true } },
+      ultimoAcceso: true,
       createdAt: true,
     },
     orderBy: { nombre: 'asc' },
@@ -104,7 +106,7 @@ export async function updateUser(id: number, data: {
   });
 }
 
-export async function resetPassword(id: number) {
+export async function resetPassword(id: number, actorId?: number, ctx?: AccessContext) {
   const user = await prisma.usuario.findUnique({ where: { id } });
   if (!user) throw new AppError(404, 'Usuario no encontrado');
 
@@ -115,6 +117,7 @@ export async function resetPassword(id: number) {
     where: { id },
     data: { passwordHash, forcePasswordChange: true },
   });
+  await recordAccess({ evento: 'RESET_PASSWORD', ficha: user.ficha, usuarioId: id, actorId }, ctx);
 
   return { tempPassword };
 }
@@ -122,7 +125,7 @@ export async function resetPassword(id: number) {
 export async function changePassword(userId: number, data: {
   currentPassword: string;
   newPassword: string;
-}) {
+}, ctx?: AccessContext) {
   const user = await prisma.usuario.findUnique({ where: { id: userId } });
   if (!user) throw new AppError(404, 'Usuario no encontrado');
 
@@ -135,4 +138,15 @@ export async function changePassword(userId: number, data: {
     where: { id: userId },
     data: { passwordHash, forcePasswordChange: false },
   });
+  await recordAccess({ evento: 'CAMBIO_PASSWORD', ficha: user.ficha, usuarioId: userId }, ctx);
+}
+
+// Invalida los refresh tokens: el usuario queda afuera cuando vence su access token (15 min máx.)
+export async function revokeSessions(id: number, actorId: number, ctx?: AccessContext) {
+  const user = await prisma.usuario.findUnique({ where: { id } });
+  if (!user) throw new AppError(404, 'Usuario no encontrado');
+
+  const { count } = await prisma.refreshToken.deleteMany({ where: { usuarioId: id } });
+  await recordAccess({ evento: 'SESIONES_CERRADAS', ficha: user.ficha, usuarioId: id, actorId }, ctx);
+  return { count };
 }

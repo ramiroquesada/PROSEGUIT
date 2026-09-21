@@ -325,7 +325,10 @@ model Usuario {
   enviosServicio       EnvioServicio[]
   movimientosUbicacion MovimientoUbicacion[]
   refreshTokens        RefreshToken[]
-  createdAt            DateTime              @default(now()) @map("created_at")
+  accesos              RegistroAcceso[]      @relation("AccesoUsuario")
+  accesosComoActor     RegistroAcceso[]      @relation("AccesoActor")
+  ultimoAcceso         DateTime?             @map("ultimo_acceso")
+  createdAt           DateTime              @default(now()) @map("created_at")
   updatedAt            DateTime              @updatedAt @map("updated_at")
 
   @@map("usuario")
@@ -358,6 +361,43 @@ model RefreshToken {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("refresh_token")
+}
+
+// ==========================================
+// REGISTRO DE ACCESOS (seguridad)
+// ==========================================
+
+enum EventoAcceso {
+  LOGIN_OK
+  LOGIN_FALLIDO
+  USUARIO_INEXISTENTE
+  USUARIO_INACTIVO
+  USUARIO_BLOQUEADO
+  LOGOUT
+  CAMBIO_PASSWORD
+  RESET_PASSWORD
+  SESIONES_CERRADAS
+
+  @@map("evento_acceso")
+}
+
+model RegistroAcceso {
+  id        Int          @id @default(autoincrement())
+  fecha     DateTime     @default(now())
+  evento    EventoAcceso
+  // Ficha tal como se ingresó: queda aunque el usuario no exista
+  ficha     Int?
+  usuarioId Int?         @map("usuario_id")
+  usuario   Usuario?     @relation("AccesoUsuario", fields: [usuarioId], references: [id], onDelete: SetNull)
+  // Quién hizo la acción cuando no es el propio usuario (reset, cierre de sesiones)
+  actorId   Int?         @map("actor_id")
+  actor     Usuario?     @relation("AccesoActor", fields: [actorId], references: [id], onDelete: SetNull)
+  ip        String?      @db.VarChar(64)
+  userAgent String?      @map("user_agent") @db.VarChar(500)
+
+  @@index([fecha(sort: Desc)])
+  @@index([ficha, fecha(sort: Desc)])
+  @@map("registro_acceso")
 }
 
 // ==========================================

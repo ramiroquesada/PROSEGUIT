@@ -9,6 +9,7 @@ import {
   KeyRound,
   LayoutTemplate,
   Users,
+  ShieldCheck,
   LogOut,
   Moon,
   Sun,
@@ -27,6 +28,7 @@ const navItems = [
   { to: '/etiquetas', label: 'Etiquetas', icon: Tag },
   { to: '/plantillas', label: 'Plantillas', icon: LayoutTemplate },
   { to: '/usuarios', label: 'Usuarios', icon: Users },
+  { to: '/accesos', label: 'Accesos', icon: ShieldCheck, adminOnly: true },
 ];
 
 interface SidebarProps {
@@ -66,7 +68,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         <nav className={styles.nav}>
-          {navItems.map((item) => {
+          {navItems.filter((item) => !item.adminOnly || user?.rol === 'ADMIN').map((item) => {
             const Icon = item.icon;
             return (
               <NavLink

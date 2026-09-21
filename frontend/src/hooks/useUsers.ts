@@ -10,6 +10,7 @@ interface Usuario {
   activo: boolean;
   forcePasswordChange: boolean;
   oficina: { id: number; nombre: string } | null;
+  ultimoAcceso: string | null;
   createdAt: string;
 }
 
@@ -57,6 +58,14 @@ export function useResetPassword() {
   return useMutation({
     mutationFn: (id: number) => api.post<{ message: string; tempPassword: string }>(`/users/${id}/reset-password`, {}),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
+  });
+}
+
+export function useRevokeSessions() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.post<{ message: string; count: number }>(`/users/${id}/revoke-sessions`, {}),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['access-log'] }),
   });
 }
 

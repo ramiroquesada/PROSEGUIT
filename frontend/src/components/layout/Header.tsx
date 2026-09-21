@@ -13,6 +13,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/licencias':   'Licencias',
   '/plantillas':  'Plantillas',
   '/usuarios':    'Usuarios',
+  '/accesos':     'Accesos',
 };
 
 // Breadcrumb para rutas de detalle/edición de equipos

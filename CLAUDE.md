@@ -29,7 +29,13 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 
 ## Estado actual del proyecto (Abril 2026)
 
-### ✅ Completado recientemente (abril 17)
+### ✅ Completado recientemente (septiembre 21)
+
+- **Registro de accesos** — Tabla `registro_acceso` separada del historial de equipos. Registra login OK, contraseña incorrecta, ficha inexistente, usuario inactivo, bloqueo, logout, cambio y reset de contraseña, y cierre de sesiones, con IP (`X-Real-IP` de nginx) y user-agent. Página `/accesos` (solo admin) con resumen de 24 h y filtros. `recordAccess()` nunca rompe la operación que registra
+- **Bloqueo por intentos fallidos** — 5 contraseñas incorrectas en 15 min bloquean la ficha (HTTP 429). Se desbloquea sola al salir de la ventana, o al instante con un reset de contraseña. Constantes en `access-log.service.ts`
+- **Último acceso y cerrar sesiones** — `usuario.ultimo_acceso` visible en `UsersPage`; botón admin "Cerrar sesiones" que borra los refresh tokens (el access token sigue vivo hasta 15 min)
+
+### ✅ Completado (abril 17)
 
 - **Impresión de etiquetas de equipos** — Nueva página `/etiquetas` que reemplaza al Excel `Codigos Pre Impresos - 33 Etiquetas.ods`. Imprime el número en Arial grande (opcionalmente entre asteriscos, como venía saliendo del .ods) sobre una grilla A4 uniforme de 3 × 11 = 33 etiquetas de 63,5 × 25,4 mm. Rango correlativo arrancando en `max(serie)+1`, opción de empezar en una etiqueta intermedia para reusar hojas a medio despegar, y calibración de offset X/Y guardada en `localStorage`. **Sin código de barras ni QR**: no hay lector de barras, y los celulares no están en la misma red que el servidor
 - **Auto-fill modelo desde plantilla** — Al seleccionar una plantilla en el formulario de equipo (individual o masivo), el campo Modelo se rellena automáticamente con el nombre de la plantilla; el usuario puede editarlo libremente después
@@ -51,7 +57,8 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 | `licenses` | GET list/summary/detail, POST crear, PUT editar, DELETE (con estado derivado) |
 | `model-templates` | CRUD completo (admin only) |
 | `service-providers` | CRUD completo (admin only) |
-| `users` | CRUD + reset-password + change-password |
+| `users` | CRUD + reset-password + change-password + revoke-sessions |
+| `access-log` | GET list (paginado + filtros), GET summary (admin only) |
 
 ### ✅ Frontend — 14 páginas
 
@@ -71,7 +78,8 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 | `/historial` | HistoryPage | Historial global con filtros y badges |
 | `/etiquetas` | LabelsPage | Impresión de etiquetas numeradas en hojas A4 de 33 |
 | `/plantillas` | TemplatesPage | CRUD plantillas de modelos (admin) |
-| `/usuarios` | UsersPage | CRUD usuarios (admin) |
+| `/usuarios` | UsersPage | CRUD usuarios (admin), último acceso, cerrar sesiones |
+| `/accesos` | AccessLogPage | Registro de accesos y seguridad (admin) |
 
 ### ✅ Características implementadas
 - Auth completa con JWT access + refresh tokens con **rotación automática** (cada refresh emite un nuevo refresh token, invalidando el anterior)
