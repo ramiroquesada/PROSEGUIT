@@ -2,6 +2,22 @@
 
 Todos los cambios relevantes de PROSEGUIT se documentan en este archivo. El proyecto usa versionado semántico (`MAJOR.MINOR.PATCH`).
 
+## [2.3.0] - 2026-09-21
+
+### Agregado
+
+- Registro de accesos, en una tabla aparte del historial de equipos. Guarda inicios de sesión, contraseñas incorrectas, fichas inexistentes, intentos de usuarios inactivos o bloqueados, cierres de sesión, cambios y resets de contraseña, y cierres de sesión forzados. Cada registro lleva fecha, ficha, IP y navegador, y en los resets y cierres forzados también el administrador que lo hizo.
+- Página `/accesos`, solo para administradores, con el resumen de las últimas 24 horas (inicios de sesión, intentos fallidos e intentos con la cuenta bloqueada) y la tabla filtrable por ficha, evento y fechas. Los intentos fallidos aparecen resaltados.
+- Bloqueo por intentos fallidos: con 5 contraseñas incorrectas en 15 minutos la ficha queda bloqueada y el login lo avisa con los minutos que faltan. Se desbloquea sola al pasar ese tiempo, o al instante cuando un administrador resetea la contraseña.
+- Columna "Último acceso" en Usuarios.
+- Botón "Cerrar sesiones" en Usuarios, para sacar a un usuario de todos sus dispositivos. Queda afuera en 15 minutos como máximo, que es lo que dura el token de acceso.
+
+### Notas de actualización
+
+- La migración nueva es aditiva: crea la tabla `registro_acceso` y la columna `usuario.ultimo_acceso`, y se aplica al iniciar el backend en el despliegue Docker.
+- La IP se toma de la cabecera `X-Real-IP` que ya envía nginx. En desarrollo, sin proxy, se ve la del equipo local.
+- El registro empieza vacío: no hay accesos anteriores a esta versión, y "Último acceso" dice "Nunca" hasta el próximo login de cada usuario.
+
 ## [2.2.1] - 2026-09-16
 
 ### Corregido
