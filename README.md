@@ -82,10 +82,12 @@
 | Módulo | Descripción |
 |--------|-------------|
 | **Inventario** | Búsqueda debounced, filtros en cascada, ordenamiento, paginación configurable |
-| **Estado por ubicación** | El estado del equipo se deriva del nombre de la oficina — sin inconsistencias de DB |
-| **Estado NUEVO** | Equipos recién ingresados quedan en NUEVO hasta ser asignados a una oficina final |
+| **Estado por ubicación** | El estado del equipo se deriva del tipo de la oficina donde está — sin inconsistencias de DB |
+| **Estado NUEVO** | Equipos recién ingresados quedan en NUEVO (dentro del Stock) hasta ser asignados a una oficina |
+| **Stock de equipos** | Oficina "Stock disponible" con los equipos listos para entregar, agrupados por tipo, etapas *A revisar* / *Listo*, días en stock, condición (Bueno / Con detalles / Solo para repuestos) y botón **Pasar a stock** en la ficha |
+| **Insumos** | Catálogo abierto por categorías para lo que no tiene número de serie (cables, pilas, periféricos…): ingresos, entregas a oficina/persona/equipo, ajustes por conteo y registro de movimientos |
 | **Historial de auditoría** | Toda acción registra motivo, técnico, ubicación origen/destino y timestamp |
-| **Acciones de equipo** | Transferir (SALIDA), enviar a soporte (ENTRADA), servicio externo, baja |
+| **Acciones de equipo** | ENTRADA (a Mantenimiento), SALIDA (vuelve a su oficina asignada), cambiar oficina, pasar a stock, servicio externo. El descarte es ENTRADA → asignada Depósito → SALIDA |
 | **Lógica de acciones** | El tipo de acción en SALIDA se determina automáticamente según el estado del equipo |
 | **Préstamos** | Salida y devolución con identificación de funcionario y técnico responsable |
 | **Licencias de software** | CRUD completo, estado derivado (VIGENTE/POR_VENCER/VENCIDA), resumen por software, sección en ficha de equipo |
@@ -284,10 +286,10 @@ El número de release, el procedimiento para aumentarlo y la comprobación poste
 ```
 PROSEGUIT/
 ├── backend/
-│   ├── Dockerfile                         # Imagen de producción (tsx)
+│   ├── Dockerfile                         # Imagen de producción (compila con tsc, corre node dist/)
 │   ├── vitest.config.ts                   # Config de tests
 │   ├── prisma/
-│   │   ├── schema.prisma                  # Modelo de datos (12 modelos, 2 enums)
+│   │   ├── schema.prisma                  # Modelo de datos (22 modelos, 9 enums)
 │   │   ├── seed.ts                        # Usuarios iniciales
 │   │   ├── migrate-v1.ts                  # Migración desde seguit v1
 │   │   └── migrations/
@@ -318,16 +320,17 @@ PROSEGUIT/
 │       │   ├── action-types.ts            # Labels y colores de acciones centralizados
 │       │   ├── dashboard-helpers.ts       # Utilidades compartidas de widgets
 │       │   └── find-soporte-office.ts
-│       ├── hooks/                         # useEquipment, useLocations, useHistory...
+│       ├── hooks/                         # useEquipment, useLocations, useHistory, useSupplies...
 │       ├── components/
 │       │   ├── layout/                    # Sidebar, Header, MainLayout
 │       │   ├── ui/                        # DataTable (tabla reutilizable), StatusBadge
 │       │   ├── dashboard/                 # Widgets configurables con drag & drop
+│       │   ├── supplies/                  # Modales y tabla de movimientos de insumos
 │       │   └── LocationCascadeSelect.tsx  # Selector Ciudad›Sección›Oficina reutilizable
-│       ├── pages/                         # 13 páginas
+│       ├── pages/                         # 18 páginas
 │       └── styles/                        # variables.css, reset.css, globals.css
 │
-├── packages/shared/                       # Schemas Zod compartidos (equipment, user)
+├── packages/shared/                       # Schemas Zod compartidos (equipment, user, supplies…)
 ├── docker-compose.yml                     # PostgreSQL para desarrollo
 ├── docker-compose.prod.yml                # Producción: postgres + backend + nginx
 └── .env.production.example                # Template de variables de entorno para prod
@@ -346,15 +349,19 @@ Ciudad ──< Seccion ──< Oficina ──< Equipo
                                   Historial (accion + motivo + origen + destino)
                                   Prestamo (solicitante + tecnico + fechas)
                                   EnvioServicio (ServicioExterno + diagnostico)
+
+CategoriaInsumo ──< Insumo ──< MovimientoInsumo (INGRESO · ENTREGA · AJUSTE)
 ```
 
-**Estados de equipo:** `NUEVO` · `ACTIVO` · `EN_REPARACION` · `EN_DEPOSITO` · `PRESTADO` · `EN_SERVICIO_EXTERNO`
+**Estados de equipo:** `NUEVO` · `ACTIVO` · `EN_REPARACION` · `EN_DEPOSITO` · `PRESTADO` · `EN_SERVICIO_EXTERNO` · `DISPONIBLE`
 
-**Tipos de oficina:** `OFICINA` · `SOPORTE` · `DEPOSITO` — determinan el estado derivado del equipo
+**Stock:** etapa `A_REVISAR` · `LISTO` — condición `BUENO` · `CON_DETALLES` · `SOLO_REPUESTOS`
+
+**Tipos de oficina:** `OFICINA` · `SOPORTE` · `MANTENIMIENTO` · `STOCK` · `DEPOSITO` (descarte) — determinan el estado derivado del equipo
 
 **Tipos de acción:** `CREACION` · `ASIGNACION` · `EDICION` · `TRANSFERENCIA` · `ENVIO_SOPORTE` · `RETORNO_SOPORTE` · `PRESTAMO` · `DEVOLUCION` · `ENVIO_SERVICIO_EXTERNO` · `RETORNO_SERVICIO_EXTERNO` · `FOTO_AGREGADA` · `FOTO_ELIMINADA`
 
-> El campo `estado` en la base de datos puede quedar desactualizado. Siempre se usa `resolveEstado(estado, oficina.nombre)` para mostrar el estado real en la UI.
+> El campo `estado` en la base de datos puede quedar desactualizado. Siempre se usa `resolveEstado(estado, oficina.tipo)` para mostrar el estado real en la UI.
 
 ---
 
@@ -368,15 +375,19 @@ Todos los endpoints requieren `Authorization: Bearer <token>` excepto `POST /aut
 |--------|-----------|
 | **Auth** | `POST /auth/login` · `POST /auth/refresh` · `POST /auth/logout` |
 | **Equipos** | `GET /equipment` · `POST /equipment` · `GET /equipment/:id` · `PUT /equipment/:id` |
-| **Acciones equipo** | `POST /equipment/:id/transfer` · `/send-to-support` · `/send-to-service` · `/return-from-service` |
-| **Fotos** | `POST /equipment/:id/images` · `DELETE /equipment/:id/images/:imageId` |
+| **Acciones equipo** | `POST /equipment/:id/transfer` · `/send-to-support` · `/exit` · `/send-to-stock` · `/send-to-service` · `/return-from-service` · `PATCH /equipment/:id/stock-stage` |
+| **Stock** | `GET /equipment/stock` |
+| **Fotos** | `POST /equipment/:id/images` · `PATCH/DELETE /equipment/:id/images/:imageId` |
 | **Tipos** | `GET /equipment/types` · `GET /equipment/next-serie` |
 | **Ubicaciones** | `GET /locations/tree` · `POST/PUT/DELETE /locations/cities` · `/sections` · `/offices` |
 | **Historial** | `GET /history` · `GET /history/equipment/:id` |
 | **Préstamos** | `GET /loans` · `POST /loans` · `POST /loans/:id/return` |
 | **Plantillas** | `GET/POST /model-templates` · `PUT/DELETE /model-templates/:id` |
 | **Servicios** | `GET/POST /service-providers` · `PUT /service-providers/:id` |
-| **Usuarios** | `GET/POST /users` · `GET /users/me` · `PUT /users/:id` · `POST /users/:id/reset-password` · `POST /users/change-password` |
+| **Usuarios** | `GET/POST /users` · `GET /users/me` · `PUT /users/:id` · `POST /users/:id/reset-password` · `POST /users/:id/revoke-sessions` · `POST /users/change-password` |
+| **Licencias** | `GET /licenses` · `GET /licenses/summary` · `GET/PUT/DELETE /licenses/:id` · `POST /licenses` |
+| **Insumos** | `GET/POST /supplies` · `GET/PUT /supplies/:id` · `POST /supplies/:id/movements` · `GET /supplies/movements` · `GET/POST /supplies/categories` · `PUT /supplies/categories/:id` |
+| **Accesos** | `GET /access-log` · `GET /access-log/summary` (admin) |
 | **Dashboard** | `GET /dashboard/stats` · `GET /dashboard/recent-activity` |
 
 ---

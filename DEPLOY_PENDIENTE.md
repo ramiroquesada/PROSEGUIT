@@ -1,4 +1,4 @@
-# Deploy pendiente: control de stock de equipos (fase 1)
+# Deploy pendiente: v2.4.0 — stock de equipos e insumos
 
 > **Para el agente que actualiza el servidor de producción (opencode u otro).**
 > Leé esto completo antes de ejecutar nada. Cuando el deploy y el paso manual estén cerrados,
@@ -29,6 +29,14 @@ No modifican ni borran filas existentes (la única inserción son las categoría
 ## Pasos
 
 Trabajar en el directorio del repo en el servidor, en la rama `main`.
+
+0. **Anotar la versión que está corriendo hoy**, antes de tocar nada:
+
+   ```bash
+   curl http://127.0.0.1:${HTTP_PORT:-80}/api/v1/health
+   ```
+
+   Pasale a Ramiro el número de `"version"`. Si es anterior a 2.3.0, con este deploy también llegan las versiones intermedias (etiquetas, fix de CORS, registro de accesos); sus notas están en `CHANGELOG.md`. Ninguna pide pasos manuales: sus migraciones también son aditivas y se aplican solas, y `CORS_ALLOWED_ORIGINS` sigue vacía.
 
 1. **Deploy normal**, con el script de siempre (exige árbol limpio, hace backup de PostgreSQL y `uploads/`, `git pull --ff-only`, rebuild y health check):
 
@@ -64,7 +72,7 @@ Trabajar en el directorio del repo en el servidor, en la rama `main`.
    - Correrlo dos veces no hace nada la segunda vez.
    - Opciones: `--todas-las-oficinas` (incluye NUEVO asignados a oficinas que no son Soporte) y `--ficha=NNNN` (usuario del historial). Usarlas sólo si Ramiro lo pide.
 
-5. **Prueba rápida** sugerida para Ramiro desde el navegador: entrar, abrir `/stock`, ver un equipo y la barra lateral con el ítem *Stock*.
+5. **Prueba rápida** sugerida para Ramiro desde el navegador: entrar, ver `v2.4.0` en la barra lateral, abrir `/stock` y `/insumos` (debe mostrar el catálogo vacío y las seis categorías en *Categorías*), y abrir la ficha de un equipo para ver el botón *Pasar a stock*. No hace falta cargar datos de prueba en producción.
 
 ## No hacer
 

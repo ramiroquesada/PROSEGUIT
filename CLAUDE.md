@@ -27,9 +27,18 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 
 ---
 
-## Estado actual del proyecto (Abril 2026)
+## Estado actual del proyecto (noviembre 2026 · v2.4.0)
 
-### ✅ Completado recientemente (septiembre 21)
+> v2.4.0 está en `main` y **pendiente de desplegar** en la oficina. Los pasos para el servidor están en `DEPLOY_PENDIENTE.md`.
+
+### ✅ Completado (noviembre 17) — v2.4.0, pedido de stock del director
+
+- **Control de stock de equipos** (fase 1) — oficina única "Stock disponible" (tipo `STOCK`), estado derivado `DISPONIBLE`, etapas *A revisar* / *Listo*, días en stock, página `/stock` agrupada por tipo. Las altas nuevas se crean directo en Stock. `DEPOSITO` pasa a significar descarte
+- **Pasar a stock y condición** (fase 2) — botón en la ficha desde una oficina, Mantenimiento o Depósito; campo `condicion` (Bueno / Con detalles / Solo para repuestos) con filtro y columnas Origen/Condición en `/stock`
+- **Insumos** (fase 3) — catálogo abierto por categorías para lo que no tiene número de serie (cables, pilas, periféricos…), stock por cantidad con ingresos, entregas (a oficina/persona/equipo) y ajustes por conteo; registro global de movimientos. Páginas `/insumos` y `/insumos/:id`
+- **Script `pasar-nuevos-a-stock`** — pasa a Stock los equipos NUEVO que esperaban en Mantenimiento (ver "Ciclo de vida y Stock")
+
+### ✅ Completado (septiembre 21)
 
 - **Registro de accesos** — Tabla `registro_acceso` separada del historial de equipos. Registra login OK, contraseña incorrecta, ficha inexistente, usuario inactivo, bloqueo, logout, cambio y reset de contraseña, y cierre de sesiones, con IP (`X-Real-IP` de nginx) y user-agent. Página `/accesos` (solo admin) con resumen de 24 h y filtros. `recordAccess()` nunca rompe la operación que registra
 - **Bloqueo por intentos fallidos** — 5 contraseñas incorrectas en 15 min bloquean la ficha (HTTP 429). Se desbloquea sola al salir de la ventana, o al instante con un reset de contraseña. Constantes en `access-log.service.ts`
@@ -44,7 +53,7 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 - **Equipment Templates Integration** — Validación de templateId, selector dropdown en formulario de equipos, reference card con datos de plantilla, invalidación de caché `['equipment']`
 - **TemplatesPage Mejorada** — Edit functionality con ícono Pencil, editor dinámico de pares clave-valor para specs, ModalMode pattern (create/editar), validación de claves duplicadas
 
-### ✅ Backend — 12 módulos completos
+### ✅ Backend — 12 módulos
 
 | Módulo | Endpoints principales |
 |--------|----------------------|
@@ -61,7 +70,7 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 | `access-log` | GET list (paginado + filtros), GET summary (admin only) |
 | `supplies` | GET/POST/PUT categories, GET list/detail, POST crear, PUT editar (incl. baja), POST :id/movements (INGRESO/ENTREGA/AJUSTE), GET movements (registro global) |
 
-### ✅ Frontend — 14 páginas
+### ✅ Frontend — 19 rutas (18 páginas)
 
 | Ruta | Página | Descripción |
 |------|--------|-------------|
@@ -88,7 +97,7 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 ### ✅ Características implementadas
 - Auth completa con JWT access + refresh tokens con **rotación automática** (cada refresh emite un nuevo refresh token, invalidando el anterior)
 - Página de cambio de contraseña (`/cambiar-password`) — **redirige forzosamente** si `forcePasswordChange` es true (ProtectedRoute lo intercepta)
-- Acciones de equipos: transferir (SALIDA), enviar a soporte (ENTRADA), enviar a servicio externo, dar de baja, retornar de servicio
+- Acciones de equipos: ENTRADA (a Mantenimiento), SALIDA (vuelve a su oficina asignada), cambiar oficina / asignar desde Stock, pasar a stock, enviar y retornar de servicio externo, préstamo. No hay "baja": el descarte es ENTRADA → asignada Depósito → SALIDA
 - Historial completo de cada acción con motivo, ubicación origen/destino, técnico y fecha
 - Préstamos: crear por número de serie, registrar devolución
 - **Licencias de software**: gestión por equipo con estado derivado (VIGENTE, POR_VENCER, VENCIDA), búsqueda, filtros, resumen por software
@@ -98,7 +107,7 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 - Header sticky con nombre del usuario logueado y breadcrumb para subrutas
 - Dashboard con saludo personalizado según hora del día
 - Script de migración desde seguit v1 (`backend/prisma/migrate-v1.ts`)
-- **Estado de equipo derivado del nombre de oficina** — no del campo DB (depósito/soporte = estado especial)
+- **Estado de equipo derivado del tipo de oficina** — no del campo DB (ver "Regla técnica")
 - **EquipmentListPage**: búsqueda debounced, filtros en cascada (ciudad→sección→oficina), chips de filtros activos, columnas ordenables (serie/tipo/modelo), paginación con ventana ±5, selector de página arriba y abajo, scroll preservado al paginar
 - **Estado NUEVO**: equipo recién ingresado. Al crear un equipo queda en NUEVO dentro del Stock (disponible). Al asignarlo a una oficina pasa a ACTIVO. Ver sección "Ciclo de vida y Stock" más abajo.
 - **Control de stock** (`/stock`): equipos disponibles agrupados por tipo, etapas "A revisar" / "Listo", días en stock y garantía restante. Marcar como listo desde la tabla o la ficha.
@@ -121,7 +130,9 @@ npm run db:studio        # Abre Prisma Studio (explorador visual de BD)
 npm run db:seed          # Seed: crea usuarios admin (9999) y técnico (7844)
 
 # Tests
-npm test                 # Corre los 67 tests del backend (no requiere DB)
+npm test                 # 140 tests unitarios del backend (no requiere DB)
+cd backend && npm run test:integration  # 45 tests de integración (base temporal; requiere npm run db:up)
+npm run release:check    # Versiones + build + unitarios + integración (antes de cada release)
 cd backend && npm run test:watch  # Modo watch durante desarrollo
 
 # Migración de datos desde seguit v1 (ver sección completa abajo)
@@ -238,6 +249,8 @@ Alta ──► STOCK (Nuevo, Listo) ──asignar──► Oficina (Activo) ◄�
 4. **Etapas de stock** — `Equipo.stockEtapa` (`A_REVISAR` | `LISTO`) y `Equipo.stockDesde` (para "días en stock"). Se limpian al salir del Stock. Cambio con `PATCH /equipment/:id/stock-stage` (acepta `condicion?` al marcar listo).
 4b. **Condición** — `Equipo.condicion` (`BUENO` | `CON_DETALLES` | `SOLO_REPUESTOS`, nula = sin definir): estado físico de la unidad, independiente de la ubicación. Las altas nuevas quedan en `BUENO`. Se carga al pasar a stock, al marcar listo o desde Editar; se conserva al asignar. Labels y colores en `CONDICION_LABEL` / `CONDICION_COLOR` de `frontend/src/lib/equipment-status.ts`.
 4c. **Descartar** — no hay acción propia: ENTRADA → cambiar asignada a Depósito → SALIDA.
+5. **"Nuevo" = nunca asignado a una oficina.** Un NUEVO que va de Stock a Mantenimiento (ENTRADA) y vuelve sigue siendo NUEVO: la ENTRADA guarda `metadata.estadoAnterior` en el historial y la SALIDA lo consulta. Si en cambio sale a una oficina, se registra `ASIGNACION`.
+6. **Equipos NUEVO previos al Stock** (en Mantenimiento, asignados a Soporte): se pasan con el script de una sola vez `backend/src/scripts/pasar-nuevos-a-stock.ts`. Vista previa por defecto, `--apply` para aplicar, `--todas-las-oficinas` para incluir otras oficinas asignadas. Excluye los que tienen uso previo en el historial (ASIGNACION, RETORNO_SOPORTE, PRESTAMO, DEVOLUCION). Transaccional e idempotente. En prod: `node dist/scripts/pasar-nuevos-a-stock.js` dentro del contenedor backend.
 
 ### Insumos (sin número de serie)
 
@@ -246,8 +259,6 @@ Alta ──► STOCK (Nuevo, Listo) ──asignar──► Oficina (Activo) ◄�
   - INGRESO suma; ENTREGA resta con la condición `stock >= cantidad` en el mismo UPDATE (nunca queda negativo, ni con entregas simultáneas) y puede llevar `oficinaId`, `recibe` y `equipoSerie` (se guarda `equipoId`); AJUSTE recibe `stockReal` (conteo) y motivo obligatorio, con bloqueo optimista sobre el stock leído (409 si cambió).
 - Categorías iniciales las crea la migración `20261118000100_add_insumos`; se agregan y renombran desde la app (`CategoriesModal`).
 - Frontend: hooks en `hooks/useSupplies.ts` (todas las claves bajo `['supplies']`), componentes en `components/supplies/` con CSS compartido `supplies.module.css`, labels en `lib/supply-movements.ts`.
-5. **"Nuevo" = nunca asignado a una oficina.** Un NUEVO que va de Stock a Mantenimiento (ENTRADA) y vuelve sigue siendo NUEVO: la ENTRADA guarda `metadata.estadoAnterior` en el historial y la SALIDA lo consulta. Si en cambio sale a una oficina, se registra `ASIGNACION`.
-6. **Equipos NUEVO previos al Stock** (en Mantenimiento, asignados a Soporte): se pasan con el script de una sola vez `backend/src/scripts/pasar-nuevos-a-stock.ts`. Vista previa por defecto, `--apply` para aplicar, `--todas-las-oficinas` para incluir otras oficinas asignadas. Excluye los que tienen uso previo en el historial (ASIGNACION, RETORNO_SOPORTE, PRESTAMO, DEVOLUCION). Transaccional e idempotente. En prod: `node dist/scripts/pasar-nuevos-a-stock.js` dentro del contenedor backend.
 
 ### Regla técnica (`resolveEstado`)
 
@@ -268,6 +279,11 @@ Alta ──► STOCK (Nuevo, Listo) ──asignar──► Oficina (Activo) ◄�
 - `20260328173932_add_estado_nuevo` — agrega `NUEVO` al enum `estado_equipo`
 - `20260328200000_add_asignacion_accion` — agrega `ASIGNACION` al enum `accion_tipo`
 - Si se carga una nueva DB con datos de v1, **hay que aplicar ambas migraciones antes** de importar los datos
+- v2.4.0 (todas aditivas, se aplican solas con `prisma migrate deploy` al arrancar el backend):
+  - `20261117000000_add_stock_types` — `STOCK` en `tipo_oficina`, `DISPONIBLE` en `estado_equipo`, enum `etapa_stock` y columnas `stock_etapa` / `stock_desde`
+  - `20261117000100_ensure_stock_office` — crea la oficina "Stock disponible" si no existe
+  - `20261118000000_add_condicion_equipo` — enum `condicion_equipo` y columna `condicion`
+  - `20261118000100_add_insumos` — tablas de insumos, categorías y movimientos + categorías iniciales
 - Nota: estas migraciones usan `prisma db push` + resolve manual (no `migrate dev`) porque PostgreSQL no permite usar valores de enum nuevo en la misma transacción que los agrega
 
 ---
@@ -285,18 +301,20 @@ PROSEGIT/
 │
 ├── backend/
 │   ├── prisma/
-│   │   ├── schema.prisma              # ← Modelo de datos completo (12 modelos, 2 enums)
+│   │   ├── schema.prisma              # ← Modelo de datos completo (22 modelos, 9 enums)
 │   │   ├── seed.ts                    # Usuarios iniciales (admin 9999, técnico 7844)
 │   │   ├── migrate-v1.ts              # Script migración datos de seguit v1
 │   │   └── migrations/20260322153214_init/  # Migración inicial (schema base)
 │   │   └── migrations/20260328173932_add_estado_nuevo/  # Agrega NUEVO al enum estado_equipo
 │   │   └── migrations/20260328200000_add_asignacion_accion/  # Agrega ASIGNACION al enum accion_tipo
+│   │   └── migrations/…                # 24 en total (ver "Migración DB")
 │   ├── prisma.config.ts               # Config Prisma 7 con adapter pg
 │   └── src/
 │       ├── index.ts                   # Punto de entrada Express
 │       ├── config/                    # env.ts (JWT_SECRET, DB URL, PORT)
 │       ├── middleware/                # auth.ts, validate.ts, error-handler.ts, request-id.ts
 │       ├── utils/                     # prisma.ts (pooling), pagination.ts, equipment-status.ts, logger.ts
+│       ├── scripts/                   # Scripts de una vez (pasar-nuevos-a-stock.ts, audit-data.ts); en prod: node dist/scripts/…
 │       └── modules/                   # Un directorio por dominio (ver tabla arriba)
 │           └── {dominio}/
 │               ├── {dominio}.routes.ts
@@ -311,30 +329,31 @@ PROSEGIT/
 │       ├── lib/
 │       │   ├── api-client.ts          # Singleton con JWT auto-refresh
 │       │   ├── auth-context.tsx       # AuthContext (React 19 use())
-│       │   ├── equipment-status.ts    # resolveEstado(), STATUS_LABEL, STATUS_COLOR — derivar estado desde nombre de oficina
+│       │   ├── equipment-status.ts    # resolveEstado(), STATUS_LABEL, STATUS_COLOR, CONDICION_* — estado derivado del tipo de oficina
 │       │   ├── action-types.ts        # Labels, colores y opciones de acciones centralizados
 │       │   ├── license-status.ts      # resolveLicenseStatus() para estado derivado de licencias
 │       │   ├── dashboard-helpers.ts   # Utilidades compartidas de widgets (urgencyColor)
 │       │   ├── find-soporte-office.ts # Busca la oficina de Soporte en el árbol de ubicaciones
+│       │   ├── supply-movements.ts    # Labels de movimientos de insumos, pluralUnidad, formatFecha
 │       │   └── label-sheet.ts         # Geometría de las hojas A4 de 33 etiquetas (mm, grilla, slots)
-│       ├── hooks/                     # useEquipment, useLocations, useHistory, useLoans, useUsers, useDashboard, usePageTitle, useLicenses
+│       ├── hooks/                     # useEquipment, useLocations, useHistory, useLoans, useUsers, useDashboard, usePageTitle, useLicenses, useAccessLog, useSupplies
 │       ├── components/layout/         # Sidebar.tsx, Header.tsx, MainLayout.tsx
-│       ├── components/                # LocationCascadeSelect.tsx, dashboard/
+│       ├── components/                # LocationCascadeSelect.tsx, dashboard/, supplies/ (modales + tabla de movimientos)
 │       ├── components/ui/             # DataTable.tsx (tabla + paginación reutilizable), StatusBadge.tsx
-│       ├── pages/                     # 14 páginas (ver tabla arriba)
+│       ├── pages/                     # 18 páginas (ver tabla arriba)
 │       └── styles/                    # variables.css, reset.css, globals.css
 │
 └── packages/shared/src/
-    └── schemas/                       # Schemas Zod compartidos (equipment.ts, user.ts)
+    └── schemas/                       # Schemas Zod compartidos (equipment.ts, user.ts, supplies.ts, …) — tras editarlos: npm run build:shared
 ```
 
 ---
 
 ## Modelos de datos (Prisma)
 
-**Ubicaciones (3 niveles):** `Ciudad` → `Seccion` → `Oficina` (tipo: OFICINA | SOPORTE | DEPOSITO)
+**Ubicaciones (3 niveles):** `Ciudad` → `Seccion` → `Oficina` (tipo: OFICINA | SOPORTE | MANTENIMIENTO | STOCK | DEPOSITO)
 
-**Equipos:** `TipoEquipo` → `ModeloTemplate` → `Equipo` (estado: NUEVO | ACTIVO | EN_REPARACION | EN_DEPOSITO | PRESTADO | EN_SERVICIO_EXTERNO)
+**Equipos:** `TipoEquipo` → `ModeloTemplate` → `Equipo` (estado: NUEVO | ACTIVO | EN_REPARACION | EN_DEPOSITO | PRESTADO | EN_SERVICIO_EXTERNO | DISPONIBLE; `stockEtapa`: A_REVISAR | LISTO; `condicion`: BUENO | CON_DETALLES | SOLO_REPUESTOS)
 
 **Acciones:** `Historial` (accion: CREACION | ASIGNACION | EDICION | TRANSFERENCIA | ENVIO_SOPORTE | RETORNO_SOPORTE | PRESTAMO | DEVOLUCION | CAMBIO_ESTADO | ENVIO_SERVICIO_EXTERNO | RETORNO_SERVICIO_EXTERNO | FOTO_AGREGADA | FOTO_ELIMINADA)
 
@@ -478,9 +497,10 @@ Las migraciones de DB se aplican automáticamente al iniciar el backend (`prisma
 ### Actualizar a una versión nueva
 
 ```bash
-git pull
-docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+./scripts/deploy.sh   # exige árbol limpio, hace pull --ff-only, backup (pg_dump + uploads), rebuild y health check
 ```
+
+Si hay pasos propios de la versión (scripts de datos, verificaciones), están en `DEPLOY_PENDIENTE.md`. El procedimiento general y el rollback, en `docs/VERSIONADO_Y_DEPLOY.md`.
 
 ### Ver logs
 
@@ -490,7 +510,7 @@ docker compose -f docker-compose.prod.yml logs -f frontend   # logs de nginx
 ```
 
 ### Notas técnicas
-- El backend corre con `tsx` (TypeScript directo), sin paso de compilación — evita problemas de resolución de módulos con `@proseguit/shared` que apunta a fuente `.ts`
+- El backend se compila con `tsc` en el Docker build (`npm run build:shared` + `npm run build --workspace=backend`) y corre `npx prisma migrate deploy && node dist/index.js`. Los scripts de `src/scripts/` quedan en `dist/scripts/`
 - El frontend se compila con Vite en el Docker build y nginx sirve el `dist/` estático
 - nginx también hace proxy de `/api` al servicio `backend:3001` — el frontend no necesita saber la IP del backend
 - Los secrets **nunca** van al repo; `.env.production` está en `.gitignore`
@@ -499,6 +519,14 @@ docker compose -f docker-compose.prod.yml logs -f frontend   # logs de nginx
 
 ## Pendiente / TODO
 
+### Stock (pedido del director)
+- [x] Fase 1 — control de stock de equipos
+- [x] Fase 2 — pasar a stock desde la ficha + condición
+- [x] Fase 3 — insumos
+- [ ] **Fase 4 — tintas** (en stand by desde el 17/11/2026): stock de cartuchos/tóner por modelo de impresora
+- [ ] **Fase 5** — stock mínimo por insumo, lista de compras y aviso de consumo de tintas
+
+### General
 
 - [ ] **Sistema de alertas** — notificaciones in-app (y opcionalmente email) para: garantías por vencer, equipos sin mantenimiento, licencias próximas a expirar, equipos obsoletos por fecha de fin de vida
 - [ ] **Gestión de costos** — precio de compra, depreciación opcional, costo total por área/ciudad/sección. Visible en dashboard analítico

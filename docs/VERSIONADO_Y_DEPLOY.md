@@ -2,7 +2,7 @@
 
 ## Versión actual
 
-La versión preparada es **2.1.0**. Se muestra como `v2.1.0` en la barra lateral y en la pantalla de ingreso. El backend también la informa en `GET /api/v1/health`.
+La versión preparada es **2.4.0**. Se muestra como `v2.4.0` en la barra lateral y en la pantalla de ingreso. El backend también la informa en `GET /api/v1/health`.
 
 La versión de la aplicación debe coincidir en:
 
@@ -54,7 +54,7 @@ curl http://localhost/api/v1/health
 
 En una instalación nativa con el backend expuesto directamente en su puerto predeterminado se usa `curl http://localhost:3001/api/v1/health`.
 
-La respuesta debe incluir `"status":"ok"` y `"version":"2.1.0"`. La barra lateral también debe mostrar `v2.1.0`. Luego conviene probar ingreso, apertura de un equipo, ENTRADA, SALIDA y cambio de oficina con un equipo de prueba controlado.
+La respuesta debe incluir `"status":"ok"` y `"version":"2.4.0"`. La barra lateral también debe mostrar `v2.4.0`. Luego conviene probar ingreso, apertura de un equipo, ENTRADA, SALIDA y cambio de oficina con un equipo de prueba controlado.
 
 ## Paso único posterior al deploy del control de stock
 
