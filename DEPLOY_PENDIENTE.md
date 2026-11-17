@@ -4,7 +4,7 @@
 > Leé esto completo antes de ejecutar nada. Cuando el deploy y el paso manual estén cerrados,
 > avisale a Ramiro; él decide si se borra este archivo en un commit posterior (no lo borres vos en el servidor).
 
-## Qué trae esta versión
+## Qué trae esta versión (v2.4.0)
 
 - Nueva sección **Stock** (`/stock`): equipos disponibles agrupados por tipo, etapas *A revisar* / *Listo*, días en stock.
 - Los equipos nuevos se crean siempre en la oficina **"Stock disponible"** (estado Nuevo). Desde la ficha se asignan a una oficina.
@@ -40,7 +40,7 @@ Trabajar en el directorio del repo en el servidor, en la rama `main`.
    curl http://127.0.0.1:${HTTP_PORT:-80}/api/v1/health
    ```
 
-   Debe tener `"status":"ok"` y `"db"` conectada.
+   Debe tener `"status":"ok"`, `"version":"2.4.0"` y la base conectada.
 
 3. **Vista previa del pasaje de equipos NUEVO a Stock** (no modifica nada). Los equipos nuevos que con el flujo anterior quedaron esperando en Mantenimiento se pasan a Stock con un script de una sola vez:
 
