@@ -13,6 +13,7 @@ export async function getStats() {
     enServicioExterno,
     equiposPrestados,
     totalOficinas,
+    disponiblesUsados,
   ] = await Promise.all([
     prisma.equipo.count(),
     prisma.equipo.count({ where: { estado: 'NUEVO' } }),
@@ -35,10 +36,17 @@ export async function getStats() {
       select: { equipoId: true },
     }),
     prisma.oficina.count(),
+    // Equipos en Stock que no son NUEVO (los nuevos ya se cuentan aparte).
+    prisma.equipo.count({
+      where: {
+        estado: { notIn: ESTADOS_ESPECIALES },
+        oficina: { tipo: 'STOCK' },
+      },
+    }),
   ]);
 
   const prestamosActivos = equiposPrestados.length;
-  const activos = totalEquipos - equiposNuevos - enDeposito - enReparacion - enServicioExterno - prestamosActivos;
+  const activos = totalEquipos - equiposNuevos - enDeposito - enReparacion - enServicioExterno - prestamosActivos - disponiblesUsados;
 
   return {
     totalEquipos,

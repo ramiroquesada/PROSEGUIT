@@ -49,7 +49,7 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 | Módulo | Endpoints principales |
 |--------|----------------------|
 | `auth` | POST login, refresh, logout |
-| `equipment` | GET list/detail, POST crear, PUT editar, POST transfer/send-to-support/send-to-service/return-from-service |
+| `equipment` | GET list/detail/stock, POST crear, PUT editar, POST transfer/send-to-support/exit/send-to-service/return-from-service, PATCH stock-stage |
 | `locations` | GET tree, POST/PUT cities/sections/offices |
 | `dashboard` | GET stats, GET recent-activity |
 | `history` | GET list (paginado + filtros), GET by equipoId |
@@ -72,6 +72,7 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 | `/equipos/:id` | EquipmentDetailPage | Ficha + acciones + timeline + sección licencias |
 | `/equipos/:id/editar` | EquipmentFormPage | Edición |
 | `/equipos/lote` | BulkEquipmentPage | Carga masiva: campos compartidos + tabla por equipo con series correlativas |
+| `/stock` | StockPage | Equipos disponibles por tipo, etapas A revisar / Listo, días en stock |
 | `/prestamos` | LoansPage | Lista + nuevo préstamo por serie |
 | `/licencias` | LicensesPage | Resumen por software + tabla filtrable, estado derivado |
 | `/ubicaciones` | LocationsPage | Árbol Ciudad›Sección›Oficina + panel de equipos |
@@ -96,8 +97,9 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 - Script de migración desde seguit v1 (`backend/prisma/migrate-v1.ts`)
 - **Estado de equipo derivado del nombre de oficina** — no del campo DB (depósito/soporte = estado especial)
 - **EquipmentListPage**: búsqueda debounced, filtros en cascada (ciudad→sección→oficina), chips de filtros activos, columnas ordenables (serie/tipo/modelo), paginación con ventana ±5, selector de página arriba y abajo, scroll preservado al paginar
-- **Estado NUEVO**: equipo recién ingresado. Al crear un equipo queda en NUEVO (en soporte). Al transferirlo a cualquier oficina que no sea soporte/depósito se convierte automáticamente en ACTIVO. Ver sección "Flujo estado NUEVO" más abajo.
-- **Formulario nuevo equipo**: pre-rellena el próximo número de serie (max+1), pre-selecciona tipo "PC - Torre" y la oficina de soporte como ubicación inicial
+- **Estado NUEVO**: equipo recién ingresado. Al crear un equipo queda en NUEVO dentro del Stock (disponible). Al asignarlo a una oficina pasa a ACTIVO. Ver sección "Ciclo de vida y Stock" más abajo.
+- **Control de stock** (`/stock`): equipos disponibles agrupados por tipo, etapas "A revisar" / "Listo", días en stock y garantía restante. Marcar como listo desde la tabla o la ficha.
+- **Formulario nuevo equipo**: pre-rellena el próximo número de serie (max+1) y pre-selecciona tipo "PC - Torre". No pide ubicación: siempre se crea en Stock.
 - **Dashboard en tiempo real**: todas las mutaciones de equipo invalidan `['dashboard']` via TanStack Query prefix matching, actualizando contadores y actividad reciente sin recargar la página
 - **Sección de licencias en ficha de equipo**: lista licencias del equipo con botón para agregar nuevas licencias rápidamente
 - **Carga masiva de equipos** (`/equipos/lote`): botón desde EquipmentListPage, campos compartidos para todos los equipos del lote, tabla editable con serie/matrícula/MAC/IP por fila, generación automática desde max(serie)+1, validación client-side de duplicados, envío secuencial con abort en primer error, invalidación de `['equipment']` y `['dashboard']`
@@ -181,7 +183,7 @@ npm run migrate:v1 # Hace todo: extrae JSON + repara DB + aplica migraciones + i
 
 - **CSS**: Módulos CSS con nesting nativo y custom properties. NO Tailwind, NO styled-components
 - **Ancho de páginas**: páginas de listado (tabla) = sin `max-width`, ocupan todo el ancho del `.content`. Páginas de formulario/detalle = `max-width` centrado (ej: 800px form, 1200px detail). Nunca poner `max-width` en páginas de listado.
-- **Estado de equipo**: nunca leer el campo `estado` de DB para mostrar en UI (puede estar desactualizado). Siempre usar `resolveEstado(eq.estado, eq.oficina.nombre)` de `frontend/src/lib/equipment-status.ts`. El backend deriva el estado del campo `tipo` de la oficina (no del nombre).
+- **Estado de equipo**: nunca leer el campo `estado` de DB para mostrar en UI (puede estar desactualizado). Siempre usar `resolveEstado(eq.estado, eq.oficina.tipo)` de `frontend/src/lib/equipment-status.ts`. Backend y frontend derivan el estado del campo `tipo` de la oficina (nunca del nombre).
 - **Ordenamiento en listado**: el backend acepta `sortBy` (`serie`|`modelo`|`tipo`) y `sortDir` (`asc`|`desc`) como query params. Al cambiar filtros se resetea el orden.
 - **Íconos**: Lucide React (`import { Monitor, MapPin, ... } from 'lucide-react'`)
 - **React 19**: usar `use(AuthContext)` en vez de `useContext()`, `<Context value={}>` sin `.Provider`
@@ -195,30 +197,50 @@ npm run migrate:v1 # Hace todo: extrae JSON + repara DB + aplica migraciones + i
 - **Constantes de acciones**: labels, colores y opciones de acciones de historial centralizados en `frontend/src/lib/action-types.ts` (`ACCION_LABEL`, `ACCION_COLOR`, `ACCION_OPTIONS`). No redefinir localmente en pages.
 - **Code splitting**: todas las páginas se cargan con `React.lazy` en `App.tsx`. Si agregás una nueva página, importarla con `lazy(() => import(...))`.
 - **Contraseñas de usuario**: al crear o resetear usuario, el backend genera una contraseña temporal aleatoria (8 chars hex) y la retorna una única vez en la respuesta. El frontend la muestra en un `alert()`. La ficha ya NO se usa como contraseña por defecto.
+- **Oficina actual vs asignada**: cada equipo tiene `oficinaId` (dónde está físicamente) y `oficinaAsignadaId` (a qué oficina pertenece). Mantenimiento es sólo ubicación temporal y nunca puede ser la asignada.
 - **SALIDA vs ENTRADA** (equipos):
-  - ENTRADA = `POST /equipment/:id/send-to-support` → registra siempre `ENVIO_SOPORTE` (retorno temporal a Soporte para reparación, NO es traslado permanente).
-  - SALIDA = `POST /equipment/:id/transfer` → el tipo de acción depende del `estado` actual del equipo:
-    - `EN_REPARACION` → `RETORNO_SOPORTE` (estaba en soporte para reparación, ahora vuelve al usuario)
-    - `NUEVO` o `EN_DEPOSITO` → `ASIGNACION` (primera asignación a destino final)
-    - `ACTIVO` → `TRANSFERENCIA` (traslado entre oficinas)
-  - Nunca hardcodear `TRANSFERENCIA` en `/transfer`; el backend decide según el estado.
+  - ENTRADA = `POST /equipment/:id/send-to-support` → mueve físicamente a Mantenimiento y registra `ENVIO_SOPORTE`. La oficina asignada no cambia.
+  - SALIDA = `POST /equipment/:id/exit` → desde Mantenimiento vuelve a su oficina asignada: `ASIGNACION` si era NUEVO, si no `RETORNO_SOPORTE`. Si la asignada es Stock queda DISPONIBLE (a revisar).
+  - `POST /equipment/:id/transfer` → en Mantenimiento cambia sólo la oficina asignada (`TRANSFERENCIA`); en Stock **asigna**: mueve físicamente a la oficina destino y registra `ASIGNACION`.
+  - El backend decide la acción del historial; nunca hardcodearla en el frontend.
 
 ---
 
-## Flujo estado NUEVO
+## Ciclo de vida y Stock
 
-> Contexto: los equipos se compran y llegan físicamente a "Informatica - Soporte". Recién ahí se ingresan al sistema antes de distribuirse.
+> Contexto: los equipos se compran y llegan físicamente a la sala de Soporte. Pedido del director (nov 2026): ver de un vistazo qué hay disponible para trabajar.
+
+### Tipos de oficina
+
+| Tipo | Significado | Estado derivado |
+|------|-------------|-----------------|
+| `OFICINA` / `SOPORTE` | Oficinas normales (Soporte = uso del propio personal de IT) | `ACTIVO` |
+| `MANTENIMIENTO` | Ubicación temporal tras una ENTRADA | `EN_REPARACION` |
+| `STOCK` | **Disponible**: sano y listo para usarse. Oficina única "Stock disponible" | `DISPONIBLE` |
+| `DEPOSITO` | **Descarte**: carcasas, irrecuperables, a destruir. Nunca cuenta como stock | `EN_DEPOSITO` |
 
 ### Ciclo de vida
 
-1. **Creación** — El equipo se registra con estado `NUEVO` en la oficina de soporte (pre-seleccionada automáticamente en el form). El número de serie se pre-rellena con `max(serie) + 1`.
-2. **Asignación** — Cuando se decide el destino, se usa "Transferir" hacia la oficina final. El backend cambia automáticamente el estado a `ACTIVO` (o `EN_REPARACION`/`EN_DEPOSITO` si va a soporte/depósito).
-3. **Sin destino inmediato** — El equipo puede quedarse en `NUEVO` todo el tiempo que sea necesario hasta que se asigne.
+```
+Alta ──► STOCK (Nuevo, Listo) ──asignar──► Oficina (Activo) ◄──── SALIDA ────┐
+               ▲                              │ ENTRADA                       │
+               │                              ▼                               │
+               └── asignada=Stock + SALIDA ── Mantenimiento ──────────────────┘
+                   (Disponible, A revisar)    └── asignada=Depósito + SALIDA ──► Depósito (descarte)
+```
+
+1. **Alta** — sin preguntar ubicación: el backend crea el equipo en Stock (actual y asignada), estado `NUEVO`, etapa `LISTO`. La serie se pre-rellena con `max(serie) + 1`.
+2. **Asignar** — desde la ficha (equipo en Stock) se elige la oficina destino; queda `ACTIVO`.
+3. **Volver a stock** — ENTRADA → cambiar oficina asignada a "Stock disponible" → SALIDA. Queda `DISPONIBLE` y `A_REVISAR` hasta que se marque como listo.
+4. **Etapas de stock** — `Equipo.stockEtapa` (`A_REVISAR` | `LISTO`) y `Equipo.stockDesde` (para "días en stock"). Se limpian al salir del Stock. Cambio con `PATCH /equipment/:id/stock-stage`.
+5. **"Nuevo" = nunca asignado a una oficina.** Un NUEVO que va de Stock a Mantenimiento (ENTRADA) y vuelve sigue siendo NUEVO: la ENTRADA guarda `metadata.estadoAnterior` en el historial y la SALIDA lo consulta. Si en cambio sale a una oficina, se registra `ASIGNACION`.
+6. **Equipos NUEVO previos al Stock** (en Mantenimiento, asignados a Soporte): se pasan con el script de una sola vez `backend/src/scripts/pasar-nuevos-a-stock.ts`. Vista previa por defecto, `--apply` para aplicar, `--todas-las-oficinas` para incluir otras oficinas asignadas. Excluye los que tienen uso previo en el historial (ASIGNACION, RETORNO_SOPORTE, PRESTAMO, DEVOLUCION). Transaccional e idempotente. En prod: `node dist/scripts/pasar-nuevos-a-stock.js` dentro del contenedor backend.
 
 ### Regla técnica (`resolveEstado`)
 
-- `NUEVO`, `PRESTADO`, `EN_SERVICIO_EXTERNO` → se leen **directo de DB**, no se derivan del nombre de oficina
-- `EN_REPARACION`, `EN_DEPOSITO`, `ACTIVO` → se derivan del campo `tipo` de la oficina (`SOPORTE` → `EN_REPARACION`, `DEPOSITO` → `EN_DEPOSITO`, `OFICINA` → `ACTIVO`)
+- `NUEVO`, `PRESTADO`, `EN_SERVICIO_EXTERNO` → se leen **directo de DB**
+- El resto se deriva del **tipo** de la oficina actual (tabla de arriba), igual en backend (`estadoPorOficina`) y frontend (`resolveEstado(eq.estado, eq.oficina.tipo)`)
+- La oficina Stock la crea la migración `20261117000100_ensure_stock_office` en bases existentes y `seed.ts` en bases nuevas
 
 ### Observabilidad
 

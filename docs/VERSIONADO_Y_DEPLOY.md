@@ -56,6 +56,23 @@ En una instalación nativa con el backend expuesto directamente en su puerto pre
 
 La respuesta debe incluir `"status":"ok"` y `"version":"2.1.0"`. La barra lateral también debe mostrar `v2.1.0`. Luego conviene probar ingreso, apertura de un equipo, ENTRADA, SALIDA y cambio de oficina con un equipo de prueba controlado.
 
+## Paso único posterior al deploy del control de stock
+
+La versión que incorpora el Stock no mueve ningún equipo existente: sólo agrega columnas y tipos, y crea la oficina "Stock disponible". Los equipos NUEVO que quedaron en espera en Mantenimiento con el flujo anterior se pasan a Stock **a mano, una sola vez**, después de que `deploy.sh` terminó bien:
+
+```bash
+# 1. Vista previa: lista qué equipos se moverían y cuáles quedan para revisar. No cambia nada.
+docker compose -f docker-compose.prod.yml --env-file .env.production exec backend node dist/scripts/pasar-nuevos-a-stock.js
+
+# 2. Aplicar, sólo si la lista es correcta.
+docker compose -f docker-compose.prod.yml --env-file .env.production exec backend node dist/scripts/pasar-nuevos-a-stock.js --apply
+```
+
+- Por defecto toma sólo los NUEVO asignados a oficinas de Soporte; `--todas-las-oficinas` incluye el resto.
+- Nunca mueve equipos con uso previo en su historial; esos aparecen como "revisar a mano".
+- Todo ocurre en una transacción: si un equipo cambió entre la vista previa y la aplicación, no se mueve ninguno.
+- Correrlo de nuevo no hace nada (ya no quedan candidatos). El historial queda a nombre del primer ADMIN activo o del usuario indicado con `--ficha=NNNN`.
+
 ## Rollback
 
 Si el servicio no arranca y todavía no se realizaron movimientos con la versión nueva, volver a la imagen o commit anterior y conservar el backup. Si ya hubo ENTRADAS, SALIDAS o cambios de asignación, seguir el procedimiento de rollback de [Flujo de equipos y próximo deploy](FLUJO_EQUIPOS_Y_PROXIMO_DEPLOY.md), porque el estado de la base ya puede depender del modelo nuevo.

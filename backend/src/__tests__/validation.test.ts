@@ -28,10 +28,6 @@ describe('Validation — Zod middleware', () => {
       const res = await api.post('/api/v1/equipment').set('Authorization', `Bearer ${token}`).send({ serie: 99991, oficinaId: 1 });
       expect(res.status).toBe(400);
     });
-    it('rechaza sin oficinaId', async () => {
-      const res = await api.post('/api/v1/equipment').set('Authorization', `Bearer ${token}`).send({ serie: 99992, tipoEquipoId: 1 });
-      expect(res.status).toBe(400);
-    });
     it('rechaza serie negativa', async () => {
       const res = await api.post('/api/v1/equipment').set('Authorization', `Bearer ${token}`).send({ serie: -1, tipoEquipoId: 1, oficinaId: 1 });
       expect(res.status).toBe(400);

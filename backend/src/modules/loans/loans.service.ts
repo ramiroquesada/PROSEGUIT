@@ -1,7 +1,7 @@
 import { prisma } from '../../utils/prisma.js';
 import { AppError } from '../../middleware/error-handler.js';
 import { paginatedResult, type PaginationParams } from '../../utils/pagination.js';
-import { estadoPorOficina } from '../../utils/equipment-status.js';
+import { estadoPorOficina, type EstadoDerivado } from '../../utils/equipment-status.js';
 
 interface LoanFilters {
   activo?: boolean;
@@ -157,7 +157,7 @@ export async function returnLoan(prestamoId: number, data: {
       where: { equipoId: prestamo.equipoId, activo: true },
     });
 
-    let nextState: 'PRESTADO' | 'ACTIVO' | 'EN_REPARACION' | 'EN_DEPOSITO' = 'PRESTADO';
+    let nextState: 'PRESTADO' | EstadoDerivado = 'PRESTADO';
     if (remainingActiveLoans === 0) {
       const oficinaEquipo = await tx.oficina.findUnique({ where: { id: prestamo.equipo.oficinaId } });
       nextState = oficinaEquipo ? estadoPorOficina(oficinaEquipo.tipo) : 'ACTIVO';

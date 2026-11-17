@@ -5,7 +5,7 @@ export const createEquipmentSchema = z.object({
   modelo: z.string().optional(),
   templateId: z.number().int().optional(),
   tipoEquipoId: z.number().int().positive('El tipo de equipo es obligatorio'),
-  oficinaId: z.number().int().positive('La oficina es obligatoria'),
+  // Sin oficina: todo equipo nuevo se crea en la oficina de Stock.
   ip: z.string().optional(),
   mac: z.string().optional(),
   matricula: z.string().optional(),
@@ -34,5 +34,10 @@ export const sendToSupportSchema = z.object({
 export const sendToServiceSchema = z.object({
   servicioId: z.number().int().positive('El servicio externo es obligatorio'),
   motivo: z.string().min(1, 'El motivo es obligatorio'),
+  comentario: z.string().optional(),
+});
+
+export const stockStageSchema = z.object({
+  etapa: z.enum(['A_REVISAR', 'LISTO']),
   comentario: z.string().optional(),
 });

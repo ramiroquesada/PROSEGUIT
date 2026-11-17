@@ -2,10 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEquipmentDetail, useEquipmentTypes, useNextSerie, useTemplates } from '../hooks/useEquipment';
-import { useLocationTree } from '../hooks/useLocations';
 import { api } from '../lib/api-client';
-import { findSoporteOffice } from '../lib/find-soporte-office';
-import LocationCascadeSelect from '../components/LocationCascadeSelect';
 import styles from './EquipmentFormPage.module.css';
 import { usePageTitle } from '../hooks/usePageTitle';
 
@@ -19,7 +16,6 @@ export default function EquipmentFormPage() {
 
   const { data: equipo } = useEquipmentDetail(isEditing ? equipoId : 0);
   const { data: tipos } = useEquipmentTypes();
-  const { data: locations } = useLocationTree();
   const { data: nextSerieData } = useNextSerie();
 
   const [form, setForm] = useState({
@@ -27,9 +23,6 @@ export default function EquipmentFormPage() {
     modelo: '',
     tipoEquipoId: '',
     templateId: '',
-    ciudadId: '',
-    seccionId: '',
-    oficinaId: '',
     ip: '',
     mac: '',
     matricula: '',
@@ -56,9 +49,6 @@ export default function EquipmentFormPage() {
         modelo: equipo.modelo || '',
         tipoEquipoId: String(equipo.tipoEquipo.id),
         templateId: equipo.template?.id ? String(equipo.template.id) : '',
-        ciudadId: String(equipo.oficinaAsignada.seccion.ciudad.id),
-        seccionId: String(equipo.oficinaAsignada.seccion.id),
-        oficinaId: String(equipo.oficinaAsignada.id),
         ip: equipo.ip || '',
         mac: equipo.mac || '',
         matricula: equipo.matricula || '',
@@ -82,10 +72,10 @@ export default function EquipmentFormPage() {
     }
   }, [isEditing, nextSerieData]);
 
-  // Preseleccionar tipo "PC - Torre" y oficina asignada de Soporte (solo en creación).
-  // La ubicación física inicial la fija el backend en Mantenimiento.
+  // Preseleccionar tipo "PC - Torre" (solo en creación).
+  // La ubicación inicial la fija el backend: siempre Stock.
   useEffect(() => {
-    if (isEditing || !tipos || !locations) return;
+    if (isEditing || !tipos) return;
 
     const tipoPCTorre = tipos.find((t) =>
       t.nombre.toLowerCase().replace(/\s+/g, '').includes('pctorre') ||
@@ -93,18 +83,11 @@ export default function EquipmentFormPage() {
       t.nombre.toLowerCase().includes('pc-torre')
     );
 
-    const soporte = findSoporteOffice(locations);
-
     setForm((p) => ({
       ...p,
       ...(tipoPCTorre && !p.tipoEquipoId ? { tipoEquipoId: String(tipoPCTorre.id) } : {}),
-      ...(soporte && !p.ciudadId ? {
-        ciudadId: String(soporte.ciudadId),
-        seccionId: String(soporte.seccionId),
-        oficinaId: String(soporte.oficinaId),
-      } : {}),
     }));
-  }, [isEditing, tipos, locations]);
+  }, [isEditing, tipos]);
 
   const mutation = useMutation({
     mutationFn: (data: Record<string, unknown>) =>
@@ -134,8 +117,8 @@ export default function EquipmentFormPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.serie || !form.tipoEquipoId || (!isEditing && !form.oficinaId)) {
-      setError('Serie, tipo y oficina asignada son obligatorios');
+    if (!form.serie || !form.tipoEquipoId) {
+      setError('Serie y tipo son obligatorios');
       return;
     }
     if (isEditing && !form.motivo.trim()) {
@@ -162,7 +145,6 @@ export default function EquipmentFormPage() {
 
     if (!isEditing) {
       payload.serie = Number(form.serie);
-      payload.oficinaId = Number(form.oficinaId);
     }
 
     if (isEditing) {
@@ -288,17 +270,10 @@ export default function EquipmentFormPage() {
         </div>
 
         {!isEditing && (
-          <div className={styles.section}>
-            <h3 className={styles.sectionTitle}>Oficina asignada *</h3>
-            <p className={styles.hint}>El equipo se creará en Mantenimiento. Ésta será la oficina a la que irá cuando reciba la SALIDA.</p>
-            <LocationCascadeSelect
-              required
-              excludeOfficeTypes={['MANTENIMIENTO']}
-              value={{ ciudadId: form.ciudadId, seccionId: form.seccionId, oficinaId: form.oficinaId }}
-              onChange={(v) => setForm((p) => ({ ...p, ...v }))}
-              onError={(msg) => setError(msg)}
-            />
-          </div>
+          <p className={styles.hint}>
+            El equipo se creará en <strong>Stock</strong> como <strong>Nuevo</strong> y quedará disponible.
+            Cuando se decida su destino, se asigna desde la ficha.
+          </p>
         )}
 
         {/* ── Datos adicionales ── */}

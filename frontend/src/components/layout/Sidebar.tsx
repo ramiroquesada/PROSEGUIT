@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from 'react-router';
 import {
   LayoutDashboard,
   Monitor,
+  Boxes,
   MapPin,
   ArrowLeftRight,
   ScrollText,
@@ -21,6 +22,7 @@ import styles from './Sidebar.module.css';
 const navItems = [
   { to: '/', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/equipos', label: 'Equipos', icon: Monitor },
+  { to: '/stock', label: 'Stock', icon: Boxes },
   { to: '/ubicaciones', label: 'Ubicaciones', icon: MapPin },
   { to: '/prestamos', label: 'Préstamos', icon: ArrowLeftRight },
   { to: '/licencias', label: 'Licencias', icon: KeyRound },

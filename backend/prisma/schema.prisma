@@ -14,7 +14,8 @@ enum TipoOficina {
   OFICINA
   SOPORTE
   MANTENIMIENTO
-  DEPOSITO
+  DEPOSITO // Descarte: equipos irrecuperables o a destruir. Nunca cuentan como disponibles.
+  STOCK // Equipos sanos listos para usarse (control de stock)
 
   @@map("tipo_oficina")
 }
@@ -104,8 +105,16 @@ enum EstadoEquipo {
   EN_DEPOSITO
   PRESTADO
   EN_SERVICIO_EXTERNO
+  DISPONIBLE // Derivado: el equipo está físicamente en una oficina tipo STOCK
 
   @@map("estado_equipo")
+}
+
+enum EtapaStock {
+  A_REVISAR // Volvió a stock y falta revisarlo
+  LISTO // Se puede entregar
+
+  @@map("etapa_stock")
 }
 
 model TipoEquipo {
@@ -157,6 +166,8 @@ model Equipo {
   precioCompra      Decimal?        @map("precio_compra") @db.Decimal(10, 2)
   observacion       String?         @db.Text
   especificaciones  Json            @default("{}") @db.JsonB
+  stockEtapa        EtapaStock?     @map("stock_etapa")
+  stockDesde        DateTime?       @map("stock_desde")
   v1Id              Int?            @map("v1_id")
 
   historial      Historial[]

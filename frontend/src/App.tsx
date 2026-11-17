@@ -18,6 +18,7 @@ const HistoryPage = lazy(() => import('./pages/HistoryPage'));
 const BulkEquipmentPage = lazy(() => import('./pages/BulkEquipmentPage'));
 const LabelsPage = lazy(() => import('./pages/LabelsPage'));
 const AccessLogPage = lazy(() => import('./pages/AccessLogPage'));
+const StockPage = lazy(() => import('./pages/StockPage'));
 
 const PageLoader = () => (
   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', minHeight: '200px', color: 'var(--color-text-secondary)' }}>
@@ -63,6 +64,7 @@ export default function App() {
           <Route path="equipos/lote" element={<BulkEquipmentPage />} />
           <Route path="equipos/:id" element={<EquipmentDetailPage />} />
           <Route path="equipos/:id/editar" element={<EquipmentFormPage />} />
+          <Route path="stock" element={<StockPage />} />
           <Route path="prestamos" element={<LoansPage />} />
           <Route path="licencias" element={<LicensesPage />} />
           <Route path="ubicaciones" element={<LocationsPage />} />

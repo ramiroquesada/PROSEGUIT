@@ -27,6 +27,7 @@ vi.mock('../../utils/prisma.js', () => ({
     },
     historial: {
       create: vi.fn(),
+      findFirst: vi.fn(),
     },
     modeloTemplate: {
       findUnique: vi.fn(),
@@ -34,7 +35,7 @@ vi.mock('../../utils/prisma.js', () => ({
   },
 }));
 
-import { transferEquipment, sendToSupport, exitEquipment, createEquipment, updateEquipment, getNextSerie, returnFromService, saveEquipmentImage, deleteEquipmentImage, updateImageDescription } from './equipment.service.js';
+import { transferEquipment, sendToSupport, exitEquipment, createEquipment, setStockStage, updateEquipment, getNextSerie, returnFromService, saveEquipmentImage, deleteEquipmentImage, updateImageDescription } from './equipment.service.js';
 import { prisma } from '../../utils/prisma.js';
 import { AppError } from '../../middleware/error-handler.js';
 
@@ -44,12 +45,13 @@ const mockPrisma = prisma as unknown as {
   servicioExterno: { findUnique: ReturnType<typeof vi.fn> };
   envioServicio: { create: ReturnType<typeof vi.fn>; findFirst: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> };
   equipoImagen: { create: ReturnType<typeof vi.fn>; findFirst: ReturnType<typeof vi.fn>; update: ReturnType<typeof vi.fn> };
-  historial: { create: ReturnType<typeof vi.fn> };
+  historial: { create: ReturnType<typeof vi.fn>; findFirst: ReturnType<typeof vi.fn> };
   modeloTemplate: { findUnique: ReturnType<typeof vi.fn> };
 };
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mockPrisma.historial.findFirst.mockResolvedValue(null);
   mockPrisma.oficina.findUnique.mockResolvedValue({ id: 10, nombre: 'Oficina asignada', tipo: 'OFICINA' });
   mockPrisma.oficina.findFirst.mockResolvedValue({ id: 99, nombre: 'Mantenimiento', tipo: 'MANTENIMIENTO' });
 });
@@ -170,33 +172,227 @@ describe('exitEquipment', () => {
   });
 });
 
+// ─── Stock ───────────────────────────────────────────────────────────────────
+
+describe('transferEquipment — asignación desde Stock', () => {
+  it('mueve el equipo físicamente a la oficina destino y lo activa', async () => {
+    mockPrisma.equipo.findUnique.mockResolvedValue({
+      id: 1, oficinaId: 50, oficinaAsignadaId: 50, estado: 'NUEVO',
+      oficina: { id: 50, tipo: 'STOCK' },
+    });
+    mockPrisma.oficina.findUnique.mockResolvedValue({ id: 6, nombre: 'Tesorería', tipo: 'OFICINA' });
+    mockPrisma.equipo.update.mockResolvedValue({ id: 1 });
+
+    await transferEquipment(1, { oficinaDestinoId: 6, motivo: 'Entrega' }, 99);
+
+    expect(mockPrisma.equipo.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        oficinaId: 6,
+        oficinaAsignadaId: 6,
+        estado: 'ACTIVO',
+        stockEtapa: null,
+        stockDesde: null,
+        historial: { create: expect.objectContaining({ accion: 'ASIGNACION', oficinaOrigenId: 50, oficinaDestinoId: 6 }) },
+      }),
+    }));
+  });
+
+  it('rechaza asignar a Mantenimiento desde Stock', async () => {
+    mockPrisma.equipo.findUnique.mockResolvedValue({
+      id: 1, oficinaId: 50, oficinaAsignadaId: 50, estado: 'DISPONIBLE',
+      oficina: { id: 50, tipo: 'STOCK' },
+    });
+    mockPrisma.oficina.findUnique.mockResolvedValue({ id: 99, tipo: 'MANTENIMIENTO' });
+
+    await expect(transferEquipment(1, { oficinaDestinoId: 99, motivo: 'x' }, 99))
+      .rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  it('rechaza asignar un equipo prestado', async () => {
+    mockPrisma.equipo.findUnique.mockResolvedValue({
+      id: 1, oficinaId: 50, oficinaAsignadaId: 50, estado: 'PRESTADO',
+      oficina: { id: 50, tipo: 'STOCK' },
+    });
+
+    await expect(transferEquipment(1, { oficinaDestinoId: 6, motivo: 'x' }, 99))
+      .rejects.toMatchObject({ statusCode: 400 });
+  });
+});
+
+describe('exitEquipment — hacia Stock', () => {
+  it('un equipo usado queda DISPONIBLE y a revisar', async () => {
+    mockPrisma.equipo.findUnique.mockResolvedValue({
+      id: 1, oficinaId: 99, oficinaAsignadaId: 50, estado: 'EN_REPARACION',
+      oficina: { id: 99, tipo: 'MANTENIMIENTO' },
+      oficinaAsignada: { id: 50, tipo: 'STOCK' },
+    });
+    mockPrisma.equipo.update.mockResolvedValue({ id: 1 });
+
+    await exitEquipment(1, { motivo: 'A stock' }, 99);
+
+    expect(mockPrisma.equipo.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        oficinaId: 50,
+        estado: 'DISPONIBLE',
+        stockEtapa: 'A_REVISAR',
+        stockDesde: expect.any(Date),
+        historial: { create: expect.objectContaining({ accion: 'RETORNO_SOPORTE' }) },
+      }),
+    }));
+  });
+
+  it('un equipo NUEVO conserva su estado y queda listo', async () => {
+    mockPrisma.equipo.findUnique.mockResolvedValue({
+      id: 1, oficinaId: 99, oficinaAsignadaId: 50, estado: 'NUEVO',
+      oficina: { id: 99, tipo: 'MANTENIMIENTO' },
+      oficinaAsignada: { id: 50, tipo: 'STOCK' },
+    });
+    mockPrisma.equipo.update.mockResolvedValue({ id: 1 });
+
+    await exitEquipment(1, { motivo: 'A stock' }, 99);
+
+    expect(mockPrisma.equipo.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ estado: 'NUEVO', stockEtapa: 'LISTO' }),
+    }));
+  });
+});
+
+describe('exitEquipment — equipo nuevo que pasó por Mantenimiento', () => {
+  it('vuelve a Stock como NUEVO y listo si estaba NUEVO al recibir la ENTRADA', async () => {
+    mockPrisma.equipo.findUnique.mockResolvedValue({
+      id: 1, oficinaId: 99, oficinaAsignadaId: 50, estado: 'EN_REPARACION',
+      oficina: { id: 99, tipo: 'MANTENIMIENTO' },
+      oficinaAsignada: { id: 50, tipo: 'STOCK' },
+    });
+    mockPrisma.historial.findFirst.mockResolvedValue({ metadata: { estadoAnterior: 'NUEVO' } });
+    mockPrisma.equipo.update.mockResolvedValue({ id: 1 });
+
+    await exitEquipment(1, { motivo: 'Reparado de fábrica' }, 99);
+
+    expect(mockPrisma.equipo.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ estado: 'NUEVO', stockEtapa: 'LISTO' }),
+    }));
+  });
+
+  it('su primera salida a una oficina se registra como ASIGNACION', async () => {
+    mockPrisma.equipo.findUnique.mockResolvedValue({
+      id: 1, oficinaId: 99, oficinaAsignadaId: 7, estado: 'EN_REPARACION',
+      oficina: { id: 99, tipo: 'MANTENIMIENTO' },
+      oficinaAsignada: { id: 7, tipo: 'OFICINA' },
+    });
+    mockPrisma.historial.findFirst.mockResolvedValue({ metadata: { estadoAnterior: 'NUEVO' } });
+    mockPrisma.equipo.update.mockResolvedValue({ id: 1 });
+
+    await exitEquipment(1, { motivo: 'Entrega' }, 99);
+
+    expect(mockPrisma.equipo.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        estado: 'ACTIVO',
+        historial: { create: expect.objectContaining({ accion: 'ASIGNACION' }) },
+      }),
+    }));
+  });
+});
+
+describe('sendToSupport — desde Stock', () => {
+  it('guarda el estado anterior en el historial de la ENTRADA', async () => {
+    mockPrisma.equipo.findUnique.mockResolvedValue({
+      id: 1, oficinaId: 50, estado: 'NUEVO', oficina: { id: 50, tipo: 'STOCK' },
+    });
+    mockPrisma.equipo.update.mockResolvedValue({ id: 1 });
+
+    await sendToSupport(1, { motivo: 'Falla de fábrica' }, 99);
+
+    expect(mockPrisma.equipo.update.mock.calls[0][0].data.historial.create.metadata)
+      .toEqual({ estadoAnterior: 'NUEVO' });
+  });
+
+  it('limpia la etapa y la fecha de stock', async () => {
+    mockPrisma.equipo.findUnique.mockResolvedValue({
+      id: 1, oficinaId: 50, estado: 'DISPONIBLE', oficina: { id: 50, tipo: 'STOCK' },
+    });
+    mockPrisma.equipo.update.mockResolvedValue({ id: 1 });
+
+    await sendToSupport(1, { motivo: 'Revisión' }, 99);
+
+    expect(mockPrisma.equipo.update).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ oficinaId: 99, stockEtapa: null, stockDesde: null }),
+    }));
+  });
+});
+
+describe('setStockStage', () => {
+  it('marca como listo un equipo a revisar y conserva la fecha original', async () => {
+    mockPrisma.equipo.findUnique.mockResolvedValue({
+      id: 1, oficinaId: 50, stockEtapa: 'A_REVISAR', stockDesde: new Date('2026-01-01'),
+      oficina: { id: 50, tipo: 'STOCK' },
+    });
+    mockPrisma.equipo.update.mockResolvedValue({ id: 1 });
+
+    await setStockStage(1, { etapa: 'LISTO' }, 99);
+
+    const data = mockPrisma.equipo.update.mock.calls[0][0].data;
+    expect(data.stockEtapa).toBe('LISTO');
+    expect(data.stockDesde).toBeUndefined();
+    expect(data.historial.create).toMatchObject({ accion: 'CAMBIO_ESTADO' });
+  });
+
+  it('rechaza si el equipo no está en Stock', async () => {
+    mockPrisma.equipo.findUnique.mockResolvedValue({
+      id: 1, oficinaId: 7, stockEtapa: null, oficina: { id: 7, tipo: 'OFICINA' },
+    });
+
+    await expect(setStockStage(1, { etapa: 'LISTO' }, 99)).rejects.toMatchObject({ statusCode: 400 });
+  });
+
+  it('rechaza si ya está en esa etapa', async () => {
+    mockPrisma.equipo.findUnique.mockResolvedValue({
+      id: 1, oficinaId: 50, stockEtapa: 'LISTO', oficina: { id: 50, tipo: 'STOCK' },
+    });
+
+    await expect(setStockStage(1, { etapa: 'LISTO' }, 99)).rejects.toMatchObject({ statusCode: 400 });
+  });
+});
+
 // ─── createEquipment ─────────────────────────────────────────────────────────
 
 describe('createEquipment', () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
-  it('crea el equipo en Mantenimiento y conserva la oficina asignada', async () => {
+  it('crea el equipo en Stock, NUEVO y listo para entregar', async () => {
+    mockPrisma.oficina.findFirst.mockResolvedValue({ id: 50, nombre: 'Stock disponible', tipo: 'STOCK' });
     mockPrisma.equipo.findUnique.mockResolvedValue(null); // no existe aún
     mockPrisma.equipo.create.mockResolvedValue({ id: 1, serie: 42, estado: 'NUEVO', tipoEquipo: {}, oficina: {} });
 
-    await createEquipment({ serie: 42, tipoEquipoId: 1, oficinaId: 10 }, 99);
+    await createEquipment({ serie: 42, tipoEquipoId: 1 }, 99);
 
+    expect(mockPrisma.oficina.findFirst).toHaveBeenCalledWith(expect.objectContaining({ where: { tipo: 'STOCK' } }));
     expect(mockPrisma.equipo.create).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
-          oficinaId: 99,
-          oficinaAsignadaId: 10,
+          oficinaId: 50,
+          oficinaAsignadaId: 50,
           estado: 'NUEVO',
-          historial: { create: expect.objectContaining({ accion: 'CREACION' }) },
+          stockEtapa: 'LISTO',
+          stockDesde: expect.any(Date),
+          historial: { create: expect.objectContaining({ accion: 'CREACION', oficinaDestinoId: 50 }) },
         }),
       }),
     );
   });
 
+  it('lanza 409 si no hay oficina de Stock configurada', async () => {
+    mockPrisma.oficina.findFirst.mockResolvedValue(null);
+    mockPrisma.equipo.findUnique.mockResolvedValue(null);
+
+    await expect(createEquipment({ serie: 43, tipoEquipoId: 1 }, 99))
+      .rejects.toMatchObject({ statusCode: 409 });
+  });
+
   it('lanza 409 si la serie ya existe', async () => {
     mockPrisma.equipo.findUnique.mockResolvedValue({ id: 5, serie: 42 });
 
-    await expect(createEquipment({ serie: 42, tipoEquipoId: 1, oficinaId: 10 }, 99))
+    await expect(createEquipment({ serie: 42, tipoEquipoId: 1 }, 99))
       .rejects.toMatchObject({ statusCode: 409 });
   });
 
@@ -228,7 +424,6 @@ describe('createEquipment', () => {
       serie: 9999,
       templateId: templateId,
       tipoEquipoId: tipoId,
-      oficinaId: 1,
     }, 1);
 
     expect(result.templateId).toBe(templateId);
@@ -257,7 +452,6 @@ describe('createEquipment', () => {
         serie: 9999,
         templateId: templateId,
         tipoEquipoId: tipoId,
-        oficinaId: 1,
       }, 1)
     ).rejects.toThrow('La plantilla no corresponde al tipo de equipo seleccionado');
   });
@@ -271,7 +465,6 @@ describe('createEquipment', () => {
         serie: 9999,
         templateId: 999,
         tipoEquipoId: 1,
-        oficinaId: 1,
       }, 1)
     ).rejects.toThrow('Plantilla no encontrada');
   });
@@ -359,7 +552,6 @@ describe('createEquipment — campos de ciclo de vida', () => {
       {
         serie: 999,
         tipoEquipoId: 1,
-        oficinaId: 1,
         fechaFinVida: new Date('2030-01-01'),
         precioCompra: 25000,
       },
@@ -384,7 +576,7 @@ describe('createEquipment — campos de ciclo de vida', () => {
       oficina: { id: 1, nombre: 'Soporte', seccion: { ciudad: {} } },
     });
 
-    await createEquipment({ serie: 1000, tipoEquipoId: 1, oficinaId: 1 }, 1);
+    await createEquipment({ serie: 1000, tipoEquipoId: 1 }, 1);
 
     expect(mockPrisma.equipo.create).toHaveBeenCalledWith(
       expect.objectContaining({

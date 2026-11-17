@@ -32,6 +32,24 @@ async function main() {
     create: { nombre: 'General', seccionId: informatica.id },
   });
 
+  // Ubicaciones del sistema: en una base nueva las migraciones no pueden
+  // crearlas porque todavía no existe ninguna sección. Sólo se crean si no
+  // hay ya una oficina de ese tipo (p. ej. una base importada de v1).
+  const oficinasSistema = [
+    { nombre: 'Mantenimiento', tipo: 'MANTENIMIENTO' as const },
+    { nombre: 'Stock disponible', tipo: 'STOCK' as const },
+  ];
+  for (const { nombre, tipo } of oficinasSistema) {
+    const existe = await prisma.oficina.findFirst({ where: { tipo } });
+    if (!existe) {
+      await prisma.oficina.upsert({
+        where: { nombre_seccionId: { nombre, seccionId: informatica.id } },
+        update: { tipo },
+        create: { nombre, seccionId: informatica.id, tipo },
+      });
+    }
+  }
+
   // Usuario Admin
   const adminHash = await bcrypt.hash('admin123', 12);
   await prisma.usuario.upsert({

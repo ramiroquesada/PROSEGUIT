@@ -544,7 +544,7 @@ export default function LocationsPage() {
                 <p className={styles.panelCount}>{equiposData.pagination.total} equipos</p>
                 <div className={styles.equipoList}>
                   {equiposData.data.map((eq) => {
-                    const est = resolveEstado(eq.estado, eq.oficina.nombre);
+                    const est = resolveEstado(eq.estado, eq.oficina.tipo);
                     const estaEnOtraUbicacion = eq.oficina.id !== selectedOficina.id;
                     return (
                       <div key={eq.id} className={styles.equipoItem} onClick={() => navigate(`/equipos/${eq.id}`)}>

@@ -1,4 +1,4 @@
-import { Prisma, EstadoEquipo } from '@prisma/client';
+import { Prisma, EstadoEquipo, EtapaStock } from '@prisma/client';
 import { unlink } from 'fs/promises';
 import path from 'path';
 import { prisma } from '../../utils/prisma.js';
@@ -31,6 +31,25 @@ async function getMaintenanceOffice() {
   }
   return oficina;
 }
+
+async function getStockOffice() {
+  const oficina = await prisma.oficina.findFirst({
+    where: { tipo: 'STOCK' },
+    include: { seccion: { include: { ciudad: true } } },
+  });
+  if (!oficina) {
+    throw new AppError(409, 'No hay una oficina de Stock configurada');
+  }
+  return oficina;
+}
+
+/** Campos de stock al entrar físicamente a la oficina de Stock. */
+function entradaAStock(etapa: EtapaStock) {
+  return { stockEtapa: etapa, stockDesde: new Date() };
+}
+
+/** Campos de stock al salir físicamente de la oficina de Stock. */
+const SALIDA_DE_STOCK = { stockEtapa: null, stockDesde: null };
 
 export async function listEquipment(pagination: PaginationParams, filters: EquipmentFilters) {
   const where: Prisma.EquipoWhereInput = {};
@@ -70,6 +89,11 @@ export async function listEquipment(pagination: PaginationParams, filters: Equip
     andConditions.push({
       estado: { notIn: ESPECIALES },
       oficina: { tipo: 'DEPOSITO' },
+    });
+  } else if (filters.estado === 'DISPONIBLE') {
+    andConditions.push({
+      estado: { notIn: ESPECIALES },
+      oficina: { tipo: 'STOCK' },
     });
   } else if (filters.estado === 'ACTIVO') {
     andConditions.push({
@@ -184,7 +208,6 @@ export async function createEquipment(data: {
   modelo?: string;
   templateId?: number;
   tipoEquipoId: number;
-  oficinaId: number;
   ip?: string;
   mac?: string;
   matricula?: string;
@@ -217,14 +240,8 @@ export async function createEquipment(data: {
     }
   }
 
-  const [oficinaAsignada, mantenimiento] = await Promise.all([
-    prisma.oficina.findUnique({ where: { id: data.oficinaId } }),
-    getMaintenanceOffice(),
-  ]);
-  if (!oficinaAsignada) throw new AppError(404, 'Oficina asignada no encontrada');
-  if (oficinaAsignada.tipo === 'MANTENIMIENTO') {
-    throw new AppError(400, 'Mantenimiento es una ubicación temporal y no puede ser la oficina asignada');
-  }
+  // Todo equipo nuevo entra al Stock: queda NUEVO, disponible y listo para entregar.
+  const stock = await getStockOffice();
 
   const equipo = await prisma.equipo.create({
     data: {
@@ -232,9 +249,10 @@ export async function createEquipment(data: {
       modelo: data.modelo,
       templateId: data.templateId,
       tipoEquipoId: data.tipoEquipoId,
-      oficinaId: mantenimiento.id,
-      oficinaAsignadaId: oficinaAsignada.id,
+      oficinaId: stock.id,
+      oficinaAsignadaId: stock.id,
       estado: 'NUEVO',
+      ...entradaAStock('LISTO'),
       ip: data.ip,
       mac: data.mac,
       matricula: data.matricula,
@@ -250,10 +268,9 @@ export async function createEquipment(data: {
       historial: {
         create: {
           accion: 'CREACION',
-          oficinaDestinoId: mantenimiento.id,
+          oficinaDestinoId: stock.id,
           usuarioId,
           motivo: 'Alta de equipo',
-          metadata: { oficinaAsignadaId: oficinaAsignada.id },
         },
       },
     },
@@ -351,8 +368,12 @@ export async function transferEquipment(id: number, data: {
   });
   if (!equipo) throw new AppError(404, 'Equipo no encontrado');
 
+  if (equipo.oficina.tipo === 'STOCK') {
+    return assignFromStock(equipo, data, usuarioId);
+  }
+
   if (equipo.oficina.tipo !== 'MANTENIMIENTO') {
-    throw new AppError(400, 'La oficina asignada sólo se puede cambiar mientras el equipo está en Mantenimiento');
+    throw new AppError(400, 'La oficina asignada sólo se puede cambiar mientras el equipo está en Mantenimiento o en Stock');
   }
   if (equipo.oficinaAsignadaId === data.oficinaDestinoId) {
     throw new AppError(400, 'El equipo ya tiene esa oficina asignada');
@@ -393,6 +414,53 @@ export async function transferEquipment(id: number, data: {
   return updated;
 }
 
+/**
+ * Asignación desde Stock: el equipo sale físicamente del stock y queda
+ * en la oficina destino (ubicación actual y asignada a la vez).
+ */
+async function assignFromStock(
+  equipo: { id: number; estado: EstadoEquipo; oficinaId: number },
+  data: { oficinaDestinoId: number; motivo: string; comentario?: string },
+  usuarioId: number,
+) {
+  if (equipo.estado === 'PRESTADO') throw new AppError(400, 'El equipo está prestado');
+  if (equipo.estado === 'EN_SERVICIO_EXTERNO') throw new AppError(400, 'El equipo está en servicio externo');
+
+  const oficinaDest = await prisma.oficina.findUnique({ where: { id: data.oficinaDestinoId } });
+  if (!oficinaDest) throw new AppError(404, 'Oficina destino no encontrada');
+  if (oficinaDest.tipo === 'MANTENIMIENTO') {
+    throw new AppError(400, 'Para revisar un equipo del stock usá ENTRADA');
+  }
+  if (oficinaDest.tipo === 'STOCK') {
+    throw new AppError(400, 'El equipo ya está en Stock');
+  }
+
+  return prisma.equipo.update({
+    where: { id: equipo.id },
+    data: {
+      oficinaId: oficinaDest.id,
+      oficinaAsignadaId: oficinaDest.id,
+      estado: estadoPorOficina(oficinaDest.tipo),
+      ...SALIDA_DE_STOCK,
+      historial: {
+        create: {
+          accion: 'ASIGNACION',
+          oficinaOrigenId: equipo.oficinaId,
+          oficinaDestinoId: oficinaDest.id,
+          usuarioId,
+          motivo: data.motivo,
+          comentario: data.comentario,
+        },
+      },
+    },
+    include: {
+      tipoEquipo: true,
+      oficina: { include: { seccion: { include: { ciudad: true } } } },
+      oficinaAsignada: { include: { seccion: { include: { ciudad: true } } } },
+    },
+  });
+}
+
 export async function sendToSupport(id: number, data: {
   motivo: string;
   comentario?: string;
@@ -415,6 +483,7 @@ export async function sendToSupport(id: number, data: {
     data: {
       estado: 'EN_REPARACION',
       oficinaId: mantenimiento.id,
+      ...SALIDA_DE_STOCK,
       historial: {
         create: {
           accion: 'ENVIO_SOPORTE',
@@ -423,6 +492,9 @@ export async function sendToSupport(id: number, data: {
           usuarioId,
           motivo: data.motivo,
           comentario: data.comentario,
+          // Permite que un equipo NUEVO que entra a Mantenimiento sin haberse
+          // asignado nunca recupere su condición de nuevo en la SALIDA.
+          metadata: { estadoAnterior: equipo.estado },
         },
       },
     },
@@ -458,14 +530,41 @@ export async function exitEquipment(id: number, data: {
     throw new AppError(409, 'El equipo no tiene una oficina asignada válida');
   }
 
+  // "Nuevo" = nunca asignado a una oficina. Si estaba NUEVO al recibir la
+  // ENTRADA (p. ej. falla de fábrica detectada en Stock), lo sigue siendo.
+  let esNuevo = equipo.estado === 'NUEVO';
+  if (!esNuevo) {
+    const entrada = await prisma.historial.findFirst({
+      where: { equipoId: id, accion: 'ENVIO_SOPORTE' },
+      orderBy: { fecha: 'desc' },
+      select: { metadata: true },
+    });
+    const meta = entrada?.metadata as { estadoAnterior?: string } | null | undefined;
+    esNuevo = meta?.estadoAnterior === 'NUEVO';
+  }
+  const vaAStock = equipo.oficinaAsignada.tipo === 'STOCK';
+
+  // Hacia Stock: un equipo NUEVO conserva su estado y queda listo; el resto
+  // queda DISPONIBLE pero "a revisar" hasta que alguien lo marque como listo.
+  const destino = vaAStock
+    ? {
+        estado: esNuevo ? EstadoEquipo.NUEVO : EstadoEquipo.DISPONIBLE,
+        ...entradaAStock(esNuevo ? 'LISTO' : 'A_REVISAR'),
+      }
+    : { estado: estadoPorOficina(equipo.oficinaAsignada.tipo) };
+
+  const accion = vaAStock
+    ? (esNuevo ? 'TRANSFERENCIA' : 'RETORNO_SOPORTE')
+    : (esNuevo ? 'ASIGNACION' : 'RETORNO_SOPORTE');
+
   const updated = await prisma.equipo.update({
     where: { id },
     data: {
       oficinaId: equipo.oficinaAsignadaId,
-      estado: estadoPorOficina(equipo.oficinaAsignada.tipo),
+      ...destino,
       historial: {
         create: {
-          accion: equipo.estado === 'NUEVO' ? 'ASIGNACION' : 'RETORNO_SOPORTE',
+          accion,
           oficinaOrigenId: equipo.oficinaId,
           oficinaDestinoId: equipo.oficinaAsignadaId,
           usuarioId,
@@ -577,6 +676,69 @@ export async function returnFromService(id: number, data: {
   });
 
   return updated;
+}
+
+/**
+ * Equipos físicamente en Stock (disponibles), excluyendo los que están
+ * prestados o en servicio externo. Ordenados por antigüedad en stock.
+ */
+export async function listStock() {
+  return prisma.equipo.findMany({
+    where: {
+      oficina: { tipo: 'STOCK' },
+      estado: { notIn: ['PRESTADO', 'EN_SERVICIO_EXTERNO'] },
+    },
+    select: {
+      id: true,
+      serie: true,
+      modelo: true,
+      estado: true,
+      stockEtapa: true,
+      stockDesde: true,
+      garantiaHasta: true,
+      createdAt: true,
+      tipoEquipo: { select: { id: true, nombre: true } },
+      template: { select: { id: true, nombre: true, marca: true } },
+    },
+    orderBy: [{ stockDesde: 'asc' }, { serie: 'asc' }],
+  });
+}
+
+/** Cambia la etapa de un equipo en Stock (A revisar ↔ Listo). */
+export async function setStockStage(id: number, data: {
+  etapa: EtapaStock;
+  comentario?: string;
+}, usuarioId: number) {
+  const equipo = await prisma.equipo.findUnique({
+    where: { id },
+    include: { oficina: true },
+  });
+  if (!equipo) throw new AppError(404, 'Equipo no encontrado');
+  if (equipo.oficina.tipo !== 'STOCK') {
+    throw new AppError(400, 'El equipo no está en Stock');
+  }
+  if (equipo.stockEtapa === data.etapa) {
+    throw new AppError(400, data.etapa === 'LISTO' ? 'El equipo ya está listo' : 'El equipo ya está a revisar');
+  }
+
+  return prisma.equipo.update({
+    where: { id },
+    data: {
+      stockEtapa: data.etapa,
+      // Si no tenía fecha (equipo cargado a mano en Stock), arranca a contar ahora.
+      ...(equipo.stockDesde ? {} : { stockDesde: new Date() }),
+      historial: {
+        create: {
+          accion: 'CAMBIO_ESTADO',
+          oficinaDestinoId: equipo.oficinaId,
+          usuarioId,
+          motivo: data.etapa === 'LISTO' ? 'Revisado: listo para entregar' : 'Marcado para revisar',
+          comentario: data.comentario,
+          metadata: { stockEtapa: data.etapa },
+        },
+      },
+    },
+  });
 }
 
 export async function getEquipmentTypes() {

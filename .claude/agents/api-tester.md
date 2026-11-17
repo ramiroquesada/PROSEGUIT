@@ -34,12 +34,15 @@ Usar en requests protegidos: `Authorization: Bearer <token>`
 - `POST /auth/logout` — body: `{refreshToken}`
 
 ### Equipment (`/equipment`)
-- `GET /equipment` — query: `page, limit, tipoEquipoId, estado, ciudadId, seccionId, oficinaId, search, sortBy (serie|modelo|tipo), sortDir (asc|desc)`
+- `GET /equipment` — query: `page, limit, tipoEquipoId, estado (incluye DISPONIBLE), ciudadId, seccionId, oficinaId, search, sortBy (serie|modelo|tipo), sortDir (asc|desc)`
 - `GET /equipment/types` — lista tipos de equipo
+- `GET /equipment/stock` — equipos físicamente en Stock (sin prestados ni en servicio externo), con `stockEtapa` y `stockDesde`
 - `GET /equipment/:id` — detalle completo
-- `POST /equipment` — body: `{serie, modelo, tipoEquipoId, oficinaId, ip?, observacion?}`
+- `POST /equipment` — body: `{serie, modelo, tipoEquipoId, ip?, observacion?}` — sin oficina: siempre se crea en Stock como NUEVO/LISTO (409 si no hay oficina STOCK)
 - `PUT /equipment/:id` — editar equipo
-- `POST /equipment/:id/transfer` — body: `{oficinaDestinoId, motivo}`
+- `POST /equipment/:id/transfer` — body: `{oficinaDestinoId, motivo}` — en Mantenimiento cambia la oficina asignada; en Stock asigna (mueve físicamente, `ASIGNACION`)
+- `POST /equipment/:id/exit` — body: `{motivo}` — SALIDA desde Mantenimiento hacia la oficina asignada (si es Stock: DISPONIBLE + A_REVISAR)
+- `PATCH /equipment/:id/stock-stage` — body: `{etapa: 'A_REVISAR'|'LISTO', comentario?}` — sólo equipos en Stock
 - `POST /equipment/:id/send-to-support` — body: `{motivo}`
 - `POST /equipment/:id/send-to-service` — body: `{servicioId, motivo}`
 - `POST /equipment/:id/decommission` — body: `{motivo}`

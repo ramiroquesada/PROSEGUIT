@@ -27,6 +27,9 @@ async function main() {
     prisma.oficina.create({
       data: { nombre: 'Oficina destino QA', tipo: 'OFICINA', seccionId: seccion.id },
     }),
+    prisma.oficina.create({
+      data: { nombre: 'Stock disponible', tipo: 'STOCK', seccionId: seccion.id },
+    }),
   ]);
 
   await Promise.all([

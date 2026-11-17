@@ -31,17 +31,17 @@ describe('Concurrency — Race condition en préstamos', () => {
     const create = await api
       .post('/api/v1/equipment')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ serie: seriesRes.body.nextSerie, tipoEquipoId: tipoId, oficinaId: oficinaSoporteId, modelo: 'Equipo Test Concurrencia' });
+      .send({ serie: seriesRes.body.nextSerie, tipoEquipoId: tipoId, modelo: 'Equipo Test Concurrencia' });
 
     if (create.status !== 201) throw new Error(`Create failed: ${JSON.stringify(create.body)}`);
     equipoId = create.body.id;
 
-    const exit = await api
-      .post(`/api/v1/equipment/${equipoId}/exit`)
+    const assign = await api
+      .post(`/api/v1/equipment/${equipoId}/transfer`)
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ motivo: 'Activar para test' });
+      .send({ oficinaDestinoId: oficinaSoporteId, motivo: 'Activar para test' });
 
-    if (exit.status !== 200) throw new Error(`Exit failed: ${JSON.stringify(exit.body)}`);
+    if (assign.status !== 200) throw new Error(`Assign failed: ${JSON.stringify(assign.body)}`);
   }, 15000);
 
   it('dos préstamos simultáneos — solo uno debe crearse', async () => {

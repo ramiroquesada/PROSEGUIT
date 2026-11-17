@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api-client';
 
-export type OfficeType = 'OFICINA' | 'SOPORTE' | 'MANTENIMIENTO' | 'DEPOSITO';
+export type OfficeType = 'OFICINA' | 'SOPORTE' | 'MANTENIMIENTO' | 'DEPOSITO' | 'STOCK';
 
 interface LocationTree {
   id: number;

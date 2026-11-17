@@ -6,6 +6,7 @@ import styles from './Header.module.css';
 const PAGE_TITLES: Record<string, string> = {
   '/':            'Dashboard',
   '/equipos':     'Equipos',
+  '/stock':       'Stock',
   '/ubicaciones': 'Ubicaciones',
   '/prestamos':   'Préstamos',
   '/historial':   'Historial',

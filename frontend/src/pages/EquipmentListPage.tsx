@@ -11,6 +11,7 @@ import { usePageTitle } from '../hooks/usePageTitle';
 const STATUS_OPTIONS = [
   { value: '', label: 'Todos los estados' },
   { value: 'NUEVO', label: 'Nuevo' },
+  { value: 'DISPONIBLE', label: 'Disponible' },
   { value: 'ACTIVO', label: 'Activo' },
   { value: 'EN_REPARACION', label: 'En Mantenimiento' },
   { value: 'EN_DEPOSITO', label: 'En Depósito' },
@@ -335,7 +336,7 @@ export default function EquipmentListPage() {
               </thead>
               <tbody>
                 {data?.data.map((eq) => {
-                  const est = resolveEstado(eq.estado, eq.oficina.nombre);
+                  const est = resolveEstado(eq.estado, eq.oficina.tipo);
                   return (
                     <tr key={eq.id} onClick={() => navigate(`/equipos/${eq.id}`)} className={styles.row}>
                       <td className={styles.serie}>{eq.serie}</td>

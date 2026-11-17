@@ -2,6 +2,27 @@
 
 Todos los cambios relevantes de PROSEGUIT se documentan en este archivo. El proyecto usa versionado semántico (`MAJOR.MINOR.PATCH`).
 
+## [Sin publicar]
+
+### Agregado
+
+- Sección **Stock** (`/stock`): equipos disponibles por tipo, etapas *A revisar* / *Listo*, días en stock y garantía restante.
+- Oficina de tipo `STOCK` ("Stock disponible") y estado derivado `DISPONIBLE`.
+- Los equipos nuevos (individual y carga masiva) se crean siempre en Stock como Nuevo; ya no se pide ubicación.
+- Asignación a una oficina directamente desde la ficha de un equipo en Stock.
+- Un equipo usado que vuelve a Stock queda Disponible y *A revisar*; uno Nuevo que pasa por Mantenimiento sigue siendo Nuevo.
+- Script de una sola vez `pasar-nuevos-a-stock` (vista previa y `--apply`) para los equipos Nuevo del flujo anterior.
+
+### Corregido
+
+- El estado mostrado se deriva del tipo de la oficina actual en lugar de su nombre.
+- El dashboard ya no cuenta como activos a los equipos usados que están en Stock.
+
+### Notas de actualización
+
+- Dos migraciones aditivas (tipos, columnas nulas y la oficina Stock); no mueven equipos existentes.
+- Después del deploy, correr la vista previa del script y aplicarlo sólo tras revisarla. Ver `DEPLOY_PENDIENTE.md`.
+
 ## [2.3.0] - 2026-09-21
 
 ### Agregado

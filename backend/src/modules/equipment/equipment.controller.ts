@@ -138,3 +138,17 @@ export async function updateImageDescriptionHandler(req: Request, res: Response)
   );
   res.json({ imagen });
 }
+
+export async function stockHandler(_req: Request, res: Response) {
+  const equipos = await equipmentService.listStock();
+  res.json(equipos);
+}
+
+export async function stockStageHandler(req: Request, res: Response) {
+  const equipo = await equipmentService.setStockStage(
+    Number(req.params.id),
+    req.body,
+    req.user!.userId,
+  );
+  res.json(equipo);
+}

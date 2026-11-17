@@ -38,7 +38,8 @@ function findingCount(
   return { code, severity, description, count, sample: [] };
 }
 
-function expectedOfficeState(tipo: 'OFICINA' | 'SOPORTE' | 'MANTENIMIENTO' | 'DEPOSITO') {
+function expectedOfficeState(tipo: 'OFICINA' | 'SOPORTE' | 'MANTENIMIENTO' | 'DEPOSITO' | 'STOCK') {
+  if (tipo === 'STOCK') return 'DISPONIBLE';
   if (tipo === 'MANTENIMIENTO') return 'EN_REPARACION';
   if (tipo === 'DEPOSITO') return 'EN_DEPOSITO';
   return 'ACTIVO';

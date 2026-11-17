@@ -3,10 +3,7 @@ import { useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { useEquipmentTypes, useNextSerie, useTemplates } from '../hooks/useEquipment';
-import { useLocationTree } from '../hooks/useLocations';
 import { api } from '../lib/api-client';
-import { findSoporteOffice } from '../lib/find-soporte-office';
-import LocationCascadeSelect from '../components/LocationCascadeSelect';
 import { usePageTitle } from '../hooks/usePageTitle';
 import styles from './BulkEquipmentPage.module.css';
 
@@ -14,9 +11,6 @@ interface SharedFields {
   tipoEquipoId: string;
   templateId: string;
   modelo: string;
-  ciudadId: string;
-  seccionId: string;
-  oficinaId: string;
   proveedor: string;
   fechaAdquisicion: string;
   garantiaHasta: string;
@@ -42,15 +36,11 @@ export default function BulkEquipmentPage() {
 
   const { data: tipos } = useEquipmentTypes();
   const { data: nextSerieData } = useNextSerie();
-  const { data: locations } = useLocationTree();
 
   const [shared, setShared] = useState<SharedFields>({
     tipoEquipoId: '',
     templateId: '',
     modelo: '',
-    ciudadId: '',
-    seccionId: '',
-    oficinaId: '',
     proveedor: '',
     fechaAdquisicion: '',
     garantiaHasta: '',
@@ -67,21 +57,6 @@ export default function BulkEquipmentPage() {
   const { data: templates } = useTemplates(
     shared.tipoEquipoId ? Number(shared.tipoEquipoId) : undefined
   );
-
-  // Preseleccionar la oficina asignada. La ubicación física inicial siempre
-  // será Mantenimiento y la determina el backend.
-  useEffect(() => {
-    if (!locations) return;
-    const soporte = findSoporteOffice(locations);
-    if (soporte) {
-      setShared((p) => ({
-        ...p,
-        ciudadId: String(soporte.ciudadId),
-        seccionId: String(soporte.seccionId),
-        oficinaId: String(soporte.oficinaId),
-      }));
-    }
-  }, [locations]);
 
   // Limpiar templateId si cambia el tipo
   useEffect(() => {
@@ -143,8 +118,8 @@ export default function BulkEquipmentPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    if (!shared.tipoEquipoId || !shared.oficinaId) {
-      setSubmitError('Tipo de equipo y oficina asignada son obligatorios');
+    if (!shared.tipoEquipoId) {
+      setSubmitError('El tipo de equipo es obligatorio');
       return;
     }
     if (rows.length === 0) {
@@ -178,7 +153,6 @@ export default function BulkEquipmentPage() {
 
     const sharedPayload: Record<string, unknown> = {
       tipoEquipoId: Number(shared.tipoEquipoId),
-      oficinaId: Number(shared.oficinaId),
       modelo: shared.modelo || undefined,
       proveedor: shared.proveedor || undefined,
       fechaAdquisicion: shared.fechaAdquisicion || null,
@@ -298,21 +272,9 @@ export default function BulkEquipmentPage() {
             </div>
           )}
 
-          <div>
-            <label className={styles.label}>Oficina asignada *</label>
-            <p className={styles.hint}>Todos se crearán en Mantenimiento y saldrán luego hacia esta oficina.</p>
-            <LocationCascadeSelect
-              required
-              excludeOfficeTypes={['MANTENIMIENTO']}
-              value={{
-                ciudadId: shared.ciudadId,
-                seccionId: shared.seccionId,
-                oficinaId: shared.oficinaId,
-              }}
-              onChange={(v) => setShared((p) => ({ ...p, ...v }))}
-              onError={(msg) => setSubmitError(msg)}
-            />
-          </div>
+          <p className={styles.hint}>
+            Todos se crearán en <strong>Stock</strong> como <strong>Nuevos</strong> y quedarán disponibles.
+          </p>
 
           <div className={styles.grid4}>
             <div className={styles.field}>

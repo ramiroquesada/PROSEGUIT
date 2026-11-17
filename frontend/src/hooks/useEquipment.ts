@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api-client';
 import { compressImage } from '../lib/compress-image';
+import type { OfficeType } from './useLocations';
 
 interface EquipmentFilters {
   page?: number;
@@ -85,6 +86,7 @@ interface Equipment {
   oficina: {
     id: number;
     nombre: string;
+    tipo: OfficeType;
     seccion: {
       id: number;
       nombre: string;
@@ -94,6 +96,7 @@ interface Equipment {
   oficinaAsignada: {
     id: number;
     nombre: string;
+    tipo: OfficeType;
     seccion: {
       id: number;
       nombre: string;
@@ -101,8 +104,47 @@ interface Equipment {
     };
   };
   template: { id: number; nombre: string } | null;
+  stockEtapa: StockEtapa | null;
+  stockDesde: string | null;
   createdAt: string;
   updatedAt: string;
+}
+
+export type StockEtapa = 'A_REVISAR' | 'LISTO';
+
+export interface StockItem {
+  id: number;
+  serie: number;
+  modelo: string | null;
+  estado: string;
+  stockEtapa: StockEtapa | null;
+  stockDesde: string | null;
+  garantiaHasta: string | null;
+  createdAt: string;
+  tipoEquipo: { id: number; nombre: string };
+  template: { id: number; nombre: string; marca: string | null } | null;
+}
+
+/** Equipos físicamente en Stock (disponibles). */
+export function useStock() {
+  return useQuery({
+    queryKey: ['equipment', 'stock'],
+    queryFn: () => api.get<StockItem[]>('/equipment/stock'),
+    staleTime: 30_000,
+  });
+}
+
+export function useSetStockStage() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: number; etapa: StockEtapa; comentario?: string }) =>
+      api.patch(`/equipment/${id}/stock-stage`, data),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: ['equipment'] });
+      qc.invalidateQueries({ queryKey: ['history', 'equipment', id] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
 }
 
 export function useTransferEquipment() {
@@ -125,7 +167,7 @@ export function useSendToSupport() {
     mutationFn: ({ id, ...data }: { id: number; motivo: string; comentario?: string }) =>
       api.post(`/equipment/${id}/send-to-support`, data),
     onSuccess: (_data, { id }) => {
-      qc.invalidateQueries({ queryKey: ['equipment', id] });
+      qc.invalidateQueries({ queryKey: ['equipment'] });
       qc.invalidateQueries({ queryKey: ['history', 'equipment', id] });
       qc.invalidateQueries({ queryKey: ['dashboard'] });
     },

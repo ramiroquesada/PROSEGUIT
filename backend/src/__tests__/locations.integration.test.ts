@@ -40,10 +40,16 @@ describe('Ubicaciones — movimiento de oficina entre ciudades', () => {
       .send({
         serie: 900_001,
         tipoEquipoId: 1,
-        oficinaId: office.body.id,
         modelo: 'Equipo impacto movimiento',
       });
     expect(equipment.status).toBe(201);
+
+    // El alta siempre entra a Stock; se asigna a la oficina para el escenario.
+    const assigned = await api
+      .post(`/api/v1/equipment/${equipment.body.id}/transfer`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ oficinaDestinoId: office.body.id, motivo: 'Asignación para el test' });
+    expect(assigned.status).toBe(200);
 
     const preview = await api
       .get(`/api/v1/locations/offices/${office.body.id}/move-preview`)
