@@ -9,16 +9,18 @@
 - Nueva sección **Stock** (`/stock`): equipos disponibles agrupados por tipo, etapas *A revisar* / *Listo*, días en stock.
 - Los equipos nuevos se crean siempre en la oficina **"Stock disponible"** (estado Nuevo). Desde la ficha se asignan a una oficina.
 - El estado de un equipo se deriva del **tipo** de su oficina actual (nuevo tipo `STOCK` → estado `DISPONIBLE`).
+- Botón **Pasar a stock** en la ficha y **condición** del equipo (Bueno / Con detalles / Solo para repuestos).
 - El ciclo Mantenimiento (ENTRADA / SALIDA a su oficina) sigue igual.
 
 ## Cambios en la base (se aplican solos)
 
-Dos migraciones **aditivas**, aplicadas por el backend al arrancar (`prisma migrate deploy`):
+Tres migraciones **aditivas**, aplicadas por el backend al arrancar (`prisma migrate deploy`):
 
 | Migración | Qué hace |
 |-----------|----------|
 | `20261117000000_add_stock_types` | Agrega `STOCK` a `tipo_oficina`, `DISPONIBLE` a `estado_equipo`, el enum `etapa_stock` y dos columnas nulas en `equipo` (`stock_etapa`, `stock_desde`). |
 | `20261117000100_ensure_stock_office` | Crea la oficina "Stock disponible" (tipo STOCK) si no existe. Idempotente. |
+| `20261118000000_add_condicion_equipo` | Crea el enum `condicion_equipo` y la columna nula `equipo.condicion`. Los equipos existentes quedan sin condición. |
 
 No modifican ni borran filas existentes. Ningún equipo cambia de lugar por el deploy.
 

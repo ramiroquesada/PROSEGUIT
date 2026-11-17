@@ -46,6 +46,24 @@ export const STOCK_ETAPA_LABEL: Record<string, string> = {
   LISTO: 'Listo',
 };
 
+export type Condicion = 'BUENO' | 'CON_DETALLES' | 'SOLO_REPUESTOS';
+
+/** Condición física de la unidad (independiente de dónde esté). */
+export const CONDICION_LABEL: Record<Condicion, string> = {
+  BUENO: 'Bueno',
+  CON_DETALLES: 'Con detalles',
+  SOLO_REPUESTOS: 'Solo para repuestos',
+};
+
+export const CONDICION_COLOR: Record<Condicion, string> = {
+  BUENO: 'success',
+  CON_DETALLES: 'warning',
+  SOLO_REPUESTOS: 'neutral',
+};
+
+export const CONDICION_OPTIONS = (Object.keys(CONDICION_LABEL) as Condicion[])
+  .map((value) => ({ value, label: CONDICION_LABEL[value] }));
+
 /** Días completos desde una fecha ISO hasta hoy. */
 export function daysSince(iso: string | null): number | null {
   if (!iso) return null;

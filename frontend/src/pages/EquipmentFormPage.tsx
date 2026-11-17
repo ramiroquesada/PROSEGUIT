@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEquipmentDetail, useEquipmentTypes, useNextSerie, useTemplates } from '../hooks/useEquipment';
 import { api } from '../lib/api-client';
+import { CONDICION_OPTIONS } from '../lib/equipment-status';
 import styles from './EquipmentFormPage.module.css';
 import { usePageTitle } from '../hooks/usePageTitle';
 
@@ -34,6 +35,7 @@ export default function EquipmentFormPage() {
     fechaFinVida: '',
     precioCompra: '',
     observacion: '',
+    condicion: '',
     motivo: '',
   });
 
@@ -60,6 +62,7 @@ export default function EquipmentFormPage() {
         fechaFinVida: equipo.fechaFinVida ? equipo.fechaFinVida.slice(0, 10) : '',
         precioCompra: equipo.precioCompra ? String(equipo.precioCompra) : '',
         observacion: equipo.observacion || '',
+        condicion: equipo.condicion ?? '',
         motivo: '',
       });
     }
@@ -149,6 +152,8 @@ export default function EquipmentFormPage() {
 
     if (isEditing) {
       payload.motivo = form.motivo;
+      // Sólo se manda si se eligió una: no se puede volver a "sin definir".
+      if (form.condicion) payload.condicion = form.condicion;
     }
 
     mutation.mutate(payload);
@@ -389,6 +394,18 @@ export default function EquipmentFormPage() {
             />
           </div>
         </div>
+
+        {isEditing && (
+          <div className={styles.section}>
+            <h3 className={styles.sectionTitle}>Condición</h3>
+            <div className={styles.field}>
+              <select name="condicion" value={form.condicion} onChange={handleChange} className={styles.select}>
+                {!form.condicion && <option value="">Sin definir</option>}
+                {CONDICION_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+          </div>
+        )}
 
         {/* ── Observaciones ── */}
         <div className={styles.section}>

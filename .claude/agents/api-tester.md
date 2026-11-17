@@ -42,7 +42,8 @@ Usar en requests protegidos: `Authorization: Bearer <token>`
 - `PUT /equipment/:id` — editar equipo
 - `POST /equipment/:id/transfer` — body: `{oficinaDestinoId, motivo}` — en Mantenimiento cambia la oficina asignada; en Stock asigna (mueve físicamente, `ASIGNACION`)
 - `POST /equipment/:id/exit` — body: `{motivo}` — SALIDA desde Mantenimiento hacia la oficina asignada (si es Stock: DISPONIBLE + A_REVISAR)
-- `PATCH /equipment/:id/stock-stage` — body: `{etapa: 'A_REVISAR'|'LISTO', comentario?}` — sólo equipos en Stock
+- `PATCH /equipment/:id/stock-stage` — body: `{etapa: 'A_REVISAR'|'LISTO', comentario?, condicion?}` — sólo equipos en Stock
+- `POST /equipment/:id/send-to-stock` — body: `{motivo, comentario?, condicion?: 'BUENO'|'CON_DETALLES'|'SOLO_REPUESTOS'}` — pase directo a Stock; 400 si ya está en Stock, prestado o en servicio externo
 - `POST /equipment/:id/send-to-support` — body: `{motivo}`
 - `POST /equipment/:id/send-to-service` — body: `{servicioId, motivo}`
 - `POST /equipment/:id/decommission` — body: `{motivo}`

@@ -252,6 +252,44 @@ describe('Equipment Integration — Flujo completo', () => {
     expect(list.body.data.some((e: { id: number }) => e.id === equipoId)).toBe(true);
   });
 
+  it('Paso 8d — Pase directo a Stock desde una oficina, con condición', async () => {
+    const asignar = await api
+      .post(`/api/v1/equipment/${equipoId}/transfer`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ oficinaDestinoId, motivo: 'Entrega' });
+    expect(asignar.status).toBe(200);
+    expect(asignar.body.estado).toBe('ACTIVO');
+
+    const pase = await api
+      .post(`/api/v1/equipment/${equipoId}/send-to-stock`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ motivo: 'Reemplazado por uno nuevo', condicion: 'CON_DETALLES' });
+    expect(pase.status).toBe(200);
+    expect(pase.body).toMatchObject({
+      estado: 'DISPONIBLE', stockEtapa: 'A_REVISAR', condicion: 'CON_DETALLES',
+    });
+    expect(pase.body.oficina.id).toBe(oficinaStockId);
+    expect(pase.body.oficinaAsignada.id).toBe(oficinaStockId);
+
+    const stock = await api
+      .get('/api/v1/equipment/stock')
+      .set('Authorization', `Bearer ${adminToken}`);
+    const item = (stock.body as { id: number; condicion: string }[]).find((e) => e.id === equipoId);
+    expect(item?.condicion).toBe('CON_DETALLES');
+
+    const repetido = await api
+      .post(`/api/v1/equipment/${equipoId}/send-to-stock`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ motivo: 'Otra vez' });
+    expect(repetido.status).toBe(400);
+
+    const invalida = await api
+      .post(`/api/v1/equipment/${equipoId}/send-to-stock`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ motivo: 'x', condicion: 'ROTO' });
+    expect(invalida.status).toBe(400);
+  });
+
   it('Paso 9 — Historial completo', async () => {
     const res = await api
       .get(`/api/v1/history/equipment/${equipoId}`)

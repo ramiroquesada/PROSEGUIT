@@ -117,6 +117,14 @@ enum EtapaStock {
   @@map("etapa_stock")
 }
 
+enum CondicionEquipo {
+  BUENO // Funciona y está en buen estado
+  CON_DETALLES // Funciona, con detalles estéticos o faltantes menores
+  SOLO_REPUESTOS // No se entrega; sirve para sacar piezas
+
+  @@map("condicion_equipo")
+}
+
 model TipoEquipo {
   id        Int              @id @default(autoincrement())
   nombre    String           @unique @db.VarChar(50)
@@ -168,6 +176,7 @@ model Equipo {
   especificaciones  Json            @default("{}") @db.JsonB
   stockEtapa        EtapaStock?     @map("stock_etapa")
   stockDesde        DateTime?       @map("stock_desde")
+  condicion         CondicionEquipo?
   v1Id              Int?            @map("v1_id")
 
   historial      Historial[]

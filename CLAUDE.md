@@ -49,7 +49,7 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 | Módulo | Endpoints principales |
 |--------|----------------------|
 | `auth` | POST login, refresh, logout |
-| `equipment` | GET list/detail/stock, POST crear, PUT editar, POST transfer/send-to-support/exit/send-to-service/return-from-service, PATCH stock-stage |
+| `equipment` | GET list/detail/stock, POST crear, PUT editar, POST transfer/send-to-support/exit/send-to-stock/send-to-service/return-from-service, PATCH stock-stage |
 | `locations` | GET tree, POST/PUT cities/sections/offices |
 | `dashboard` | GET stats, GET recent-activity |
 | `history` | GET list (paginado + filtros), GET by equipoId |
@@ -231,8 +231,10 @@ Alta ──► STOCK (Nuevo, Listo) ──asignar──► Oficina (Activo) ◄�
 
 1. **Alta** — sin preguntar ubicación: el backend crea el equipo en Stock (actual y asignada), estado `NUEVO`, etapa `LISTO`. La serie se pre-rellena con `max(serie) + 1`.
 2. **Asignar** — desde la ficha (equipo en Stock) se elige la oficina destino; queda `ACTIVO`.
-3. **Volver a stock** — ENTRADA → cambiar oficina asignada a "Stock disponible" → SALIDA. Queda `DISPONIBLE` y `A_REVISAR` hasta que se marque como listo.
-4. **Etapas de stock** — `Equipo.stockEtapa` (`A_REVISAR` | `LISTO`) y `Equipo.stockDesde` (para "días en stock"). Se limpian al salir del Stock. Cambio con `PATCH /equipment/:id/stock-stage`.
+3. **Volver a stock** — botón **Pasar a stock** en la ficha (`POST /equipment/:id/send-to-stock`, body `{motivo, comentario?, condicion?}`), desde una oficina, Mantenimiento o Depósito. Mueve actual y asignada a Stock y registra `TRANSFERENCIA` con `metadata.paseAStock`. Queda `DISPONIBLE` y `A_REVISAR` hasta que se marque como listo (un equipo que nunca se asignó sigue `NUEVO` y `LISTO`). El camino ENTRADA → asignada "Stock disponible" → SALIDA sigue funcionando.
+4. **Etapas de stock** — `Equipo.stockEtapa` (`A_REVISAR` | `LISTO`) y `Equipo.stockDesde` (para "días en stock"). Se limpian al salir del Stock. Cambio con `PATCH /equipment/:id/stock-stage` (acepta `condicion?` al marcar listo).
+4b. **Condición** — `Equipo.condicion` (`BUENO` | `CON_DETALLES` | `SOLO_REPUESTOS`, nula = sin definir): estado físico de la unidad, independiente de la ubicación. Las altas nuevas quedan en `BUENO`. Se carga al pasar a stock, al marcar listo o desde Editar; se conserva al asignar. Labels y colores en `CONDICION_LABEL` / `CONDICION_COLOR` de `frontend/src/lib/equipment-status.ts`.
+4c. **Descartar** — no hay acción propia: ENTRADA → cambiar asignada a Depósito → SALIDA.
 5. **"Nuevo" = nunca asignado a una oficina.** Un NUEVO que va de Stock a Mantenimiento (ENTRADA) y vuelve sigue siendo NUEVO: la ENTRADA guarda `metadata.estadoAnterior` en el historial y la SALIDA lo consulta. Si en cambio sale a una oficina, se registra `ASIGNACION`.
 6. **Equipos NUEVO previos al Stock** (en Mantenimiento, asignados a Soporte): se pasan con el script de una sola vez `backend/src/scripts/pasar-nuevos-a-stock.ts`. Vista previa por defecto, `--apply` para aplicar, `--todas-las-oficinas` para incluir otras oficinas asignadas. Excluye los que tienen uso previo en el historial (ASIGNACION, RETORNO_SOPORTE, PRESTAMO, DEVOLUCION). Transaccional e idempotente. En prod: `node dist/scripts/pasar-nuevos-a-stock.js` dentro del contenedor backend.
 

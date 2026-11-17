@@ -12,6 +12,8 @@ Todos los cambios relevantes de PROSEGUIT se documentan en este archivo. El proy
 - Asignación a una oficina directamente desde la ficha de un equipo en Stock.
 - Un equipo usado que vuelve a Stock queda Disponible y *A revisar*; uno Nuevo que pasa por Mantenimiento sigue siendo Nuevo.
 - Script de una sola vez `pasar-nuevos-a-stock` (vista previa y `--apply`) para los equipos Nuevo del flujo anterior.
+- Botón **Pasar a stock** en la ficha: lleva el equipo a Stock en un paso desde una oficina, Mantenimiento o Depósito, sin ENTRADA/SALIDA.
+- **Condición** del equipo (Bueno / Con detalles / Solo para repuestos): se carga al pasar a stock, al marcar listo o desde Editar, se ve en la ficha y en Stock, y se puede filtrar.
 
 ### Corregido
 
@@ -20,7 +22,7 @@ Todos los cambios relevantes de PROSEGUIT se documentan en este archivo. El proy
 
 ### Notas de actualización
 
-- Dos migraciones aditivas (tipos, columnas nulas y la oficina Stock); no mueven equipos existentes.
+- Tres migraciones aditivas (tipos, columnas nulas y la oficina Stock); no mueven equipos existentes. Los equipos existentes quedan con condición "Sin definir".
 - Después del deploy, correr la vista previa del script y aplicarlo sólo tras revisarla. Ver `DEPLOY_PENDIENTE.md`.
 
 ## [2.3.0] - 2026-09-21

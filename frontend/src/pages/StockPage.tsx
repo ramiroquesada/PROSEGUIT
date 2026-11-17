@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Search, X, PackageCheck, Boxes, PackageSearch, Hourglass } from 'lucide-react';
 import { useStock, useSetStockStage, type StockItem } from '../hooks/useEquipment';
-import { daysSince, getWarrantyDaysLeft, STOCK_ETAPA_LABEL } from '../lib/equipment-status';
+import { daysSince, getWarrantyDaysLeft, STOCK_ETAPA_LABEL, CONDICION_LABEL, CONDICION_COLOR, CONDICION_OPTIONS, type Condicion } from '../lib/equipment-status';
 import TypeBadge from '../components/ui/TypeBadge';
 import { usePageTitle } from '../hooks/usePageTitle';
 import styles from './StockPage.module.css';
 
 type EtapaFiltro = '' | 'LISTO' | 'A_REVISAR';
+/** '' = todas; 'SIN' = sin condición cargada. */
+type CondicionFiltro = '' | 'SIN' | Condicion;
 
 interface Grupo {
   tipo: string;
@@ -27,10 +29,11 @@ function formatDias(dias: number | null) {
 }
 
 /** Filtra por etapa y búsqueda, y agrupa por tipo de equipo (más numeroso primero). */
-function agrupar(items: StockItem[], search: string, etapa: EtapaFiltro): Grupo[] {
+function agrupar(items: StockItem[], search: string, etapa: EtapaFiltro, condicion: CondicionFiltro): Grupo[] {
   const q = search.trim().toLowerCase();
   const filtrados = items.filter((i) => {
     if (etapa && etapaDe(i) !== etapa) return false;
+    if (condicion === 'SIN' ? i.condicion !== null : condicion && i.condicion !== condicion) return false;
     if (!q) return true;
     return (
       String(i.serie).includes(q) ||
@@ -60,6 +63,7 @@ export default function StockPage() {
 
   const [search, setSearch] = useState('');
   const [etapa, setEtapa] = useState<EtapaFiltro>('');
+  const [condicion, setCondicion] = useState<CondicionFiltro>('');
   const [stageError, setStageError] = useState('');
 
   const items = data ?? [];
@@ -70,7 +74,7 @@ export default function StockPage() {
     return d !== null && (max === null || d > max) ? d : max;
   }, null);
 
-  const grupos = agrupar(items, search, etapa);
+  const grupos = agrupar(items, search, etapa, condicion);
 
   async function marcarListo(e: React.MouseEvent, id: number) {
     e.stopPropagation();
@@ -147,6 +151,16 @@ export default function StockPage() {
             </button>
           )}
         </div>
+        <select
+          className={styles.condFilter}
+          value={condicion}
+          onChange={(e) => setCondicion(e.target.value as CondicionFiltro)}
+          aria-label="Filtrar por condición"
+        >
+          <option value="">Toda condición</option>
+          {CONDICION_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          <option value="SIN">Sin definir</option>
+        </select>
         <div className={styles.segmented} role="tablist">
           {etapaOpciones.map((o) => (
             <button
@@ -197,6 +211,7 @@ export default function StockPage() {
                     <tr>
                       <th>Serie</th>
                       <th>Modelo</th>
+                      <th>Origen</th>
                       <th>Condición</th>
                       <th>Etapa</th>
                       <th>En stock</th>
@@ -217,6 +232,11 @@ export default function StockPage() {
                             <span className={styles.pill} data-tone={item.estado === 'NUEVO' ? 'new' : 'neutral'}>
                               {item.estado === 'NUEVO' ? 'Nuevo' : 'Usado'}
                             </span>
+                          </td>
+                          <td>
+                            {item.condicion
+                              ? <span className={styles.pill} data-tone={CONDICION_COLOR[item.condicion]}>{CONDICION_LABEL[item.condicion]}</span>
+                              : <span className={styles.muted}>Sin definir</span>}
                           </td>
                           <td>
                             <span className={styles.pill} data-tone={et === 'LISTO' ? 'success' : 'warning'}>

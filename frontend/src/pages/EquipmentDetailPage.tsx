@@ -1,14 +1,15 @@
 import { useState, useRef, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router';
-import { useEquipmentDetail, useTransferEquipment, useSendToSupport, useExitEquipment, useSendToService, useReturnFromService, useUploadEquipmentImage, useDeleteEquipmentImage, useUpdateImageDescription, useSetStockStage } from '../hooks/useEquipment';
-import { resolveEstado, STATUS_LABEL, STATUS_COLOR, STOCK_ETAPA_LABEL, daysSince, getWarrantyStatus, getWarrantyDaysLeft } from '../lib/equipment-status';
+import { useEquipmentDetail, useTransferEquipment, useSendToSupport, useExitEquipment, useSendToService, useReturnFromService, useUploadEquipmentImage, useDeleteEquipmentImage, useUpdateImageDescription, useSetStockStage, useSendToStock } from '../hooks/useEquipment';
+import type { Condicion } from '../lib/equipment-status';
+import { resolveEstado, STATUS_LABEL, STATUS_COLOR, STOCK_ETAPA_LABEL, CONDICION_LABEL, CONDICION_COLOR, CONDICION_OPTIONS, daysSince, getWarrantyStatus, getWarrantyDaysLeft } from '../lib/equipment-status';
 import { useEquipmentHistory } from '../hooks/useHistory';
 import { useLocationTree } from '../hooks/useLocations';
 import { useServiceProviders } from '../hooks/useLoans';
 import { useEquipmentLicenses, useCreateLicense, useDeleteLicense } from '../hooks/useLicenses';
 import { LICENSE_STATUS_LABEL, LICENSE_STATUS_COLOR } from '../lib/license-status';
 import { ACCION_LABEL, ACCION_COLOR } from '../lib/action-types';
-import { ArrowRightLeft, Building2, RotateCcw, Pencil, ChevronLeft, LogOut, LogIn, Monitor, Camera, Trash2, X, Plus, Send, PackageCheck, PackageSearch } from 'lucide-react';
+import { ArrowRightLeft, Building2, RotateCcw, Pencil, ChevronLeft, LogOut, LogIn, Monitor, Camera, Trash2, X, Plus, Send, PackageCheck, PackageSearch, Boxes } from 'lucide-react';
 import { findMaintenanceOffice } from '../lib/find-maintenance-office';
 import LocationCascadeSelect from '../components/LocationCascadeSelect';
 import TypeBadge from '../components/ui/TypeBadge';
@@ -16,7 +17,7 @@ import styles from './EquipmentDetailPage.module.css';
 import { usePageTitle } from '../hooks/usePageTitle';
 
 // ── Tipos de modal de acción ───────────────────────────────────────────────
-type ActionType = 'salida' | 'entrada' | 'transfer' | 'service' | 'returnService' | 'asignar' | 'listo' | 'revisar';
+type ActionType = 'salida' | 'entrada' | 'transfer' | 'service' | 'returnService' | 'asignar' | 'listo' | 'revisar' | 'stock';
 
 interface ActionState {
   type: ActionType;
@@ -29,11 +30,13 @@ interface ActionState {
   oficinaId: string;
   // Service
   servicioId: string;
+  // Pase a stock / marcar listo
+  condicion: string;
 }
 
 const INITIAL_ACTION: ActionState = {
   type: 'transfer', motivo: '', comentario: '', diagnostico: '',
-  ciudadId: '', seccionId: '', oficinaId: '', servicioId: '',
+  ciudadId: '', seccionId: '', oficinaId: '', servicioId: '', condicion: '',
 };
 
 // ── Acciones disponibles por estado ───────────────────────────────────────
@@ -41,17 +44,21 @@ const ACCIONES_POR_ESTADO: Record<string, { type: ActionType; label: string; des
   NUEVO: [
     { type: 'salida', label: 'SALIDA', desc: 'Enviar a su oficina asignada', variant: 'primary' },
     { type: 'transfer', label: 'Cambiar oficina asignada', desc: 'Definir adónde pertenece', variant: 'secondary' },
+    { type: 'stock', label: 'Pasar a stock', desc: 'Queda disponible para otra oficina', variant: 'secondary' },
   ],
   ACTIVO: [
     { type: 'entrada', label: 'ENTRADA', desc: 'Ingreso temporal a Mantenimiento', variant: 'warning' },
+    { type: 'stock', label: 'Pasar a stock', desc: 'Queda disponible para otra oficina', variant: 'secondary' },
   ],
   EN_REPARACION: [
     { type: 'salida', label: 'SALIDA', desc: 'Enviar a su oficina asignada', variant: 'primary' },
     { type: 'transfer', label: 'Cambiar oficina asignada', desc: 'Elegir un nuevo destino', variant: 'secondary' },
+    { type: 'stock', label: 'Pasar a stock', desc: 'Queda disponible para otra oficina', variant: 'secondary' },
     { type: 'service', label: 'Servicio Externo', desc: 'Enviar a reparación',   variant: 'warning' },
   ],
   EN_DEPOSITO: [
     { type: 'entrada', label: 'ENTRADA', desc: 'Ingreso temporal a Mantenimiento', variant: 'warning' },
+    { type: 'stock', label: 'Pasar a stock', desc: 'Se recuperó y se puede volver a usar', variant: 'secondary' },
   ],
   EN_SERVICIO_EXTERNO: [
     { type: 'returnService', label: 'Registrar retorno', desc: 'Confirmar regreso del servicio', variant: 'primary' },
@@ -82,6 +89,7 @@ const ACCION_ICON: Record<ActionType, React.ComponentType<{ size?: number }>> = 
   asignar:       Send,
   listo:         PackageCheck,
   revisar:       PackageSearch,
+  stock:         Boxes,
 };
 
 // ── Títulos y descripciones de modal ──────────────────────────────────────
@@ -108,6 +116,13 @@ const MODAL_CONFIG: Record<ActionType, { title: string; motiLabel: string; place
     confirmLabel: 'Pasar a revisar',
     confirmVariant: 'warning',
     motivoOptional: true,
+  },
+  stock: {
+    title: 'Pasar a stock',
+    motiLabel: 'Motivo *',
+    placeholder: 'Ej: Se reemplazó por un equipo nuevo',
+    confirmLabel: 'Pasar a stock',
+    confirmVariant: 'primary',
   },
   salida: {
     title: 'Salida de Equipo',
@@ -217,6 +232,7 @@ export default function EquipmentDetailPage() {
   const serviceMutation = useSendToService();
   const returnServiceMutation = useReturnFromService();
   const stockStageMutation = useSetStockStage();
+  const sendToStockMutation = useSendToStock();
   const uploadImageMutation = useUploadEquipmentImage();
   const deleteImageMutation = useDeleteEquipmentImage();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -249,7 +265,7 @@ export default function EquipmentDetailPage() {
     return () => window.removeEventListener('keydown', onKey);
   }, [lightboxUrl]);
 
-  const isPending = transferMutation.isPending || supportMutation.isPending || exitMutation.isPending || serviceMutation.isPending || returnServiceMutation.isPending || stockStageMutation.isPending;
+  const isPending = transferMutation.isPending || supportMutation.isPending || exitMutation.isPending || serviceMutation.isPending || returnServiceMutation.isPending || stockStageMutation.isPending || sendToStockMutation.isPending;
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -312,7 +328,11 @@ export default function EquipmentDetailPage() {
   }
 
   function openAction(type: ActionType) {
-    setAction({ ...INITIAL_ACTION, type });
+    // Al marcar listo se confirma la condición: se sugiere la actual o Bueno.
+    const condicion = type === 'listo'
+      ? (equipo?.condicion ?? 'BUENO')
+      : type === 'stock' ? (equipo?.condicion ?? '') : '';
+    setAction({ ...INITIAL_ACTION, type, condicion });
     setActionError('');
   }
 
@@ -345,9 +365,16 @@ export default function EquipmentDetailPage() {
             id: equipoId,
             etapa: action.type === 'listo' ? 'LISTO' : 'A_REVISAR',
             comentario: nota || undefined,
+            ...(action.type === 'listo' && action.condicion ? { condicion: action.condicion as Condicion } : {}),
           });
           break;
         }
+        case 'stock':
+          await sendToStockMutation.mutateAsync({
+            ...base,
+            ...(action.condicion ? { condicion: action.condicion as Condicion } : {}),
+          });
+          break;
         case 'salida':
           await exitMutation.mutateAsync(base);
           break;
@@ -518,6 +545,14 @@ export default function EquipmentDetailPage() {
               <dt>Oficina asignada</dt>
               <dd>{equipo.oficinaAsignada.seccion.ciudad.nombre} › {equipo.oficinaAsignada.seccion.nombre} › {equipo.oficinaAsignada.nombre}</dd>
             </div>
+            <div className={styles.detailRow}>
+              <dt>Condición</dt>
+              <dd>
+                {equipo.condicion
+                  ? <span className={styles.condicionBadge} data-color={CONDICION_COLOR[equipo.condicion]}>{CONDICION_LABEL[equipo.condicion]}</span>
+                  : <span className={styles.sinDato}>Sin definir</span>}
+              </dd>
+            </div>
             {equipo.matricula && <div className={styles.detailRow}><dt>Matrícula</dt><dd className={styles.mono}>{equipo.matricula}</dd></div>}
             {equipo.asignadoA && <div className={styles.detailRow}><dt>Asignado a</dt><dd>{equipo.asignadoA}</dd></div>}
             {equipo.ip && <div className={styles.detailRow}><dt>IP</dt><dd className={styles.mono}>{equipo.ip}</dd></div>}
@@ -652,7 +687,7 @@ export default function EquipmentDetailPage() {
         )}
         {estadoReal === 'EN_DEPOSITO' && (
           <div className={styles.bajaNotice}>
-            Equipo en Depósito. Transferilo a una oficina activa para reasignarlo.
+            Equipo en Depósito (descarte). Si se recuperó, usá <strong>Pasar a stock</strong>.
           </div>
         )}
         {estadoReal === 'PRESTADO' && (
@@ -834,6 +869,23 @@ export default function EquipmentDetailPage() {
                   onChange={(v) => setAction((p) => p ? { ...p, ...v } : p)}
                   onError={(msg) => setActionError(msg)}
                 />
+              )}
+
+              {action.type === 'stock' && (
+                <div className={styles.entradaInfo}>
+                  El equipo pasará a <strong>Stock disponible</strong> y dejará de pertenecer a <strong>{equipo.oficinaAsignada.nombre}</strong>.
+                  {' '}Quedará <strong>Disponible · A revisar</strong> hasta que alguien lo marque como listo (si nunca se asignó, sigue Nuevo y listo).
+                </div>
+              )}
+
+              {(action.type === 'stock' || action.type === 'listo') && (
+                <div className={styles.field}>
+                  <label className={styles.label}>Condición{action.type === 'stock' ? ' (si ya la sabés)' : ''}</label>
+                  <select name="condicion" value={action.condicion} onChange={handleActionChange} className={styles.select}>
+                    {action.type === 'stock' && <option value="">Sin definir todavía</option>}
+                    {CONDICION_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
               )}
 
               {action.type === 'service' && (

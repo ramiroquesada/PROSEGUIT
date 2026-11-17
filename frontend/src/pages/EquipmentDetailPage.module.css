@@ -1080,3 +1080,21 @@
     justify-content: space-between;
   }
 }
+
+/* ── Condición física ─────────────────────────────────────────────────────── */
+.condicionBadge {
+  display: inline-block;
+  padding: 1px 10px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+
+  &[data-color="success"] { background: var(--color-success-subtle); color: var(--color-success); }
+  &[data-color="warning"] { background: var(--color-warning-subtle); color: var(--color-warning); }
+  &[data-color="neutral"] { background: var(--color-bg-subtle); color: var(--color-text-secondary); }
+}
+
+.sinDato {
+  color: var(--color-text-tertiary);
+  font-size: var(--font-size-sm);
+}

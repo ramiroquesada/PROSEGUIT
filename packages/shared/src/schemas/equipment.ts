@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+/** Condición física de la unidad, independiente de dónde esté. */
+export const condicionEquipoSchema = z.enum(['BUENO', 'CON_DETALLES', 'SOLO_REPUESTOS']);
+
 export const createEquipmentSchema = z.object({
   serie: z.number().int().positive('El número de serie es obligatorio'),
   modelo: z.string().optional(),
@@ -18,6 +21,7 @@ export const createEquipmentSchema = z.object({
   precioCompra: z.number().positive().optional().nullable(),
   observacion: z.string().optional(),
   especificaciones: z.record(z.string(), z.unknown()).optional(),
+  condicion: condicionEquipoSchema.optional().nullable(),
 });
 
 export const transferEquipmentSchema = z.object({
@@ -40,4 +44,11 @@ export const sendToServiceSchema = z.object({
 export const stockStageSchema = z.object({
   etapa: z.enum(['A_REVISAR', 'LISTO']),
   comentario: z.string().optional(),
+  condicion: condicionEquipoSchema.optional(),
+});
+
+export const sendToStockSchema = z.object({
+  motivo: z.string().min(1, 'El motivo es obligatorio'),
+  comentario: z.string().optional(),
+  condicion: condicionEquipoSchema.optional(),
 });

@@ -152,3 +152,12 @@ export async function stockStageHandler(req: Request, res: Response) {
   );
   res.json(equipo);
 }
+
+export async function sendToStockHandler(req: Request, res: Response) {
+  const equipo = await equipmentService.sendToStock(
+    Number(req.params.id),
+    req.body,
+    req.user!.userId,
+  );
+  res.json(equipo);
+}

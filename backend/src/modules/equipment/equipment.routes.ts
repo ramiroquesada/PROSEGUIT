@@ -12,6 +12,7 @@ import {
   sendToSupportSchema,
   sendToServiceSchema,
   stockStageSchema,
+  sendToStockSchema,
 } from '@proseguit/shared';
 import { z } from 'zod';
 
@@ -58,6 +59,7 @@ router.post('/:id/transfer', validate(transferEquipmentSchema), controller.trans
 router.post('/:id/send-to-support', validate(sendToSupportSchema), controller.sendToSupportHandler);
 router.post('/:id/exit', validate(sendToSupportSchema), controller.exitHandler);
 router.post('/:id/send-to-service', validate(sendToServiceSchema), controller.sendToServiceHandler);
+router.post('/:id/send-to-stock', validate(sendToStockSchema), controller.sendToStockHandler);
 router.patch('/:id/stock-stage', validate(stockStageSchema), controller.stockStageHandler);
 router.post('/:id/return-from-service', validate(returnFromServiceSchema), controller.returnFromServiceHandler);
 router.post('/:id/images', upload.single('image'), controller.uploadImageHandler);

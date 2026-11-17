@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../lib/api-client';
 import { compressImage } from '../lib/compress-image';
 import type { OfficeType } from './useLocations';
+import type { Condicion } from '../lib/equipment-status';
 
 interface EquipmentFilters {
   page?: number;
@@ -106,6 +107,7 @@ interface Equipment {
   template: { id: number; nombre: string } | null;
   stockEtapa: StockEtapa | null;
   stockDesde: string | null;
+  condicion: Condicion | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -119,6 +121,7 @@ export interface StockItem {
   estado: string;
   stockEtapa: StockEtapa | null;
   stockDesde: string | null;
+  condicion: Condicion | null;
   garantiaHasta: string | null;
   createdAt: string;
   tipoEquipo: { id: number; nombre: string };
@@ -137,8 +140,22 @@ export function useStock() {
 export function useSetStockStage() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }: { id: number; etapa: StockEtapa; comentario?: string }) =>
+    mutationFn: ({ id, ...data }: { id: number; etapa: StockEtapa; comentario?: string; condicion?: Condicion }) =>
       api.patch(`/equipment/${id}/stock-stage`, data),
+    onSuccess: (_data, { id }) => {
+      qc.invalidateQueries({ queryKey: ['equipment'] });
+      qc.invalidateQueries({ queryKey: ['history', 'equipment', id] });
+      qc.invalidateQueries({ queryKey: ['dashboard'] });
+    },
+  });
+}
+
+/** Pase directo a Stock desde cualquier ubicación (sin ENTRADA/SALIDA). */
+export function useSendToStock() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: { id: number; motivo: string; comentario?: string; condicion?: Condicion }) =>
+      api.post(`/equipment/${id}/send-to-stock`, data),
     onSuccess: (_data, { id }) => {
       qc.invalidateQueries({ queryKey: ['equipment'] });
       qc.invalidateQueries({ queryKey: ['history', 'equipment', id] });
