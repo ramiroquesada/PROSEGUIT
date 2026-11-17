@@ -16,6 +16,7 @@ import modelTemplatesRoutes from './modules/model-templates/model-templates.rout
 import serviceProvidersRoutes from './modules/service-providers/service-providers.routes.js';
 import usersRoutes from './modules/users/users.routes.js';
 import accessLogRoutes from './modules/access-log/access-log.routes.js';
+import suppliesRoutes from './modules/supplies/supplies.routes.js';
 import { APP_VERSION } from './config/version.js';
 
 const app = express();
@@ -59,6 +60,7 @@ app.use('/api/v1/model-templates', modelTemplatesRoutes);
 app.use('/api/v1/service-providers', serviceProvidersRoutes);
 app.use('/api/v1/users', usersRoutes);
 app.use('/api/v1/access-log', accessLogRoutes);
+app.use('/api/v1/supplies', suppliesRoutes);
 
 app.use(errorHandler);
 

@@ -14,6 +14,7 @@ Todos los cambios relevantes de PROSEGUIT se documentan en este archivo. El proy
 - Script de una sola vez `pasar-nuevos-a-stock` (vista previa y `--apply`) para los equipos Nuevo del flujo anterior.
 - Botón **Pasar a stock** en la ficha: lleva el equipo a Stock en un paso desde una oficina, Mantenimiento o Depósito, sin ENTRADA/SALIDA.
 - **Condición** del equipo (Bueno / Con detalles / Solo para repuestos): se carga al pasar a stock, al marcar listo o desde Editar, se ve en la ficha y en Stock, y se puede filtrar.
+- Sección **Insumos** (`/insumos`) para lo que no tiene número de serie (cables, pilas, discos, periféricos...): catálogo abierto agrupado por categoría, con búsqueda, categorías editables, ingresos, entregas (a oficina, persona o equipo), ajustes por conteo, bajas y registro de movimientos.
 
 ### Corregido
 
@@ -22,7 +23,7 @@ Todos los cambios relevantes de PROSEGUIT se documentan en este archivo. El proy
 
 ### Notas de actualización
 
-- Tres migraciones aditivas (tipos, columnas nulas y la oficina Stock); no mueven equipos existentes. Los equipos existentes quedan con condición "Sin definir".
+- Cuatro migraciones aditivas (tipos, columnas nulas, la oficina Stock y las tablas de insumos con seis categorías iniciales); no mueven equipos existentes. Los equipos existentes quedan con condición "Sin definir".
 - Después del deploy, correr la vista previa del script y aplicarlo sólo tras revisarla. Ver `DEPLOY_PENDIENTE.md`.
 
 ## [2.3.0] - 2026-09-21

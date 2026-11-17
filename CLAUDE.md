@@ -44,7 +44,7 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 - **Equipment Templates Integration** — Validación de templateId, selector dropdown en formulario de equipos, reference card con datos de plantilla, invalidación de caché `['equipment']`
 - **TemplatesPage Mejorada** — Edit functionality con ícono Pencil, editor dinámico de pares clave-valor para specs, ModalMode pattern (create/editar), validación de claves duplicadas
 
-### ✅ Backend — 10 módulos completos
+### ✅ Backend — 12 módulos completos
 
 | Módulo | Endpoints principales |
 |--------|----------------------|
@@ -59,6 +59,7 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 | `service-providers` | CRUD completo (admin only) |
 | `users` | CRUD + reset-password + change-password + revoke-sessions |
 | `access-log` | GET list (paginado + filtros), GET summary (admin only) |
+| `supplies` | GET/POST/PUT categories, GET list/detail, POST crear, PUT editar (incl. baja), POST :id/movements (INGRESO/ENTREGA/AJUSTE), GET movements (registro global) |
 
 ### ✅ Frontend — 14 páginas
 
@@ -73,6 +74,8 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 | `/equipos/:id/editar` | EquipmentFormPage | Edición |
 | `/equipos/lote` | BulkEquipmentPage | Carga masiva: campos compartidos + tabla por equipo con series correlativas |
 | `/stock` | StockPage | Equipos disponibles por tipo, etapas A revisar / Listo, días en stock |
+| `/insumos` | SuppliesPage | Insumos por categoría (búsqueda, plegables, ingreso/entrega rápida) + pestaña Movimientos |
+| `/insumos/:id` | SupplyDetailPage | Stock del insumo, ingreso/entrega/ajuste, editar, baja, movimientos |
 | `/prestamos` | LoansPage | Lista + nuevo préstamo por serie |
 | `/licencias` | LicensesPage | Resumen por software + tabla filtrable, estado derivado |
 | `/ubicaciones` | LocationsPage | Árbol Ciudad›Sección›Oficina + panel de equipos |
@@ -235,6 +238,14 @@ Alta ──► STOCK (Nuevo, Listo) ──asignar──► Oficina (Activo) ◄�
 4. **Etapas de stock** — `Equipo.stockEtapa` (`A_REVISAR` | `LISTO`) y `Equipo.stockDesde` (para "días en stock"). Se limpian al salir del Stock. Cambio con `PATCH /equipment/:id/stock-stage` (acepta `condicion?` al marcar listo).
 4b. **Condición** — `Equipo.condicion` (`BUENO` | `CON_DETALLES` | `SOLO_REPUESTOS`, nula = sin definir): estado físico de la unidad, independiente de la ubicación. Las altas nuevas quedan en `BUENO`. Se carga al pasar a stock, al marcar listo o desde Editar; se conserva al asignar. Labels y colores en `CONDICION_LABEL` / `CONDICION_COLOR` de `frontend/src/lib/equipment-status.ts`.
 4c. **Descartar** — no hay acción propia: ENTRADA → cambiar asignada a Depósito → SALIDA.
+
+### Insumos (sin número de serie)
+
+- **Catálogo abierto**: `Insumo` (nombre único sin importar mayúsculas, `categoriaId`, `unidad`, `stock`, `activo`). Un ítem por variante ("Cable HDMI 1,5 m" ≠ "Cable HDMI 3 m"). Cualquier usuario logueado crea insumos y categorías; no hay borrado, sólo baja (`activo=false`), que bloquea movimientos.
+- **`Insumo.stock` sólo cambia por `MovimientoInsumo`** (`cantidad` con signo + `stockResultante`). `PUT /supplies/:id` ignora `stock`.
+  - INGRESO suma; ENTREGA resta con la condición `stock >= cantidad` en el mismo UPDATE (nunca queda negativo, ni con entregas simultáneas) y puede llevar `oficinaId`, `recibe` y `equipoSerie` (se guarda `equipoId`); AJUSTE recibe `stockReal` (conteo) y motivo obligatorio, con bloqueo optimista sobre el stock leído (409 si cambió).
+- Categorías iniciales las crea la migración `20261118000100_add_insumos`; se agregan y renombran desde la app (`CategoriesModal`).
+- Frontend: hooks en `hooks/useSupplies.ts` (todas las claves bajo `['supplies']`), componentes en `components/supplies/` con CSS compartido `supplies.module.css`, labels en `lib/supply-movements.ts`.
 5. **"Nuevo" = nunca asignado a una oficina.** Un NUEVO que va de Stock a Mantenimiento (ENTRADA) y vuelve sigue siendo NUEVO: la ENTRADA guarda `metadata.estadoAnterior` en el historial y la SALIDA lo consulta. Si en cambio sale a una oficina, se registra `ASIGNACION`.
 6. **Equipos NUEVO previos al Stock** (en Mantenimiento, asignados a Soporte): se pasan con el script de una sola vez `backend/src/scripts/pasar-nuevos-a-stock.ts`. Vista previa por defecto, `--apply` para aplicar, `--todas-las-oficinas` para incluir otras oficinas asignadas. Excluye los que tienen uso previo en el historial (ASIGNACION, RETORNO_SOPORTE, PRESTAMO, DEVOLUCION). Transaccional e idempotente. En prod: `node dist/scripts/pasar-nuevos-a-stock.js` dentro del contenedor backend.
 
@@ -327,7 +338,7 @@ PROSEGIT/
 
 **Acciones:** `Historial` (accion: CREACION | ASIGNACION | EDICION | TRANSFERENCIA | ENVIO_SOPORTE | RETORNO_SOPORTE | PRESTAMO | DEVOLUCION | CAMBIO_ESTADO | ENVIO_SERVICIO_EXTERNO | RETORNO_SERVICIO_EXTERNO | FOTO_AGREGADA | FOTO_ELIMINADA)
 
-**Otros:** `Prestamo`, `EnvioServicio`, `ServicioExterno`, `Usuario` (rol: ADMIN | TECNICO), `Funcionario`, `RefreshToken`, `Licencia`
+**Otros:** `Prestamo`, `EnvioServicio`, `ServicioExterno`, `Usuario` (rol: ADMIN | TECNICO), `Funcionario`, `RefreshToken`, `Licencia`, `CategoriaInsumo` → `Insumo` → `MovimientoInsumo` (tipo: INGRESO | ENTREGA | AJUSTE)
 
 ---
 

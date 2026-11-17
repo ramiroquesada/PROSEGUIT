@@ -98,6 +98,15 @@ Usar en requests protegidos: `Authorization: Bearer <token>`
 - `GET /access-log/summary` — `{loginsOk, fallidos, bloqueos}` de las últimas 24 h
 - `POST /auth/login` responde **429** tras 5 intentos fallidos en 15 min para la misma ficha
 
+### Supplies (`/supplies`, cualquier usuario logueado)
+- `GET /supplies/categories` — con `_count.insumos`; `POST` / `PUT /supplies/categories/:id` — body `{nombre}`, 409 si se repite (sin importar mayúsculas)
+- `GET /supplies` — query `search`, `categoriaId`, `incluirInactivos=true`; incluye el último movimiento
+- `GET /supplies/:id` — con los últimos 100 movimientos
+- `POST /supplies` — body `{nombre, categoriaId, unidad?, observacion?, ingresoInicial?}`
+- `PUT /supplies/:id` — body `{nombre?, categoriaId?, unidad?, observacion?, activo?}` (el stock no se edita)
+- `POST /supplies/:id/movements` — `{tipo:'INGRESO', cantidad, motivo?}` | `{tipo:'ENTREGA', cantidad, oficinaId?, equipoSerie?, recibe?, motivo?}` | `{tipo:'AJUSTE', stockReal, motivo}`; 400 si no alcanza el stock o el insumo está de baja, 409 si el stock cambió durante un ajuste
+- `GET /supplies/movements` — paginado; filtros `insumoId`, `categoriaId`, `tipo`, `oficinaId`, `desde`, `hasta` (YYYY-MM-DD, `hasta` incluye el día)
+
 ## Qué testear en cada endpoint
 
 1. **Respuesta exitosa** — status 200/201, estructura JSON correcta

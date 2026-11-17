@@ -49,14 +49,15 @@ model Oficina {
   tipo      TipoOficina @default(OFICINA)
   v1Id      Int?        @map("v1_id")
 
-  equipos          Equipo[]      @relation("EquipoUbicacionActual")
-  equiposAsignados Equipo[]      @relation("EquipoOficinaAsignada")
-  usuarios         Usuario[]
-  funcionarios     Funcionario[]
-  historialOrigen  Historial[]   @relation("HistorialOrigen")
-  historialDestino Historial[]   @relation("HistorialDestino")
-  prestamos        Prestamo[]
-  createdAt        DateTime      @default(now()) @map("created_at")
+  equipos           Equipo[]           @relation("EquipoUbicacionActual")
+  equiposAsignados  Equipo[]           @relation("EquipoOficinaAsignada")
+  usuarios          Usuario[]
+  funcionarios      Funcionario[]
+  historialOrigen   Historial[]        @relation("HistorialOrigen")
+  historialDestino  Historial[]        @relation("HistorialDestino")
+  prestamos         Prestamo[]
+  movimientosInsumo MovimientoInsumo[]
+  createdAt         DateTime           @default(now()) @map("created_at")
 
   @@unique([nombre, seccionId])
   @@map("oficina")
@@ -150,42 +151,43 @@ model ModeloTemplate {
 }
 
 model Equipo {
-  id                Int             @id @default(autoincrement())
-  serie             Int             @unique
-  modelo            String?         @db.VarChar(100)
-  templateId        Int?            @map("template_id")
-  template          ModeloTemplate? @relation(fields: [templateId], references: [id])
-  tipoEquipoId      Int             @map("tipo_equipo_id")
-  tipoEquipo        TipoEquipo      @relation(fields: [tipoEquipoId], references: [id])
-  oficinaId         Int             @map("oficina_id")
-  oficina           Oficina         @relation("EquipoUbicacionActual", fields: [oficinaId], references: [id])
-  oficinaAsignadaId Int             @map("oficina_asignada_id")
-  oficinaAsignada   Oficina         @relation("EquipoOficinaAsignada", fields: [oficinaAsignadaId], references: [id])
-  estado            EstadoEquipo    @default(NUEVO)
-  ip                String?         @db.VarChar(45)
-  mac               String?         @db.VarChar(17)
-  matricula         String?         @unique @db.VarChar(100)
-  asignadoA         String?         @map("asignado_a") @db.Text
-  proveedor         String?         @db.VarChar(200)
-  fechaAdquisicion  DateTime?       @map("fecha_adquisicion")
-  nroInventario     String?         @map("nro_inventario") @db.VarChar(100)
-  garantiaHasta     DateTime?       @map("garantia_hasta")
-  fechaFinVida      DateTime?       @map("fecha_fin_vida")
-  precioCompra      Decimal?        @map("precio_compra") @db.Decimal(10, 2)
-  observacion       String?         @db.Text
-  especificaciones  Json            @default("{}") @db.JsonB
-  stockEtapa        EtapaStock?     @map("stock_etapa")
-  stockDesde        DateTime?       @map("stock_desde")
+  id                Int              @id @default(autoincrement())
+  serie             Int              @unique
+  modelo            String?          @db.VarChar(100)
+  templateId        Int?             @map("template_id")
+  template          ModeloTemplate?  @relation(fields: [templateId], references: [id])
+  tipoEquipoId      Int              @map("tipo_equipo_id")
+  tipoEquipo        TipoEquipo       @relation(fields: [tipoEquipoId], references: [id])
+  oficinaId         Int              @map("oficina_id")
+  oficina           Oficina          @relation("EquipoUbicacionActual", fields: [oficinaId], references: [id])
+  oficinaAsignadaId Int              @map("oficina_asignada_id")
+  oficinaAsignada   Oficina          @relation("EquipoOficinaAsignada", fields: [oficinaAsignadaId], references: [id])
+  estado            EstadoEquipo     @default(NUEVO)
+  ip                String?          @db.VarChar(45)
+  mac               String?          @db.VarChar(17)
+  matricula         String?          @unique @db.VarChar(100)
+  asignadoA         String?          @map("asignado_a") @db.Text
+  proveedor         String?          @db.VarChar(200)
+  fechaAdquisicion  DateTime?        @map("fecha_adquisicion")
+  nroInventario     String?          @map("nro_inventario") @db.VarChar(100)
+  garantiaHasta     DateTime?        @map("garantia_hasta")
+  fechaFinVida      DateTime?        @map("fecha_fin_vida")
+  precioCompra      Decimal?         @map("precio_compra") @db.Decimal(10, 2)
+  observacion       String?          @db.Text
+  especificaciones  Json             @default("{}") @db.JsonB
+  stockEtapa        EtapaStock?      @map("stock_etapa")
+  stockDesde        DateTime?        @map("stock_desde")
   condicion         CondicionEquipo?
-  v1Id              Int?            @map("v1_id")
+  v1Id              Int?             @map("v1_id")
 
-  historial      Historial[]
-  prestamos      Prestamo[]
-  enviosServicio EnvioServicio[]
-  imagenes       EquipoImagen[]
-  licencias      Licencia[]
-  createdAt      DateTime        @default(now()) @map("created_at")
-  updatedAt      DateTime        @updatedAt @map("updated_at")
+  historial         Historial[]
+  prestamos         Prestamo[]
+  enviosServicio    EnvioServicio[]
+  imagenes          EquipoImagen[]
+  licencias         Licencia[]
+  movimientosInsumo MovimientoInsumo[]
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
 
   @@index([tipoEquipoId])
   @@index([oficinaId])
@@ -347,8 +349,9 @@ model Usuario {
   refreshTokens        RefreshToken[]
   accesos              RegistroAcceso[]      @relation("AccesoUsuario")
   accesosComoActor     RegistroAcceso[]      @relation("AccesoActor")
+  movimientosInsumo    MovimientoInsumo[]
   ultimoAcceso         DateTime?             @map("ultimo_acceso")
-  createdAt           DateTime              @default(now()) @map("created_at")
+  createdAt            DateTime              @default(now()) @map("created_at")
   updatedAt            DateTime              @updatedAt @map("updated_at")
 
   @@map("usuario")
@@ -444,6 +447,69 @@ model Licencia {
   @@index([equipoId])
   @@index([fechaExpiracion])
   @@map("licencia")
+}
+
+// ==========================================
+// INSUMOS (sin número de serie: se controlan por cantidad)
+// ==========================================
+
+enum TipoMovimientoInsumo {
+  INGRESO // Compra o recepción: suma
+  ENTREGA // Sale hacia una oficina o persona: resta
+  AJUSTE // Corrección por conteo físico: suma o resta
+
+  @@map("tipo_movimiento_insumo")
+}
+
+model CategoriaInsumo {
+  id        Int      @id @default(autoincrement())
+  nombre    String   @unique @db.VarChar(60)
+  insumos   Insumo[]
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("categoria_insumo")
+}
+
+model Insumo {
+  id          Int                @id @default(autoincrement())
+  nombre      String             @unique @db.VarChar(120)
+  categoriaId Int                @map("categoria_id")
+  categoria   CategoriaInsumo    @relation(fields: [categoriaId], references: [id])
+  unidad      String             @default("unidad") @db.VarChar(30)
+  /// Cantidad actual. Sólo cambia a través de MovimientoInsumo.
+  stock       Int                @default(0)
+  activo      Boolean            @default(true)
+  observacion String?            @db.Text
+  movimientos MovimientoInsumo[]
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  @@index([categoriaId])
+  @@map("insumo")
+}
+
+model MovimientoInsumo {
+  id              Int                  @id @default(autoincrement())
+  insumoId        Int                  @map("insumo_id")
+  insumo          Insumo               @relation(fields: [insumoId], references: [id])
+  tipo            TipoMovimientoInsumo
+  /// Con signo: positivo suma al stock, negativo resta.
+  cantidad        Int
+  stockResultante Int                  @map("stock_resultante")
+  oficinaId       Int?                 @map("oficina_id")
+  oficina         Oficina?             @relation(fields: [oficinaId], references: [id])
+  equipoId        Int?                 @map("equipo_id")
+  equipo          Equipo?              @relation(fields: [equipoId], references: [id], onDelete: SetNull)
+  recibe          String?              @db.VarChar(120)
+  motivo          String?              @db.Text
+  usuarioId       Int                  @map("usuario_id")
+  usuario         Usuario              @relation(fields: [usuarioId], references: [id])
+  fecha           DateTime             @default(now())
+
+  @@index([insumoId, fecha(sort: Desc)])
+  @@index([fecha])
+  @@index([oficinaId])
+  @@map("movimiento_insumo")
 }
 
 // ==========================================

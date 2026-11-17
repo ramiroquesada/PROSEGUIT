@@ -1,12 +1,14 @@
 import { useLocation, useParams } from 'react-router';
 import { Menu } from 'lucide-react';
 import { useEquipmentDetail } from '../../hooks/useEquipment';
+import { useSupply } from '../../hooks/useSupplies';
 import styles from './Header.module.css';
 
 const PAGE_TITLES: Record<string, string> = {
   '/':            'Dashboard',
   '/equipos':     'Equipos',
   '/stock':       'Stock',
+  '/insumos':     'Insumos',
   '/ubicaciones': 'Ubicaciones',
   '/prestamos':   'Préstamos',
   '/historial':   'Historial',
@@ -28,6 +30,17 @@ function EquipmentBreadcrumb({ id, isEdit }: { id: string; isEdit: boolean }) {
       <span className={styles.breadcrumbCurrent}>
         {isEdit ? `${label} · Editar` : label}
       </span>
+    </span>
+  );
+}
+
+function SupplyBreadcrumb({ id }: { id: string }) {
+  const { data } = useSupply(parseInt(id, 10));
+  return (
+    <span className={styles.breadcrumb}>
+      Insumos
+      <span className={styles.breadcrumbSep}>›</span>
+      <span className={styles.breadcrumbCurrent}>{data ? data.nombre : '…'}</span>
     </span>
   );
 }
@@ -65,6 +78,9 @@ export default function Header({ onMenuToggle }: HeaderProps) {
   } else if (pathname.match(/^\/equipos\/\d+$/)) {
     title = 'Equipos';
     breadcrumb = <EquipmentBreadcrumb id={params.id!} isEdit={false} />;
+  } else if (pathname.match(/^\/insumos\/\d+$/)) {
+    title = 'Insumos';
+    breadcrumb = <SupplyBreadcrumb id={params.id!} />;
   } else {
     const base = '/' + pathname.split('/')[1];
     title = PAGE_TITLES[base] || 'PROSEGUIT';
