@@ -24,7 +24,7 @@ Todos los cambios relevantes de PROSEGUIT se documentan en este archivo. El proy
 ### Notas de actualización
 
 - Cuatro migraciones aditivas (tipos, columnas nulas, la oficina Stock y las tablas de insumos con seis categorías iniciales); no mueven equipos existentes. Los equipos existentes quedan con condición "Sin definir".
-- Después del deploy, correr la vista previa del script y aplicarlo sólo tras revisarla. Ver `DEPLOY_PENDIENTE.md`.
+- Después del deploy, correr la vista previa del script y aplicarlo sólo tras revisarla. Detalle en CLAUDE.md, "Ciclo de vida y Stock", punto 6.
 
 ## [2.3.0] - 2026-09-21
 

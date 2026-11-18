@@ -29,7 +29,7 @@ Reemplaza a "seguit v1" (PHP/MySQL).
 
 ## Estado actual del proyecto (noviembre 2026 · v2.4.0)
 
-> v2.4.0 está en `main` y **pendiente de desplegar** en la oficina. Los pasos para el servidor están en `DEPLOY_PENDIENTE.md`.
+> v2.4.0 **desplegada en la oficina el 18/11/2026** (desde v2.3.0, commit `a05e4c0`; backup previo en `backups/20261118T105721Z-a05e4c0/` del servidor).
 
 ### ✅ Completado (noviembre 17) — v2.4.0, pedido de stock del director
 
@@ -250,7 +250,7 @@ Alta ──► STOCK (Nuevo, Listo) ──asignar──► Oficina (Activo) ◄�
 4b. **Condición** — `Equipo.condicion` (`BUENO` | `CON_DETALLES` | `SOLO_REPUESTOS`, nula = sin definir): estado físico de la unidad, independiente de la ubicación. Las altas nuevas quedan en `BUENO`. Se carga al pasar a stock, al marcar listo o desde Editar; se conserva al asignar. Labels y colores en `CONDICION_LABEL` / `CONDICION_COLOR` de `frontend/src/lib/equipment-status.ts`.
 4c. **Descartar** — no hay acción propia: ENTRADA → cambiar asignada a Depósito → SALIDA.
 5. **"Nuevo" = nunca asignado a una oficina.** Un NUEVO que va de Stock a Mantenimiento (ENTRADA) y vuelve sigue siendo NUEVO: la ENTRADA guarda `metadata.estadoAnterior` en el historial y la SALIDA lo consulta. Si en cambio sale a una oficina, se registra `ASIGNACION`.
-6. **Equipos NUEVO previos al Stock** (en Mantenimiento, asignados a Soporte): se pasan con el script de una sola vez `backend/src/scripts/pasar-nuevos-a-stock.ts`. Vista previa por defecto, `--apply` para aplicar, `--todas-las-oficinas` para incluir otras oficinas asignadas. Excluye los que tienen uso previo en el historial (ASIGNACION, RETORNO_SOPORTE, PRESTAMO, DEVOLUCION). Transaccional e idempotente. En prod: `node dist/scripts/pasar-nuevos-a-stock.js` dentro del contenedor backend.
+6. **Equipos NUEVO previos al Stock** (en Mantenimiento, asignados a Soporte): se pasan con el script de una sola vez `backend/src/scripts/pasar-nuevos-a-stock.ts`. Vista previa por defecto, `--apply` para aplicar, `--todas-las-oficinas` para incluir otras oficinas asignadas. Excluye los que tienen uso previo en el historial (ASIGNACION, RETORNO_SOPORTE, PRESTAMO, DEVOLUCION). Transaccional e idempotente. En prod: `node dist/scripts/pasar-nuevos-a-stock.js` dentro del contenedor backend. Se corrió tras el deploy del 18/11/2026: la vista previa listó 11 equipos para Stock (asignados a Soporte) y dejó afuera 5 NUEVO ya asignados a otras oficinas (series 1366, 1389, 2157, 2177, 2178), que se resuelven a mano desde la ficha con SALIDA o Pasar a stock.
 
 ### Insumos (sin número de serie)
 
@@ -500,7 +500,7 @@ Las migraciones de DB se aplican automáticamente al iniciar el backend (`prisma
 ./scripts/deploy.sh   # exige árbol limpio, hace pull --ff-only, backup (pg_dump + uploads), rebuild y health check
 ```
 
-Si hay pasos propios de la versión (scripts de datos, verificaciones), están en `DEPLOY_PENDIENTE.md`. El procedimiento general y el rollback, en `docs/VERSIONADO_Y_DEPLOY.md`.
+Si una versión necesita pasos propios (scripts de datos, verificaciones), se dejan en `DEPLOY_PENDIENTE.md` en la raíz, que `AGENTS.md` le indica leer al agente del servidor; se borra una vez desplegada. Hoy no hay ninguno. El procedimiento general y el rollback, en `docs/VERSIONADO_Y_DEPLOY.md`.
 
 ### Ver logs
 
